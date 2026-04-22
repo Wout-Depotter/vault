@@ -1,6 +1,6 @@
 // Savings App - Service Worker
 // Verhoog CACHE_VERSION elke keer dat je index.html wijzigt
-const CACHE_VERSION = 'savings-v5.3';
+const CACHE_VERSION = 'savings-v5.4';
 const CACHE_ASSETS = [
   './',
   './index.html',
