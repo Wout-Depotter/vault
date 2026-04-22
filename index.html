@@ -460,6 +460,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text3)" id="modal-ticker"></div>
     </div>
     <button class="header-btn" onclick="refreshOneFromModal()" id="modal-refresh-btn" title="Live koers">↻</button>
+    <button class="header-btn" onclick="closeDetailModal()" title="Sluiten" style="font-size:1.1rem;font-weight:300">&times;</button>
   </div>
   <!-- Price hero -->
   <div style="padding:0 18px 10px">
@@ -997,7 +998,7 @@ function setModalTab(tab){
   const h=currentDetailHolding;if(!h)return;
   const el=document.getElementById('modal-tab-content');
   if(tab==='general'){
-    el.innerHTML='<div style="padding-bottom:8px"><div class="form-group" style="margin-bottom:10px"><label class="form-label">Prijs bijwerken (€)</label><input type="number" class="form-input" id="update-price" value="'+(h.current||0)+'" step="any" min="0"></div><button class="btn-primary" onclick="updatePrice(''+h.id+'')">Opslaan</button></div>';
+    el.innerHTML='<div style="padding-bottom:8px"><div class="form-group" style="margin-bottom:10px"><label class="form-label">Prijs bijwerken (€)</label><input type="number" class="form-input" id="update-price" value="'+(h.current||0)+'" step="any" min="0"></div><button class="btn-primary" onclick="updateCurrentHoldingPrice()">Opslaan</button></div>';
   } else {
     const htxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker).sort((a,b)=>new Date(b.date)-new Date(a.date));
     el.innerHTML=htxs.length?htxs.map(t=>{
@@ -1008,7 +1009,7 @@ function setModalTab(tab){
         '<div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':'Verkocht')+'</div>'+
         '<div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+(t.costs&&t.costs>0?' · kosten '+fe(t.costs):'')+'</div></div>'+
         '<div class="tx-amount '+ac+'" style="flex-shrink:0">'+sign+fe(Math.abs(t.total||0))+'</div>'+
-        '<button data-txid="'+t.id+'" onclick="deleteTxFromModal(this.dataset.txid,''+h.id+'')" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 6px">&times;</button></div>';
+        '<button data-txid="'+t.id+'" data-hid="'+h.id+'" onclick="deleteTxFromModal(this.dataset.txid,this.dataset.hid)" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 6px">&times;</button></div>';
     }).join(''):'<div style="font-size:.82rem;color:var(--text3);padding:8px 0">Geen transacties</div>';
   }
 }
@@ -1549,9 +1550,7 @@ async function fetchHistoricalStooq(ticker,range){
     if(!r.ok)return null;
     const csv=await r.text();
     if(!csv||csv.includes('No data')||csv.length<50)return null;
-    const lines=csv.trim().split(/
-?
-/);
+    const lines=csv.trim().split(/\r?\n/);
     if(lines.length<2)return null;
     const data=[];
     for(let i=1;i<lines.length;i++){
@@ -1579,3 +1578,40 @@ function buildPricesFromTransactions(h){
   if(h.current>0)prices.push({date:end.toISOString().split('T')[0],price:h.current});
   return prices.length>1?prices:null;
 }
+
+
+
+// ── TICKER MAP & REFRESH ──
+
+// ── UPDATE FUNCTIONS ──
+
+// ── API KEY ──
+
+// ── CLOUDFLARE WORKER ──
+
+// ── MANUAL ADD ──
+function updateCurrentHoldingPrice(){if(currentDetailHolding)updatePrice(currentDetailHolding.id);}
+// ── UPDATE PRICE (from modal) ──
+// ── DELETE ──
+// ── TRASH ──
+// ── SEARCH ──
+async function renderSearchResult(el,results){el.innerHTML=results.map(item=>{const sym=(item.symbol||'').replace(/['"<>]/g,'');const cp=item.changePct||0;return '<div class="search-result-item" data-sym="'+sym+'" onclick="clickSearchResult(this)"><div class="sr-symbol">📈 '+item.symbol+'</div><div class="sr-info"><div class="sr-name">'+(item.name||item.symbol)+'</div><div class="sr-exchange">'+(item.exchange||'')+'</div></div><div class="sr-price"><div class="sr-price-val">'+fe(item.price||0)+'</div><span class="'+(cp>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</span></div></div>';}).join('');}
+// ── DATA ──
+// ── INIT ──
+(function init(){
+  document.getElementById('header-date').textContent=new Date().toLocaleDateString('nl-BE',{weekday:'short',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
+  const addDate=document.getElementById('add-date');if(addDate)addDate.value=new Date().toISOString().split('T')[0];
+  loadPrefs();loadEmailJS();
+  ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
+  CF_WORKER_URL=localStorage.getItem('v_cf_worker')||'';
+  const hasPIN=!!localStorage.getItem('v_hash'),ejsSkipped=localStorage.getItem('v_ejs_skipped');
+  if(!ejsService&&!ejsSkipped){document.getElementById('setup-screen').classList.add('visible');document.getElementById('pin-screen').style.display='none';return;}
+  if(!hasPIN)hint('Stel je 6-cijferige PIN in');
+  updateBioUI();updateApiKeyBadge();updateWorkerBadge();updateEmailBadge();
+  const sp=sessionStorage.getItem('v_sp');
+  if(sp&&hasPIN)unlockWith(sp);
+  else if(bioEnabled&&bioCredId&&hasPIN)setTimeout(autoTriggerBiometric,600);
+})();
+</script>
+</body>
+</html>
