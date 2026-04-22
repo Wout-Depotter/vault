@@ -9,7 +9,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="202604221023">
+<meta name="version" content="202604221200">
 <title>Savings</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -286,6 +286,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('overview',this)">Overzicht</button>
     <button class="tab-btn" onclick="switchTab('holdings',this)">Holdings</button>
+    <button class="tab-btn" onclick="switchTab('saxo',this)">Saxo</button>
+    <button class="tab-btn" onclick="switchTab('revolut',this)">Revolut</button>
     <button class="tab-btn" onclick="switchTab('search',this)">&#128269; Zoeken</button>
     <button class="tab-btn" onclick="switchTab('transactions',this)">Transacties</button>
     <button class="tab-btn" onclick="switchTab('import',this)">&#128229; Import PDF</button>
@@ -340,6 +342,46 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="section-title">ALLE HOLDINGS</div>
     <div class="holdings-list" id="all-holdings-list"><div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">&#128188;</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen holdings</div></div></div>
   </div>
+  <div class="page" id="page-saxo">
+    <div id="saxo-hero" style="background:var(--bg);padding:0 0 8px">
+      <div style="padding:14px 18px 6px;display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <div style="font-size:.68rem;letter-spacing:.1em;color:var(--text3);margin-bottom:3px">SAXO BANK</div>
+          <div id="saxo-hero-value" style="font-family:'DM Serif Display',serif;font-size:2.6rem;letter-spacing:-1.5px;line-height:1">€0,00</div>
+          <div id="saxo-hero-change" style="font-size:.86rem;margin-top:5px;display:flex;gap:8px;min-height:1.2em"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 14px 10px">
+        <div class="quick-stat"><div class="qs-label">W/V</div><div class="qs-val" id="saxo-pl">–</div></div>
+        <div class="quick-stat"><div class="qs-label">RENDEMENT</div><div class="qs-val" id="saxo-pct">–</div></div>
+        <div class="quick-stat"><div class="qs-label">GEÏNVESTEERD</div><div class="qs-val" id="saxo-inv">–</div></div>
+      </div>
+    </div>
+    <div class="section-title" style="padding:4px 14px 6px">SAXO HOLDINGS</div>
+    <div class="holdings-list" style="padding:0 14px" id="saxo-holdings-list">
+      <div class="empty-state">Geen Saxo holdings</div>
+    </div>
+  </div>
+  <div class="page" id="page-revolut">
+    <div id="revolut-hero" style="background:var(--bg);padding:0 0 8px">
+      <div style="padding:14px 18px 6px;display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <div style="font-size:.68rem;letter-spacing:.1em;color:var(--text3);margin-bottom:3px">REVOLUT</div>
+          <div id="revolut-hero-value" style="font-family:'DM Serif Display',serif;font-size:2.6rem;letter-spacing:-1.5px;line-height:1">€0,00</div>
+          <div id="revolut-hero-change" style="font-size:.86rem;margin-top:5px;display:flex;gap:8px;min-height:1.2em"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 14px 10px">
+        <div class="quick-stat"><div class="qs-label">W/V</div><div class="qs-val" id="revolut-pl">–</div></div>
+        <div class="quick-stat"><div class="qs-label">RENDEMENT</div><div class="qs-val" id="revolut-pct">–</div></div>
+        <div class="quick-stat"><div class="qs-label">GEÏNVESTEERD</div><div class="qs-val" id="revolut-inv">–</div></div>
+      </div>
+    </div>
+    <div class="section-title" style="padding:4px 14px 6px">REVOLUT HOLDINGS</div>
+    <div class="holdings-list" style="padding:0 14px" id="revolut-holdings-list">
+      <div class="empty-state">Geen Revolut holdings</div>
+    </div>
+  </div>
   <div class="page" id="page-search">
     <div class="section-title">ZOEK KOERS WERELDWIJD</div>
     <div class="search-wrap">
@@ -375,6 +417,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="import-icon">&#128200;</div>
       <div class="import-title">Saxo Bank Excel / CSV</div>
       <div class="import-sub">Transacties export (.xlsx of .csv)<br><span style="color:var(--accent);font-weight:600">Tik hier om te selecteren</span></div>
+    </div>
+    <div class="import-zone">
+      <input type="file" accept=".pdf" onchange="importPDF(event,'revolut-pnl')">
+      <div class="import-icon">📊</div>
+      <div class="import-title">Revolut P&amp;L PDF</div>
+      <div class="import-sub">USD/EUR Profit and Loss Statement<br><span style="color:var(--accent);font-weight:600">Tik hier om te selecteren</span></div>
     </div>
     <div id="import-result"></div>
   </div>
@@ -707,17 +755,26 @@ const GECKO_MAP={
 
 async function fetchStooq(ticker){
   const stooqTicker=STOOQ_MAP[ticker]||ticker.toLowerCase().replace('-eur','.v');
-  try{
-    const r=await fetch('https://stooq.com/q/l/?s='+stooqTicker+'&f=sd2t2ohlcv&h&e=json',
-      {mode:'cors',signal:AbortSignal.timeout(6000)});
-    if(!r.ok)return null;
-    const d=await r.json();
-    const sym=d?.symbols?.[0];
-    if(!sym||!sym.close||sym.close<=0)return null;
-    const price=sym.close,prev=sym.open||price;
-    const chg=price-prev,pct=prev>0?(chg/prev)*100:0;
-    return{price,prev,change:chg,changePct:pct,currency:'EUR',name:ticker};
-  }catch(e){return null;}
+  // Try direct Stooq first, then via CORS proxy
+  const urls=[
+    'https://stooq.com/q/l/?s='+stooqTicker+'&f=sd2t2ohlcv&h&e=json',
+    'https://api.allorigins.win/get?url='+encodeURIComponent('https://stooq.com/q/l/?s='+stooqTicker+'&f=sd2t2ohlcv&h&e=json'),
+  ];
+  for(const url of urls){
+    try{
+      const r=await fetch(url,{signal:AbortSignal.timeout(7000)});
+      if(!r.ok)continue;
+      let d=await r.json();
+      // allorigins wraps response in {contents: "..."}
+      if(d.contents)d=JSON.parse(d.contents);
+      const sym=d?.symbols?.[0];
+      if(!sym||!sym.close||sym.close<=0)continue;
+      const price=sym.close,prev=sym.open||price;
+      const chg=price-prev,pct=prev>0?(chg/prev)*100:0;
+      return{price,prev,change:chg,changePct:pct,currency:'EUR',name:ticker};
+    }catch(e){}
+  }
+  return null;
 }
 
 async function fetchCoinGecko(ticker){
@@ -895,30 +952,44 @@ function lockApp(){holdings=[];transactions=[];deletedHoldings=[];currentPin='';
 function changePIN(){isSettingPin=true;pinConfirm='';pinInput='';dots();hint('Voer je nieuwe PIN in');document.getElementById('pin-screen').classList.remove('hidden');}
 
 // TABS
-function switchTab(page,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+page).classList.add('active');btn.classList.add('active');if(page==='overview')renderOverview();if(page==='holdings')renderHoldings();if(page==='transactions')renderTransactions();if(page==='trash')renderTrash();}
+function switchTab(page,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(page==='overview')renderOverview();
+  if(page==='holdings')renderHoldings();
+  if(page==='transactions')renderTransactions();
+  if(page==='trash')renderTrash();
+  if(page==='saxo')renderBroker('saxo');
+  if(page==='revolut')renderBroker('revolut');
+}
 
-// CALC
-function calc(h){const inv=h.qty*h.price,cur=h.qty*h.current,pl=cur-inv;return{inv,cur,pl,pct:inv>0?(pl/inv)*100:0};}
-function portfolio(){let ti=0,tc=0,td=0;holdings.forEach(h=>{const c=calc(h);ti+=c.inv;tc+=c.cur;td+=(h.dailyChange||0)*h.qty;});return{ti,tc,pl:tc-ti,pct:ti>0?((tc-ti)/ti)*100:0,td};}
-const f=(n,d=2)=>new Intl.NumberFormat('nl-BE',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
-const fe=n=>'€'+f(n);const fp=n=>(n>=0?'+':'')+f(n)+'%';const fpl=n=>(n>=0?'+€':'-€')+f(Math.abs(n));
-
-// RENDER
-function renderOverview(){
-  const{tc,pl,pct,td}=portfolio();
-  // Hero value
-  const hv=document.getElementById('hero-value');
-  if(hv){hv.textContent=fe(tc);hv.style.filter=blurValues?'blur(8px)':'';}
-  // Quick stats
-  const qpl=document.getElementById('qs-pl');if(qpl){qpl.textContent=fpl(pl);qpl.style.color=pl>=0?'var(--green)':'var(--red)';}
-  const qpct=document.getElementById('qs-pct');if(qpct){qpct.textContent=fp(pct);qpct.style.color=pct>=0?'var(--green)':'var(--red)';}
-  const qday=document.getElementById('qs-day');
-  if(qday){const hasLive=holdings.some(h=>h.lastRefresh);qday.textContent=hasLive?fpl(td):'–';qday.style.color=td>=0?'var(--green)':'var(--red)';}
-  // Portfolio chart
-  drawPortfolioChart();
-  // Holdings list - show ALL holdings sorted by value
-  const el=document.getElementById('top-holdings-list');
-  el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*b.current-a.qty*a.current).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">📊</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:4px">Nog geen holdings</div><div style="font-size:.78rem">Importeer je PDF of voeg manueel toe</div></div>';
+function renderBroker(broker){
+  const brokerName=broker==='saxo'?'Saxo Bank':'Revolut';
+  const bh=holdings.filter(h=>h.broker===brokerName);
+  const inv=bh.reduce((s,h)=>s+h.qty*h.price,0);
+  const cur=bh.reduce((s,h)=>s+h.qty*(h.current||h.price),0);
+  const pl=cur-inv, pct=inv>0?(pl/inv)*100:0;
+  const cc=pl>=0?'var(--green)':'var(--red)';
+  // Hero
+  const hv=document.getElementById(broker+'-hero-value');
+  if(hv)hv.textContent=fe(cur);
+  const hc=document.getElementById(broker+'-hero-change');
+  if(hc)hc.innerHTML=pl!==0?'<span style="color:'+cc+';font-weight:600">'+(pl>=0?'+':'')+fe(pl)+'</span><span style="color:'+cc+'"> '+(pct>=0?'+':'')+pct.toFixed(2)+'%</span>':'';
+  // Stats
+  const plEl=document.getElementById(broker+'-pl');
+  if(plEl){plEl.textContent=fpl(pl);plEl.style.color=cc;}
+  const pctEl=document.getElementById(broker+'-pct');
+  if(pctEl){pctEl.textContent=fp(pct);pctEl.style.color=cc;}
+  const invEl=document.getElementById(broker+'-inv');
+  if(invEl)invEl.textContent=fe(inv);
+  // Holdings list
+  const el=document.getElementById(broker+'-holdings-list');
+  if(!el)return;
+  el.innerHTML=bh.length
+    ?[...bh].sort((a,b)=>b.qty*b.current-a.qty*a.current).map(cardHTML).join('')
+    :'<div class="empty-state">Geen '+brokerName+' holdings</div>';
 }
 function renderDonut(){const svg=document.getElementById('donut-svg'),leg=document.getElementById('donut-legend');document.getElementById('donut-count').textContent=holdings.length;if(!holdings.length){svg.innerHTML='<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>';leg.innerHTML='<div style="font-size:.78rem;color:var(--text3)">Nog geen holdings</div>';return;}const total=holdings.reduce((s,h)=>s+h.qty*h.current,0),C=2*Math.PI*40,g={};holdings.forEach(h=>{const k=LABELS[h.type]||h.type;g[k]=(g[k]||0)+h.qty*h.current;});let cir='',lh='',off=0,ci=0;Object.entries(g).sort((a,b)=>b[1]-a[1]).forEach(([lbl,val])=>{const p=total>0?val/total:0,col=COLORS[ci%COLORS.length];cir+=`<circle cx="55" cy="55" r="40" fill="none" stroke="${col}" stroke-width="18" stroke-dasharray="${(p*C).toFixed(2)} ${(C-p*C).toFixed(2)}" stroke-dashoffset="${(-off*C).toFixed(2)}" transform="rotate(-90 55 55)"/>`;lh+=`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div><div class="legend-name">${lbl}</div><div class="legend-pct">${(p*100).toFixed(1)}%</div></div>`;off+=p;ci++;});svg.innerHTML='<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>'+cir;leg.innerHTML=lh;}
 function cardHTML(h){const{cur,pl,pct}=calc(h),bc=h.broker==='Saxo Bank'?'broker-saxo':h.broker==='Revolut'?'broker-revolut':'',cc=pl>0?'up':pl<0?'down':'neutral',col=COLORS[holdings.indexOf(h)%COLORS.length];const hasLive=!!h.lastRefresh;const dpct=h.dailyChangePct||0;return '<div class="holding-card" onclick="openDetail(\''+h.id+'\')">'+'<div class="holding-icon" style="background:'+col+'22">'+(ICONS[h.type]||'📦')+'</div>'+'<div class="holding-info"><div class="holding-name">'+h.name+'</div>'+'<div class="holding-meta">'+(h.ticker?'<span style="font-family:DM Mono,monospace;font-size:.72rem">'+h.ticker.split(':')[0]+'</span>':'')+'<span class="broker-tag '+bc+'">'+h.broker+'</span>'+(hasLive?'<span class="live-dot"></span><span class="'+(dpct>=0?'up':'down')+'" style="font-size:.62rem;padding:1px 4px">'+(dpct>=0?'+':'')+dpct.toFixed(2)+'% vandaag</span>':'')+'</div></div>'+'<div class="holding-right"><div class="holding-value">'+fe(cur)+'</div><div class="holding-change '+cc+'">'+fp(pct)+'</div>'+(hasLive&&h.dailyChangePct!==undefined?'<div style="font-size:.64rem;color:'+(h.dailyChangePct>=0?'var(--green)':'var(--red)')+'">'+( h.dailyChangePct>=0?'▲':'▼')+' '+(Math.abs(h.dailyChangePct||0)).toFixed(2)+'% vandaag</div>':'')+' </div>'+'</div>';}
@@ -1130,7 +1201,7 @@ async function importPDF(event,broker){const file=event.target.files[0];if(!file
         pageText+=item.str;
         lastY=y;
       });
-      text+=pageText+'\n';}hideLoading();const result=broker==='saxo'?parseSaxoPDF(text):parseRevolutPDF(text);showImportResult(result);if(result.updatedHoldings>0||result.newTx>0){await persist();renderAll();}}catch(e){hideLoading();showToast('PDF lezen mislukt: '+e.message);console.error(e);}}
+      text+=pageText+'\n';}hideLoading();const result=broker==='saxo'?parseSaxoPDF(text):broker==='revolut-pnl'?parseRevolutPnL(text):parseRevolutPDF(text);showImportResult(result);if(result.updatedHoldings>0||result.newTx>0){await persist();renderAll();}}catch(e){hideLoading();showToast('PDF lezen mislukt: '+e.message);console.error(e);}}
 function showLoading(msg){document.getElementById('loading-text').textContent=msg;document.getElementById('loading-overlay').classList.add('visible');}
 function hideLoading(){document.getElementById('loading-overlay').classList.remove('visible');}
 
@@ -1377,6 +1448,46 @@ function parseSaxoExcel(rows){
   return{newTx,skipped,updatedHoldings,broker:'Saxo Bank',reportType:'Excel'};
 }
 
+// REVOLUT P&L PARSER (USD/EUR Profit and Loss Statement)
+function parseRevolutPnL(text){
+  let newTx=0,skipped=0,updatedHoldings=0;
+  const existingIds=new Set(transactions.map(t=>t.id));
+  const lines=text.split(/\r?\n/);
+  // Format: "2025-11-10 2026-03-31 GSAT Globalstar Inc. US3789735079 US 2.29819646 US$131.24 US$152.60 US$21.36 US$1.53"
+  const SELL_RE=/^(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})\s+(\w+)\s+(.+?)\s+(US\w{10,12})\s+(US|IE|LU|FR|DE)\s+([\d.]+)\s+(?:US\$|€)([\d.]+)\s+(?:US\$|€)([\d.]+)\s+(?:US\$|€)([\d.]+)/;
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i].trim();
+    const m=SELL_RE.exec(line);
+    if(!m)continue;
+    const[,dateAcq,dateSold,symbol,name,isin,,qty,costBasis,proceeds,grossPnl]=m;
+    const id='rev_pnl_'+dateSold+'_'+symbol+'_'+qty;
+    if(existingIds.has(id)){skipped++;continue;}
+    // Check next line for EUR rate
+    const nextLine=(lines[i+1]||'').trim();
+    const eurMatch=nextLine.match(/€([\d.]+)/);
+    const proceedsEur=eurMatch?parseFloat(eurMatch[0].replace('€','')):(parseFloat(proceeds)*0.87);
+    const costEur=eurMatch?parseFloat((lines[i+1]||'').match(/€([\d.]+)/)?.[0]?.replace('€','')||costBasis):(parseFloat(costBasis)*0.87);
+    const qtyNum=parseFloat(qty);
+    const priceEur=qtyNum>0?proceedsEur/qtyNum:0;
+    const costPerShare=qtyNum>0?costEur/qtyNum:0;
+    // Record as SELL transaction
+    const sellTx={id,name:name.trim(),ticker:symbol,yahooTicker:STOOQ_MAP[symbol]||symbol,
+      type:'stock',broker:'Revolut',qty:qtyNum,price:priceEur,total:proceedsEur,
+      date:dateSold,action:'sell',isin,note:'P&L rapport - verkoop'};
+    transactions.push(sellTx);existingIds.add(id);newTx++;
+    // Also record original buy if we have the date
+    const buyId='rev_pnl_buy_'+dateAcq+'_'+symbol;
+    if(!existingIds.has(buyId)){
+      const buyTx={id:buyId,name:name.trim(),ticker:symbol,yahooTicker:STOOQ_MAP[symbol]||symbol,
+        type:'stock',broker:'Revolut',qty:qtyNum,price:costPerShare,total:costEur,
+        date:dateAcq,action:'buy',isin,note:'P&L rapport - aankoop'};
+      transactions.push(buyTx);existingIds.add(buyId);newTx++;
+    }
+    updatedHoldings++;
+  }
+  return{newTx,skipped,updatedHoldings,broker:'Revolut',reportType:'P&L Statement'};
+}
+
 // REVOLUT PARSER
 function parseRevolutPDF(text){
   let newTx=0,skipped=0,updatedHoldings=0;
@@ -1486,7 +1597,8 @@ function drawSparkline(canvas, crosshairId, tooltipId, priceBigId, prices, h, bu
     crosshair.style.left=xS(idx)+'px';crosshair.style.opacity='1';
     tooltip.style.left=Math.min(xS(idx),W-130)+'px';tooltip.style.opacity='1';
     const d=new Date(p.date).toLocaleDateString('nl-BE',{day:'numeric',month:'short',year:'numeric'});
-    tooltip.innerHTML='<span style="color:var(--text3)">'+ d+'</span> <strong>'+fe(p.price)+'</strong>';
+    const label=lastPriceBig?'':(p.price>=0?'W/V: +':'W/V: ');
+    tooltip.innerHTML='<span style="color:var(--text3)">'+d+'</span> <strong>'+(lastPriceBig?'':label)+fe(Math.abs(p.price))+'</strong>';
     if(lastPriceBig)lastPriceBig.textContent=fe(p.price);
   }
   function onLeave(){crosshair.style.opacity='0';tooltip.style.opacity='0';if(lastPriceBig)lastPriceBig.textContent=fe(origPrice);}
@@ -1507,43 +1619,61 @@ async function setPortfolioRange(range,btn){
 }
 
 function buildPortfolioHistory(range){
-  // Build portfolio value over time from transactions
+  // Build P&L history: shows added value (current value - invested cost basis)
+  // NOT cumulative invested amount - just the profit/loss over time
   if(!transactions.length&&!holdings.length)return null;
   const days=RANGE_CONFIG[range].days;
   const now=new Date();
   const fromDate=new Date(now);fromDate.setDate(fromDate.getDate()-days);
-  // Collect all transaction dates + today
+
+  // Collect date points: all tx dates + weekly intervals
   const dates=new Set();
-  transactions.forEach(t=>{if(t.date&&new Date(t.date)>=fromDate)dates.add(t.date);});
-  // Add weekly points in range
+  transactions.forEach(t=>{if(t.date)dates.add(t.date);});
   const d=new Date(fromDate);
   while(d<=now){dates.add(d.toISOString().split('T')[0]);d.setDate(d.getDate()+7);}
   dates.add(now.toISOString().split('T')[0]);
   const sortedDates=[...dates].sort();
+
+  // For each date: calculate (current_price * qty_at_date) - (cost_basis_at_date)
+  // = unrealised P&L at that point in time
+  // We use the holding's CURRENT price as proxy (no historical prices available)
+  // but scale it: if current price is known, use it; otherwise use avg buy price
+  const currentTotalValue=holdings.reduce((s,h)=>s+h.qty*(h.current||h.price),0);
+  const currentTotalCost=holdings.reduce((s,h)=>s+h.qty*h.price,0);
+  const currentPL=currentTotalValue-currentTotalCost;
+
   const points=[];
   for(const date of sortedDates){
+    if(new Date(date)<fromDate)continue;
     const dt=new Date(date);
-    // Calculate portfolio value at this date using each holding's cost basis up to that date
-    let totalValue=0;
+    let totalCostBasis=0, totalCurrentValue=0;
     holdings.forEach(h=>{
-      // Find qty at this date
-      const relevantTxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker&&t.date&&new Date(t.date)<=dt);
-      let qty=0;
-      relevantTxs.forEach(t=>{if(t.action==='buy')qty+=t.qty;else qty-=t.qty;});
-      qty=Math.max(0,qty);
-      // Use current price as approximation (we don't have historical for portfolio)
-      // For past dates, use the purchase price from last tx before that date
-      const lastTx=relevantTxs[relevantTxs.length-1];
-      const price=lastTx?lastTx.price:(h.current||0);
-      totalValue+=qty*price;
+      // Qty owned at this date
+      const relevantTxs=transactions.filter(t=>
+        t.name===h.name&&t.broker===h.broker&&t.date&&new Date(t.date)<=dt
+      );
+      let qty=0, costBasis=0;
+      relevantTxs.forEach(t=>{
+        if(t.action==='buy'){qty+=t.qty;costBasis+=t.total||t.qty*t.price;}
+        else{
+          // Sell: reduce proportionally
+          const avgCost=qty>0?costBasis/qty:0;
+          qty-=t.qty;costBasis-=t.qty*avgCost;
+        }
+      });
+      qty=Math.max(0,qty);costBasis=Math.max(0,costBasis);
+      // Use current price as proxy for value at this date
+      const price=h.current||h.price||0;
+      totalCurrentValue+=qty*price;
+      totalCostBasis+=costBasis;
     });
-    if(totalValue>0)points.push({date,price:totalValue});
+    const pl=totalCurrentValue-totalCostBasis;
+    // Only add points where we actually have holdings
+    if(totalCostBasis>0||totalCurrentValue>0)points.push({date,price:pl});
   }
-  // Make sure the last point uses current values
-  if(points.length>0){
-    const curTotal=holdings.reduce((s,h)=>s+h.qty*(h.current||h.price),0);
-    points[points.length-1].price=curTotal;
-  }
+
+  // Ensure last point = actual current P&L
+  if(points.length>0)points[points.length-1].price=currentPL;
   return points.length>1?points:null;
 }
 
@@ -1553,20 +1683,26 @@ function drawPortfolioChart(){
   const wrap=canvas.parentElement;
   canvas.width=wrap.clientWidth||window.innerWidth;
   canvas.height=120;
-  const prices=buildPortfolioHistory(portfolioRange);
-  if(!prices||prices.length<2){
+  const plPoints=buildPortfolioHistory(portfolioRange);
+  if(!plPoints||plPoints.length<2){
     const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
     return;
   }
-  drawSparkline(canvas,'portfolio-crosshair','portfolio-tooltip','hero-value',prices,null,'');
-  // Update hero change
-  const first=prices[0].price,last=prices[prices.length-1].price;
-  const chg=last-first,pct=first>0?(chg/first)*100:0;
-  const cc=chg>=0?'var(--green)':'var(--red)';
+  // Draw the P&L sparkline - tooltip shows P&L value, NOT replacing hero-value
+  drawSparkline(canvas,'portfolio-crosshair','portfolio-tooltip',null,plPoints,null,'');
+  // Hero-value stays as total portfolio value (set by renderOverview)
+  // Hero-change shows P&L for selected period
+  const first=plPoints[0].price, last=plPoints[plPoints.length-1].price;
+  const periodGain=last-first;  // gain IN the period (not total P&L)
+  const{tc,ti:inv}=portfolio();
+  const totalPL=last;  // last point IS current total P&L
+  const totalPct=inv>0?(totalPL/inv)*100:0;
+  const cc=totalPL>=0?'var(--green)':'var(--red)';
   const hc=document.getElementById('hero-change');
-  if(hc)hc.innerHTML='<span style="color:'+cc+';font-weight:600">'+(chg>=0?'+':'')+fe(chg)+'</span>'+
-    '<span style="color:'+cc+'"> '+(pct>=0?'+':'')+pct.toFixed(2)+'%</span>'+
-    '<span style="color:var(--text3);font-size:.8rem"> '+portfolioRange+'</span>';
+  if(hc)hc.innerHTML=
+    '<span style="color:'+cc+';font-weight:600">'+(totalPL>=0?'+':'')+fe(totalPL)+'</span>'+
+    '<span style="color:'+cc+'"> '+(totalPct>=0?'+':'')+totalPct.toFixed(2)+'%</span>'+
+    '<span style="color:var(--text3);font-size:.78rem;margin-left:4px">totale W/V</span>';
 }
 
 // ── HOLDING CHART (standalone modal) ──
