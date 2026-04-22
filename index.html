@@ -1433,13 +1433,17 @@ const fpl=n=>(n>=0?'+€':'-€')+f(Math.abs(n));
 
 // ── CALC ──
 function calc(h){
-  // Investment = sum of all buy transaction totals (includes costs/taxes)
-  // minus sum of sell transaction totals (proceeds reduce cost basis)
+  // Investment = sum of all buy transaction totals + fees
+  // tx.total = amount paid for the asset (excl. broker fees)
+  // tx.costs = broker fees/taxes (separate field)
+  // Real investment = tx.total + tx.costs
   const htxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker);
   let inv=0;
   htxs.forEach(t=>{
-    if(t.action==='buy') inv+=(t.total||t.qty*t.price||0);
-    else inv-=(t.total||t.qty*t.price||0); // sells reduce cost basis
+    const base=t.total||t.qty*t.price||0;
+    const fees=t.costs||0;
+    if(t.action==='buy') inv+=base+fees;
+    else inv-=base; // sells: proceeds reduce cost basis (no fees added back)
   });
   // Fallback to h.price * h.qty if no transactions found
   if(inv<=0) inv=h.qty*(h.price||0);
