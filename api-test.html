@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Test v2</title>
+<style>
+body{font-family:monospace;padding:16px;background:#0f0e0d;color:#f0ece6;font-size:.78rem;line-height:1.9}
+.ok{color:#4caf7d}.fail{color:#e05c4b}.pending{color:#d4913f}
+h2{color:#d4913f;margin:16px 0 6px;font-size:.9rem}
+</style>
+</head>
+<body>
+<h2>🔍 API Test — Savings app</h2>
+<div id="out"></div>
+<script>
+const out = document.getElementById('out');
+const log = (msg, ok) => {
+  const d = document.createElement('div');
+  d.className = ok === null ? 'pending' : ok ? 'ok' : 'fail';
+  d.textContent = (ok === null ? '⏳' : ok ? '✅' : '❌') + ' ' + msg;
+  out.appendChild(d);
+  return d;
+};
+
+async function test(label, url, parse) {
+  const el = log(label + ' ...', null);
+  try {
+    const r = await fetch(url, {signal: AbortSignal.timeout(8000)});
+    if (!r.ok) { el.textContent = '❌ ' + label + ': HTTP ' + r.status; el.className='fail'; return null; }
+    const ct = r.headers.get('content-type')||'';
+    const d = ct.includes('json') ? await r.json() : await r.text();
+    const v = parse(d);
+    el.textContent = '✅ ' + label + ': ' + v;
+    el.className = 'ok';
+    return v;
+  } catch(e) {
+    el.textContent = '❌ ' + label + ': ' + e.message;
+    el.className = 'fail';
+    return null;
+  }
+}
+
+async function run() {
+  const enc = encodeURIComponent;
+  const stooqIWDA = 'https://stooq.com/q/l/?s=iwda.as&f=sd2t2ohlcv&h&e=json';
+  
+  log('=== STOOQ direct ===', null);
+  await test('Stooq IWDA.AS direct',
+    stooqIWDA,
+    d => typeof d === 'string' ? d.substring(0,50) : d?.symbols?.[0]?.close ?? 'no close');
+
+  log('=== CORS PROXIES (Stooq) ===', null);
+  const proxies = [
+    ['allorigins.win', `https://api.allorigins.win/get?url=${enc(stooqIWDA)}`,
+      d => { try{return JSON.parse(d.contents)?.symbols?.[0]?.close;}catch(e){return 'parse:'+e.message;}}],
+    ['corsproxy.io', `https://corsproxy.io/?${enc(stooqIWDA)}`,
+      d => d?.symbols?.[0]?.close ?? JSON.stringify(d).substring(0,40)],
+    ['thingproxy', `https://thingproxy.freeboard.io/fetch/${stooqIWDA}`,
+      d => typeof d==='string'?d.substring(0,50):d?.symbols?.[0]?.close],
+    ['codetabs', `https://api.codetabs.com/v1/proxy?quest=${enc(stooqIWDA)}`,
+      d => typeof d==='string'?d.substring(0,50):d?.symbols?.[0]?.close],
+  ];
+  for (const [name, url, parse] of proxies) {
+    await test(name + ' → IWDA', url, parse);
+  }
+
+  log('=== COINGECKO ===', null);
+  const geckoUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur';
+  await test('CoinGecko direct', geckoUrl, d => d?.bitcoin?.eur ?? JSON.stringify(d).substring(0,40));
+  await test('CoinGecko via allorigins', `https://api.allorigins.win/get?url=${enc(geckoUrl)}`,
+    d => { try{return JSON.parse(d.contents)?.bitcoin?.eur;}catch(e){return 'parse err';} });
+  await test('CoinGecko via corsproxy', `https://corsproxy.io/?${enc(geckoUrl)}`,
+    d => d?.bitcoin?.eur ?? JSON.stringify(d).substring(0,40));
+
+  log('=== YAHOO FINANCE ===', null);
+  await test('Yahoo IWDA.AS', 'https://query1.finance.yahoo.com/v8/finance/chart/IWDA.AS?interval=1d&range=1d',
+    d => d?.chart?.result?.[0]?.meta?.regularMarketPrice ?? 'no data');
+  await test('Yahoo BTC-EUR', 'https://query1.finance.yahoo.com/v8/finance/chart/BTC-EUR?interval=1d&range=1d',
+    d => d?.chart?.result?.[0]?.meta?.regularMarketPrice ?? 'no data');
+
+  log('=== TWELVE DATA ===', null);
+  await test('Twelve Data IWDA.AS (no key)', 'https://api.twelvedata.com/price?symbol=IWDA.AS&apikey=demo',
+    d => d?.price ?? d?.message ?? d?.status ?? JSON.stringify(d).substring(0,50));
+
+  log('=== FRANKFURTER EUR/USD ===', null);
+  await test('Frankfurter', 'https://api.frankfurter.app/latest?from=EUR&to=USD',
+    d => d?.rates?.USD ?? 'no rate');
+
+  out.insertAdjacentHTML('beforeend','<div style="margin-top:12px;color:#9a9088">— Test klaar —</div>');
+}
+run();
+</script>
+</body>
+</html>
