@@ -216,6 +216,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 ::-webkit-scrollbar{width:0}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:.82rem;font-weight:500;opacity:0;transition:all .3s ease;z-index:9999;white-space:nowrap;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.update-banner{position:fixed;top:0;left:0;right:0;z-index:9998;background:var(--accent);color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;transform:translateY(-100%);transition:transform .3s ease;box-shadow:0 4px 20px rgba(193,127,58,.4)}
+.update-banner.show{transform:translateY(0)}
+.update-banner .ub-text{font-size:.84rem;font-weight:600}
+.update-banner .ub-sub{font-size:.72rem;opacity:.85}
+.update-banner-btn{background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;padding:7px 14px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .loading-overlay{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.65);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
 .loading-overlay.visible{display:flex}
 .loading-spinner{width:46px;height:46px;border:4px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
@@ -396,9 +401,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="settings-item" onclick="importJsonData()"><div class="si-icon">&#128229;</div><div class="si-info"><div class="si-label">Importeer backup</div><div class="si-sub">Herstel vanuit JSON backup</div></div><div class="si-arrow">&#8250;</div></div>
       <div class="settings-item" onclick="clearData()"><div class="si-icon">&#128465;</div><div class="si-info"><div class="si-label">Alles wissen</div><div class="si-sub" style="color:var(--red)">Verwijder alle data</div></div><div class="si-arrow">&#8250;</div></div>
     </div>
-    <div class="section-title">OVER</div>
+    <div class="section-title">APP</div>
     <div class="settings-section">
-      <div class="settings-item"><div class="si-icon">&#128188;</div><div class="si-info"><div class="si-label">Savings v5.1</div><div class="si-sub">Live koersen &middot; PDF import &middot; AES-256 &middot; Prullenbak</div></div></div>
+      <div class="settings-item" onclick="manualCheckUpdate()">
+        <div class="si-icon">&#10024;</div>
+        <div class="si-info"><div class="si-label">Controleer op updates</div><div class="si-sub" id="update-status">Tik om te controleren</div></div>
+        <div class="si-arrow">&#8250;</div>
+      </div>
+      <div class="settings-item"><div class="si-icon">&#128188;</div><div class="si-info"><div class="si-label">Savings v5.2</div><div class="si-sub">Live koersen &middot; Excel import &middot; Grafieken &middot; AES-256</div></div></div>
     </div>
   </div>
 </div>
@@ -488,6 +498,13 @@ export default {<br>
     <button class="btn-danger" onclick="clearApiKey()">Verwijderen</button>
   </div>
 </div>
+<div class="update-banner" id="update-banner">
+  <div>
+    <div class="ub-text">&#10024; Update beschikbaar</div>
+    <div class="ub-sub">Nieuwe versie van Savings klaar</div>
+  </div>
+  <button class="update-banner-btn" onclick="applyUpdate()">Nu installeren</button>
+</div>
 <div class="loading-overlay" id="loading-overlay">
   <div class="loading-spinner"></div>
   <div class="loading-text" id="loading-text">Bezig...</div>
@@ -495,8 +512,26 @@ export default {<br>
 <div class="toast" id="toast"></div>
 <input type="file" id="json-import-input" accept=".json" style="display:none" onchange="handleJsonImport(event)">
 <script>
-// Force fresh load - unregister any cached service workers
-if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister()));}
+// Service Worker - auto-update
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    // Check for updates every time app opens
+    reg.update();
+    reg.addEventListener('updatefound',()=>{
+      const newWorker=reg.installing;
+      newWorker.addEventListener('statechange',()=>{
+        if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
+          // New version available - show update banner
+          showUpdateBanner();
+        }
+      });
+    });
+  }).catch(()=>{});
+  // When new SW takes control, reload
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(window._swUpdating)window.location.reload();
+  });
+}
 
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const ENC=new TextEncoder(),DEC=new TextDecoder();
@@ -537,6 +572,34 @@ function showApiKeySetup(){document.getElementById('api-key-input').value=ANTHRO
 function closeApiModal(e){if(e.target===document.getElementById('apikey-modal'))document.getElementById('apikey-modal').classList.remove('open');}
 function saveApiKey(){const k=document.getElementById('api-key-input').value.trim();ANTHROPIC_KEY=k;localStorage.setItem('v_api_key',k);updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');showToast(k?'API key opgeslagen':'API key verwijderd');}
 function clearApiKey(){ANTHROPIC_KEY='';localStorage.removeItem('v_api_key');updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');}
+// UPDATE FUNCTIONS
+function showUpdateBanner(){document.getElementById('update-banner').classList.add('show');}
+function applyUpdate(){
+  window._swUpdating=true;
+  document.getElementById('update-banner').classList.remove('show');
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistration().then(reg=>{
+      if(reg&&reg.waiting){reg.waiting.postMessage({type:'SKIP_WAITING'});}
+      else window.location.reload();
+    });
+  } else window.location.reload();
+}
+function manualCheckUpdate(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistration().then(reg=>{
+      if(!reg){showToast('Geen service worker actief');return;}
+      reg.update().then(()=>{
+        if(reg.waiting){showUpdateBanner();showToast('Update gevonden!');}
+        else showToast('App is up-to-date ✓');
+      });
+    });
+  } else {
+    // Fallback: hard reload
+    showToast('Cache wissen...');
+    setTimeout(()=>{window.location.href=window.location.href+'?v='+Date.now();},500);
+  }
+}
+
 function updateApiKeyBadge(){const b=document.getElementById('api-key-badge'),s=document.getElementById('api-key-sub');if(b){b.textContent=ANTHROPIC_KEY?'INGESTELD':'NIET INGESTELD';b.className='si-badge'+(ANTHROPIC_KEY?'':' off');}if(s)s.textContent=ANTHROPIC_KEY?'Zoeken actief':'Voor zoeken & automatische koersen';}
 
 // LIVE PRICES
