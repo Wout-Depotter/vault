@@ -351,7 +351,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
     <div class="section-title">LIVE KOERSEN</div>
     <div class="settings-section">
-      <div class="settings-item" onclick="showApiKeySetup()"><div class="si-icon">&#128273;</div><div class="si-info"><div class="si-label">Anthropic API Key</div><div class="si-sub" id="api-key-sub">Voor zoeken &amp; automatische koersen</div></div><div class="si-badge off" id="api-key-badge">NIET INGESTELD</div></div>
+      <div class="settings-item" onclick="showWorkerSetup()"><div class="si-icon">&#9889;</div><div class="si-info"><div class="si-label">Cloudflare Worker URL</div><div class="si-sub" id="worker-sub">Gratis proxy voor betrouwbare koersen</div></div><div class="si-badge off" id="worker-badge">NIET INGESTELD</div></div>
       <div class="settings-item" onclick="refreshAllPrices()"><div class="si-icon">&#128260;</div><div class="si-info"><div class="si-label">Koersen verversen</div><div class="si-sub" id="last-refresh-time">Nog niet vernieuwd</div></div><div class="si-arrow">&#8250;</div></div>
     </div>
     <div class="section-title">DATA</div>
@@ -379,6 +379,37 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <button class="btn-danger" id="modal-delete-btn">Holding verwijderen</button>
   </div>
 </div>
+<!-- CLOUDFLARE WORKER MODAL -->
+<div class="modal-overlay" id="worker-modal" onclick="closeWorkerModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Cloudflare Worker</div>
+    <div style="font-size:.82rem;color:var(--text2);line-height:1.6;margin-bottom:14px">
+      Een gratis Cloudflare Worker lost het CORS probleem op voor live koersen.<br><br>
+      <strong>Stap 1:</strong> Ga naar <strong>workers.cloudflare.com</strong> (gratis account)<br>
+      <strong>Stap 2:</strong> Maak een nieuwe Worker aan<br>
+      <strong>Stap 3:</strong> Plak de code uit de Vault app<br>
+      <strong>Stap 4:</strong> Kopieer je Worker URL hier in<br><br>
+      <strong>Gratis:</strong> 100.000 requests/dag — meer dan genoeg.
+    </div>
+    <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:12px;font-family:DM Mono,monospace;font-size:.72rem;color:var(--text2);margin-bottom:14px;word-break:break-all">
+export default {<br>
+&nbsp;async fetch(request) {<br>
+&nbsp;&nbsp;const url = new URL(request.url);<br>
+&nbsp;&nbsp;const ticker = url.searchParams.get('ticker') || 'AAPL';<br>
+&nbsp;&nbsp;const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`,<br>
+&nbsp;&nbsp;&nbsp;{headers:{'User-Agent':'Mozilla/5.0'}});<br>
+&nbsp;&nbsp;const data = await r.json();<br>
+&nbsp;&nbsp;return new Response(JSON.stringify(data), {headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}});<br>
+&nbsp;}<br>
+};
+    </div>
+    <div class="form-group"><label class="form-label">Jouw Worker URL</label><input type="text" class="form-input" id="worker-url-input" placeholder="https://vault-proxy.JOUW-NAAM.workers.dev"></div>
+    <button class="btn-primary" onclick="saveWorkerUrl()">Opslaan</button>
+    <button class="btn-danger" onclick="clearWorkerUrl()">Verwijderen</button>
+  </div>
+</div>
+
 <!-- API KEY MODAL -->
 <div class="modal-overlay" id="apikey-modal" onclick="closeApiModal(event)">
   <div class="modal-sheet">
@@ -424,6 +455,13 @@ function updateEmailBadge(){const b=document.getElementById('email-badge'),s=doc
 function showEmailSetup(){document.getElementById('setup-service').value=ejsService;document.getElementById('setup-template').value=ejsTemplate;document.getElementById('setup-pubkey').value=ejsKey;document.getElementById('setup-screen').classList.add('visible');}
 async function sendLoginNotificationIfNewDevice(){if(!ejsService||!ejsTemplate||!ejsKey)return;try{const deviceId=await getDeviceId();const known=JSON.parse(localStorage.getItem('v_known_devices')||'[]');if(known.includes(deviceId))return;const t=new Date().toLocaleString('nl-BE',{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});await emailjs.send(ejsService,ejsTemplate,{to_email:NOTIFY_EMAIL,to_name:'Wout',login_time:t,device:navigator.userAgent.includes('iPhone')?'iPhone':navigator.userAgent.includes('iPad')?'iPad':'Onbekend',app_name:'Vault Portfolio',message:'Nieuw toestel gedetecteerd!'});known.push(deviceId);localStorage.setItem('v_known_devices',JSON.stringify(known));}catch(e){}}
 
+// CLOUDFLARE WORKER
+function showWorkerSetup(){document.getElementById('worker-url-input').value=CF_WORKER_URL;document.getElementById('worker-modal').classList.add('open');}
+function closeWorkerModal(e){if(e.target===document.getElementById('worker-modal'))document.getElementById('worker-modal').classList.remove('open');}
+function saveWorkerUrl(){const u=document.getElementById('worker-url-input').value.trim();CF_WORKER_URL=u;localStorage.setItem('v_cf_worker',u);updateWorkerBadge();document.getElementById('worker-modal').classList.remove('open');showToast(u?'Worker URL opgeslagen ✓':'Worker URL verwijderd');}
+function clearWorkerUrl(){CF_WORKER_URL='';localStorage.removeItem('v_cf_worker');updateWorkerBadge();document.getElementById('worker-modal').classList.remove('open');}
+function updateWorkerBadge(){const b=document.getElementById('worker-badge'),s=document.getElementById('worker-sub');if(b){b.textContent=CF_WORKER_URL?'ACTIEF':'NIET INGESTELD';b.className='si-badge'+(CF_WORKER_URL?'':' off');}if(s)s.textContent=CF_WORKER_URL?'Live koersen via: '+CF_WORKER_URL.replace('https://','').split('/')[0]:'Gratis proxy voor betrouwbare koersen';}
+
 // API KEY
 function showApiKeySetup(){document.getElementById('api-key-input').value=ANTHROPIC_KEY;document.getElementById('apikey-modal').classList.add('open');}
 function closeApiModal(e){if(e.target===document.getElementById('apikey-modal'))document.getElementById('apikey-modal').classList.remove('open');}
@@ -431,11 +469,61 @@ function saveApiKey(){const k=document.getElementById('api-key-input').value.tri
 function clearApiKey(){ANTHROPIC_KEY='';localStorage.removeItem('v_api_key');updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');}
 function updateApiKeyBadge(){const b=document.getElementById('api-key-badge'),s=document.getElementById('api-key-sub');if(b){b.textContent=ANTHROPIC_KEY?'INGESTELD':'NIET INGESTELD';b.className='si-badge'+(ANTHROPIC_KEY?'':' off');}if(s)s.textContent=ANTHROPIC_KEY?'Zoeken actief':'Voor zoeken & automatische koersen';}
 
-// LIVE PRICES
+// LIVE PRICES - Multi-strategy approach
 const EUR_USD={rate:1.08,ts:0};
+// Optional: set your Cloudflare Worker URL in settings for reliable prices
+// Free worker at workers.cloudflare.com - 100k requests/day
+let CF_WORKER_URL=localStorage.getItem('v_cf_worker')||'';
+
 async function fetchYahoo(ticker){
-  const urls=['https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d','https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d'];
-  for(const url of urls){try{const r=await fetch(url,{mode:'cors'});if(!r.ok)continue;const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;if(!meta)continue;const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price,chg=price-prev,pct=prev>0?(chg/prev)*100:0;return{price,prev,change:chg,changePct:pct,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};}catch(e){}}return null;}
+  // Strategy 1: Cloudflare Worker proxy (if configured)
+  if(CF_WORKER_URL){
+    try{
+      const r=await fetch(CF_WORKER_URL+'?ticker='+encodeURIComponent(ticker),{mode:'cors'});
+      if(r.ok){const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;if(meta){const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price,chg=price-prev,pct=prev>0?(chg/prev)*100:0;return{price,prev,change:chg,changePct:pct,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};}}
+    }catch(e){}
+  }
+  // Strategy 2: Direct Yahoo (works in Safari iOS without CORS issues in many cases)
+  const yahooUrls=[
+    'https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d',
+    'https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d',
+  ];
+  for(const url of yahooUrls){
+    try{
+      const r=await fetch(url,{mode:'cors',credentials:'include',headers:{'Accept':'application/json'}});
+      if(!r.ok)continue;
+      const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;
+      if(!meta)continue;
+      const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price,chg=price-prev,pct=prev>0?(chg/prev)*100:0;
+      return{price,prev,change:chg,changePct:pct,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};
+    }catch(e){}
+  }
+  // Strategy 3: Yahoo with no-cors (limited but sometimes works for basic data)
+  try{
+    const r=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d',{mode:'no-cors'});
+    // no-cors returns opaque response - can't read data but confirms reachability
+  }catch(e){}
+  // Strategy 4: Try corsproxy variants
+  const proxies=[
+    'https://corsproxy.io/?'+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=2d'),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=2d'),
+  ];
+  for(const url of proxies){
+    try{
+      const r=await fetch(url,{signal:AbortSignal.timeout(4000)});
+      if(!r.ok)continue;
+      const text=await r.text();
+      const d=JSON.parse(text.startsWith('{')?text:'{}');
+      const inner=d.contents?JSON.parse(d.contents):d;
+      const meta=inner?.chart?.result?.[0]?.meta;
+      if(meta&&meta.regularMarketPrice){
+        const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price,chg=price-prev,pct=prev>0?(chg/prev)*100:0;
+        return{price,prev,change:chg,changePct:pct,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};
+      }
+    }catch(e){}
+  }
+  return null;
+}
 async function fetchEurUsd(){if(Date.now()-EUR_USD.ts<300000)return EUR_USD.rate;const d=await fetchYahoo('EURUSD=X');if(d){EUR_USD.rate=d.price;EUR_USD.ts=Date.now();}return EUR_USD.rate;}
 async function fetchPriceInEur(ticker,instrCurrency){const data=await fetchYahoo(ticker);if(!data)return null;let priceEur=data.price;if((instrCurrency||data.currency)==='USD'){const rate=await fetchEurUsd();priceEur=data.price/rate;data.changeEur=(data.change||0)/rate;}else data.changeEur=data.change||0;data.priceEur=priceEur;data.changePctEur=data.changePct||0;return data;}
 const TICKER_MAP={'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA','SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS','UST':'UST.PA','EUNL':'EUNL.AS','VUAA':'VUAA.IE','FWIA':'FWIA.IE','BTC':'BTC-EUR','ETH':'ETH-EUR'};
@@ -524,7 +612,7 @@ async function checkPin(){
   await unlockWith(entered);
 }
 async function unlockWith(pin){const stored=localStorage.getItem('v_hash'),h=await pinHash(pin);if(h!==stored){pinErr('Onjuiste PIN');return;}const ok=await loadData(pin);if(!ok){pinErr('Ontsleuteling mislukt');return;}currentPin=pin;sessionStorage.setItem('v_sp',pin);if(bioEnabled&&bioCredId)localStorage.setItem('v_bio_pin',btoa(pin));unlock();sendLoginNotificationIfNewDevice();}
-function unlock(){document.getElementById('pin-screen').classList.add('hidden');document.getElementById('app').classList.add('visible');updateBioUI();updateEmailBadge();updateApiKeyBadge();renderAll();}
+function unlock(){document.getElementById('pin-screen').classList.add('hidden');document.getElementById('app').classList.add('visible');updateBioUI();updateEmailBadge();updateApiKeyBadge();updateWorkerBadge();renderAll();}
 function lockApp(){holdings=[];transactions=[];deletedHoldings=[];currentPin='';pinInput='';dots();hint('Voer je 6-cijferige PIN in');document.getElementById('pin-screen').classList.remove('hidden');document.getElementById('app').classList.remove('visible');updateBioUI();setTimeout(autoTriggerBiometric,600);}
 function changePIN(){isSettingPin=true;pinConfirm='';pinInput='';dots();hint('Voer je nieuwe PIN in');document.getElementById('pin-screen').classList.remove('hidden');}
 
@@ -704,6 +792,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
   document.getElementById('add-date').value=new Date().toISOString().split('T')[0];
   loadPrefs();loadEmailJS();
   ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
+  CF_WORKER_URL=localStorage.getItem('v_cf_worker')||'';
   const hasPIN=!!localStorage.getItem('v_hash'),ejsSkipped=localStorage.getItem('v_ejs_skipped');
   if(!ejsService&&!ejsSkipped){document.getElementById('setup-screen').classList.add('visible');document.getElementById('pin-screen').style.display='none';return;}
   if(!hasPIN)hint('Stel je 6-cijferige PIN in');
