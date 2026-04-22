@@ -194,6 +194,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .qs-val{font-family:'DM Mono',monospace;font-size:.86rem;font-weight:600}
 .modal-tab{flex:1;padding:10px;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:.86rem;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
 .modal-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.donut-mini{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.donut-bar{height:8px;border-radius:4px;flex:1}
+.activity-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;margin-top:2px}
+.activity-content{flex:1}
+.activity-title{font-size:.88rem;font-weight:600}
+.activity-sub{font-size:.74rem;color:var(--text3);margin-top:2px}
+.activity-amount{font-family:'DM Mono',monospace;font-size:.88rem;font-weight:600;text-align:right;flex-shrink:0}
+.alert-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:8px;font-size:.6rem;padding:2px 5px;font-weight:700;min-width:16px;text-align:center}
+.month-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:.84rem}
+.month-row:last-child{border-bottom:none}
 .tx-edit-modal{position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .2s}
 .tx-edit-modal.open{opacity:1;pointer-events:all}
 .tx-edit-sheet{background:var(--card);border-radius:20px 20px 0 0;padding:20px 18px 40px;width:100%;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
@@ -281,6 +293,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('overview',this)">Overzicht</button>
     <button class="tab-btn" onclick="switchTab('holdings',this)">Holdings</button>
+    <button class="tab-btn" onclick="switchTab('analyse',this)">📊 Analyse</button>
+    <button class="tab-btn" onclick="switchTab('activity',this)">📅 Activiteit</button>
     <button class="tab-btn" onclick="switchTab('saxo',this)">Saxo</button>
     <button class="tab-btn" onclick="switchTab('revolut',this)">Revolut</button>
     <button class="tab-btn" onclick="switchTab('search',this)">&#128269; Zoeken</button>
@@ -331,6 +345,27 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="holdings-list" style="padding:0 14px" id="top-holdings-list">
       <div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">📊</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:4px">Nog geen holdings</div><div style="font-size:.78rem">Importeer je PDF of voeg manueel toe</div></div>
     </div>
+  </div>
+  <div class="page" id="page-analyse">
+    <!-- Allocatie -->
+    <div class="section-title">ALLOCATIE</div>
+    <div class="form-card" style="padding:14px" id="analyse-allocation"></div>
+    <!-- Winners / Losers -->
+    <div class="section-title" style="margin-top:14px">TOP WINNERS & LOSERS</div>
+    <div id="analyse-winners" class="form-card" style="padding:10px"></div>
+    <!-- Kosten -->
+    <div class="section-title" style="margin-top:14px">TOTALE KOSTEN</div>
+    <div id="analyse-costs" class="form-card" style="padding:14px"></div>
+    <!-- Dividenden -->
+    <div class="section-title" style="margin-top:14px">DIVIDENDEN</div>
+    <div id="analyse-dividends" class="form-card" style="padding:14px"></div>
+    <!-- Maandrapport -->
+    <div class="section-title" style="margin-top:14px">MAANDRAPPORT</div>
+    <div id="analyse-monthly" class="form-card" style="padding:10px"></div>
+  </div>
+  <div class="page" id="page-activity">
+    <div class="section-title">ACTIVITEITSFEED</div>
+    <div id="activity-list"></div>
   </div>
   <div class="page" id="page-holdings">
 
@@ -466,6 +501,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="settings-item" onclick="exportData()"><div class="si-icon">&#128228;</div><div class="si-info"><div class="si-label">Exporteer backup</div><div class="si-sub">Versleuteld JSON bestand</div></div><div class="si-arrow">&#8250;</div></div>
       <div class="settings-item" onclick="importJsonData()"><div class="si-icon">&#128229;</div><div class="si-info"><div class="si-label">Importeer backup</div><div class="si-sub">Herstel vanuit JSON backup</div></div><div class="si-arrow">&#8250;</div></div>
       <div class="settings-item" onclick="clearData()"><div class="si-icon">&#128465;</div><div class="si-info"><div class="si-label">Alles wissen</div><div class="si-sub" style="color:var(--red)">Verwijder alle data</div></div><div class="si-arrow">&#8250;</div></div>
+    </div>
+    <div class="section-title">PRIJSALERTS</div>
+    <div class="settings-section">
+      <div class="settings-item" onclick="showAlertSetup()">
+        <div class="si-icon">🔔</div>
+        <div class="si-info"><div class="si-label">Prijsalerts instellen</div><div class="si-sub" id="alerts-sub">Tik om drempel in te stellen</div></div>
+        <div class="si-arrow">›</div>
+      </div>
+    </div>
+    <div class="section-title">AUTO-REFRESH</div>
+    <div class="settings-section">
+      <div class="settings-item" onclick="toggleAutoRefresh()">
+        <div class="si-icon">⏱</div>
+        <div class="si-info"><div class="si-label">Automatisch verversen</div><div class="si-sub" id="autorefresh-sub">Koersen elke 5 min verversen</div></div>
+        <div class="si-badge off" id="autorefresh-badge">UIT</div>
+      </div>
     </div>
     <div class="section-title">APP</div>
     <div class="settings-section">
@@ -1375,7 +1426,7 @@ function switchTab(page,btn){document.querySelectorAll('.page').forEach(p=>p.cla
 function renderBroker(broker){const brokerName=broker==='saxo'?'Saxo Bank':'Revolut';const bh=holdings.filter(h=>h.broker===brokerName);const inv=bh.reduce((s,h)=>s+h.qty*h.price,0),cur=bh.reduce((s,h)=>s+h.qty*(h.current||h.price),0),pl=cur-inv,pct=inv>0?(pl/inv)*100:0,cc=pl>=0?'var(--green)':'var(--red)';const hv=document.getElementById(broker+'-hero-value');if(hv)hv.textContent=fe(cur);const hc=document.getElementById(broker+'-hero-change');if(hc)hc.innerHTML=pl!==0?'<span style="color:'+cc+';font-weight:600">'+(pl>=0?'+':'')+fe(pl)+'</span><span style="color:'+cc+'"> '+(pct>=0?'+':'')+pct.toFixed(2)+'%</span>':'';const plEl=document.getElementById(broker+'-pl');if(plEl){plEl.textContent=fpl(pl);plEl.style.color=cc;}const pctEl=document.getElementById(broker+'-pct');if(pctEl){pctEl.textContent=fp(pct);pctEl.style.color=cc;}const invEl=document.getElementById(broker+'-inv');if(invEl)invEl.textContent=fe(inv);const el=document.getElementById(broker+'-holdings-list');if(!el)return;el.innerHTML=bh.length?[...bh].sort((a,b)=>b.qty*b.current-a.qty*a.current).map(cardHTML).join(''):'<div class="empty-state">Geen '+brokerName+' holdings</div>';}
 
 // ── RENDER ──
-function renderAll(){renderOverview();renderHoldings();renderTransactions();}
+function renderAll(){renderOverview();renderHoldings();renderTransactions();checkPriceAlerts();}
 function renderOverview(){const{tc,pl,pct,td,ti}=portfolio();const hv=document.getElementById('hero-value');if(hv){hv.textContent=fe(tc);hv.style.filter=blurValues?'blur(8px)':'';}const qpl=document.getElementById('qs-pl');if(qpl){qpl.textContent=fpl(pl);qpl.style.color=pl>=0?'var(--green)':'var(--red)';}const qpct=document.getElementById('qs-pct');if(qpct){qpct.textContent=fp(pct);qpct.style.color=pct>=0?'var(--green)':'var(--red)';}const qday=document.getElementById('qs-day');if(qday){const hasLive=holdings.some(h=>h.lastRefresh);qday.textContent=hasLive?fpl(td):'–';qday.style.color=td>=0?'var(--green)':'var(--red)';}drawPortfolioChart();const el=document.getElementById('top-holdings-list');if(el)el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*(b.current||b.price)-a.qty*(a.current||a.price)).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">📊</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:4px">Nog geen holdings</div><div style="font-size:.78rem">Importeer je PDF of voeg manueel toe</div></div>';}
 function renderHoldings(){const el=document.getElementById('all-holdings-list');if(!el)return;el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*(b.current||b.price)-a.qty*(a.current||a.price)).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">💼</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen holdings</div></div>';}
 function renderTransactions(){const el=document.getElementById('tx-list');if(!el)return;let txs=[...transactions];if(txFilter.year)txs=txs.filter(t=>(t.date||'').startsWith(txFilter.year));if(txFilter.month)txs=txs.filter(t=>(t.date||'').substring(0,7)===txFilter.year+'-'+txFilter.month);txs.sort((a,b)=>new Date(b.date)-new Date(a.date));el.innerHTML=txs.length?txs.map(t=>{const ac=t.action==='buy'?'buy':'sell',icon=t.action==='buy'?'⬆️':'⬇️',sign=t.action==='buy'?'-':'+';return'<div class="tx-item"><div class="tx-icon '+ac+'">'+icon+'</div><div class="tx-info"><div class="tx-name">'+t.name+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+(t.costs&&t.costs>0?' · kosten '+fe(t.costs):'')+(t.note?' · '+t.note:'')+'</div></div><div class="tx-amount '+ac+'">'+sign+fe(Math.abs(t.total||0))+'</div><button data-txid="'+t.id+'" onclick="openTxEdit(this.dataset.txid)" style="background:none;border:none;color:var(--text3);font-size:.9rem;cursor:pointer;padding:4px 5px" title="Bewerken">✏️</button><button onclick="deleteTx(nclick="deleteTx(\''+t.id+'\')" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 8px">&times;</button></div>';}).join(''):'<div class="empty-state">Geen transacties</div>';}
@@ -1849,6 +1900,283 @@ function parseRevolutPnL(text){
 }
 
 
+// ══════════════════════════════════════════
+// ── ANALYSE MODULE ──
+// ══════════════════════════════════════════
+
+function renderAnalyse(){
+  renderAllocation();
+  renderWinnersLosers();
+  renderCostOverview();
+  renderDividends();
+  renderMonthlyReport();
+}
+
+// ── ALLOCATIE BREAKDOWN ──
+function renderAllocation(){
+  const el=document.getElementById('analyse-allocation');if(!el)return;
+  const total=holdings.reduce((s,h)=>s+h.qty*(h.current||h.price),0);
+  if(!total){el.innerHTML='<div style="color:var(--text3);font-size:.82rem">Geen holdings</div>';return;}
+
+  // Group by type
+  const byType={};
+  holdings.forEach(h=>{
+    const val=h.qty*(h.current||h.price);
+    const k=LABELS[h.type]||h.type;
+    byType[k]=(byType[k]||0)+val;
+  });
+  // Group by broker
+  const byBroker={};
+  holdings.forEach(h=>{
+    const val=h.qty*(h.current||h.price);
+    byBroker[h.broker]=(byBroker[h.broker]||0)+val;
+  });
+
+  const renderGroup=(data,title)=>{
+    const sorted=Object.entries(data).sort((a,b)=>b[1]-a[1]);
+    return `<div style="font-size:.72rem;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:8px">${title}</div>`+
+      sorted.map(([k,v],i)=>{
+        const pct=(v/total*100).toFixed(1);
+        const col=COLORS[i%COLORS.length];
+        return `<div class="donut-mini">
+          <div style="font-size:.82rem;width:90px;flex-shrink:0">${k}</div>
+          <div class="donut-bar" style="background:${col}33">
+            <div style="height:100%;width:${pct}%;background:${col};border-radius:4px"></div>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:.78rem;width:42px;text-align:right">${pct}%</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--text3);width:70px;text-align:right">${fe(v)}</div>
+        </div>`;
+      }).join('');
+  };
+
+  el.innerHTML=renderGroup(byType,'CATEGORIE')+
+    '<div style="height:1px;background:var(--border);margin:12px 0"></div>'+
+    renderGroup(byBroker,'BROKER');
+}
+
+// ── TOP WINNERS & LOSERS ──
+function renderWinnersLosers(){
+  const el=document.getElementById('analyse-winners');if(!el)return;
+  const scored=holdings.map(h=>{
+    const{pl,pct}=calc(h);
+    return{h,pl,pct};
+  }).filter(x=>x.pl!==0);
+  if(!scored.length){el.innerHTML='<div style="color:var(--text3);font-size:.82rem">Ververs koersen voor winners/losers</div>';return;}
+  const sorted=[...scored].sort((a,b)=>b.pct-a.pct);
+  const top3=sorted.slice(0,3);
+  const bot3=sorted.slice(-3).reverse();
+  const row=({h,pl,pct})=>{
+    const cc=pct>=0?'var(--green)':'var(--red)';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:.84rem;font-weight:600">${h.name.length>22?h.name.substring(0,22)+'…':h.name}</div>
+        <div style="font-size:.72rem;color:var(--text3)">${h.ticker} · ${h.broker}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'DM Mono',monospace;font-size:.84rem;color:${cc};font-weight:600">${pct>=0?'+':''}${pct.toFixed(2)}%</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:${cc}">${fpl(pl)}</div>
+      </div>
+    </div>`;
+  };
+  el.innerHTML=
+    '<div style="font-size:.72rem;font-weight:700;letter-spacing:.08em;color:var(--green);margin-bottom:4px">🏆 BEST</div>'+
+    top3.map(row).join('')+
+    '<div style="font-size:.72rem;font-weight:700;letter-spacing:.08em;color:var(--red);margin-top:12px;margin-bottom:4px">📉 SLECHTST</div>'+
+    bot3.map(row).join('');
+}
+
+// ── TOTALE KOSTEN OVERZICHT ──
+function renderCostOverview(){
+  const el=document.getElementById('analyse-costs');if(!el)return;
+  let totalCosts=0,byBroker={};
+  transactions.forEach(t=>{
+    const c2=(t.costs||0);
+    totalCosts+=c2;
+    byBroker[t.broker]=(byBroker[t.broker]||0)+c2;
+  });
+  const rows=Object.entries(byBroker).filter(([,v])=>v>0).map(([k,v])=>
+    `<div class="month-row"><span>${k}</span><span style="font-family:'DM Mono',monospace">${fe(v)}</span></div>`
+  ).join('');
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+      <div style="font-size:.8rem;color:var(--text3)">Totaal betaalde kosten</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--red)">${fe(totalCosts)}</div>
+    </div>
+    ${rows||'<div style="color:var(--text3);font-size:.82rem">Geen kostendata — bewerk transacties om kosten toe te voegen</div>'}`;
+}
+
+// ── DIVIDENDEN TRACKER ──
+function renderDividends(){
+  const el=document.getElementById('analyse-dividends');if(!el)return;
+  // Look for dividend transactions (note contains 'dividend' or 'cashdividend')
+  const divTxs=transactions.filter(t=>(t.note||'').toLowerCase().includes('dividend')||
+    (t.type==='dividend'));
+  // Also check holdings that have dividend info
+  let totalDiv=divTxs.reduce((s,t)=>s+(t.total||0),0);
+  if(!divTxs.length){
+    el.innerHTML='<div style="color:var(--text3);font-size:.82rem">Nog geen dividenden geregistreerd.<br>Dividenden uit Saxo PDF worden automatisch herkend.</div>';
+    return;
+  }
+  const byHolding={};
+  divTxs.forEach(t=>{byHolding[t.name]=(byHolding[t.name]||0)+(t.total||0);});
+  const rows=Object.entries(byHolding).sort((a,b)=>b[1]-a[1]).map(([k,v])=>
+    `<div class="month-row"><span>${k.length>24?k.substring(0,24)+'…':k}</span><span style="font-family:'DM Mono',monospace;color:var(--green)">+${fe(v)}</span></div>`
+  ).join('');
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+      <div style="font-size:.8rem;color:var(--text3)">Totaal dividenden ontvangen</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--green)">+${fe(totalDiv)}</div>
+    </div>${rows}`;
+}
+
+// ── MAANDRAPPORT ──
+function renderMonthlyReport(){
+  const el=document.getElementById('analyse-monthly');if(!el)return;
+  const monthly={};
+  transactions.filter(t=>t.date&&t.action==='buy').forEach(t=>{
+    const ym=t.date.substring(0,7);
+    if(!monthly[ym])monthly[ym]={invested:0,costs:0,count:0};
+    monthly[ym].invested+=(t.total||0);
+    monthly[ym].costs+=(t.costs||0);
+    monthly[ym].count++;
+  });
+  const months=Object.keys(monthly).sort().reverse().slice(0,12);
+  if(!months.length){el.innerHTML='<div style="color:var(--text3);font-size:.82rem">Geen transactiedata</div>';return;}
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:80px 1fr 70px 50px;gap:4px;font-size:.68rem;font-weight:700;letter-spacing:.06em;color:var(--text3);margin-bottom:8px">
+      <span>MAAND</span><span>GESTORT</span><span>KOSTEN</span><span>#</span>
+    </div>`+
+    months.map(ym=>{
+      const m=monthly[ym];
+      const [y,mo]=ym.split('-');
+      const label=new Date(y,mo-1).toLocaleDateString('nl-BE',{month:'short',year:'2-digit'});
+      return `<div style="display:grid;grid-template-columns:80px 1fr 70px 50px;gap:4px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.82rem;align-items:center">
+        <span style="font-weight:600">${label}</span>
+        <span style="font-family:'DM Mono',monospace">${fe(m.invested)}</span>
+        <span style="font-family:'DM Mono',monospace;color:var(--red)">${m.costs>0?fe(m.costs):'–'}</span>
+        <span style="color:var(--text3)">${m.count}×</span>
+      </div>`;
+    }).join('');
+}
+
+// ══════════════════════════════════════════
+// ── ACTIVITEITSFEED ──
+// ══════════════════════════════════════════
+
+function renderActivity(){
+  const el=document.getElementById('activity-list');if(!el)return;
+  // Combine all transactions sorted by date desc
+  const items=[...transactions].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(!items.length){el.innerHTML='<div class="empty-state">Geen activiteit</div>';return;}
+  el.innerHTML=items.map(t=>{
+    const isBuy=t.action==='buy';
+    const isSell=t.action==='sell';
+    const isDividend=(t.note||'').toLowerCase().includes('dividend');
+    const col=isDividend?'var(--accent)':isBuy?'var(--green)':'var(--red)';
+    const icon=isDividend?'💰':isBuy?'⬆️':'⬇️';
+    const label=isDividend?'Dividend':isBuy?'Gekocht':'Verkocht';
+    const sign=isDividend||!isBuy?'+':'-';
+    const d=new Date(t.date);
+    const dateStr=d.toLocaleDateString('nl-BE',{day:'numeric',month:'short',year:'numeric'});
+    return `<div class="activity-item" style="padding:10px 14px">
+      <div class="activity-dot" style="background:${col}22">${icon}</div>
+      <div class="activity-content">
+        <div class="activity-title">${label} ${t.name.length>28?t.name.substring(0,28)+'…':t.name}</div>
+        <div class="activity-sub">${dateStr}${t.qty?' · '+f(t.qty,4)+' stuks':''}${t.price?' @ '+fe(t.price):''}${t.broker?' · '+t.broker:''}</div>
+        ${t.costs&&t.costs>0?`<div style="font-size:.7rem;color:var(--text3);margin-top:2px">kosten ${fe(t.costs)}</div>`:''}
+      </div>
+      <div class="activity-amount" style="color:${col}">${sign}${fe(Math.abs(t.total||0))}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// ── PRIJSALERTS ──
+// ══════════════════════════════════════════
+
+let priceAlertThreshold=localStorage.getItem('v_alert_pct')?parseFloat(localStorage.getItem('v_alert_pct')):5;
+let alertsEnabled=localStorage.getItem('v_alerts_on')==='1';
+
+function showAlertSetup(){
+  const pct=prompt('Alert bij rendement van X% of meer (huidig: '+priceAlertThreshold+'%):',priceAlertThreshold);
+  if(pct===null)return;
+  const val=parseFloat(pct);
+  if(isNaN(val)||val<0){showToast('Ongeldig getal');return;}
+  priceAlertThreshold=val;
+  alertsEnabled=true;
+  localStorage.setItem('v_alert_pct',val);
+  localStorage.setItem('v_alerts_on','1');
+  updateAlertsBadge();
+  checkPriceAlerts();
+  showToast('Alert ingesteld op '+val+'%');
+}
+
+function updateAlertsBadge(){
+  const s=document.getElementById('alerts-sub');
+  if(s)s.textContent=alertsEnabled?'Alert bij ≥'+priceAlertThreshold+'% rendement':'Tik om drempel in te stellen';
+}
+
+function checkPriceAlerts(){
+  if(!alertsEnabled)return;
+  const triggered=holdings.filter(h=>{
+    const{pct}=calc(h);
+    return Math.abs(pct)>=priceAlertThreshold;
+  });
+  // Show badge on holdings with alerts
+  triggered.forEach(h=>{
+    const{pct}=calc(h);
+    const cards=document.querySelectorAll(`[onclick*="${h.id}"]`);
+    cards.forEach(card=>{
+      if(!card.querySelector('.alert-badge')){
+        const badge=document.createElement('div');
+        badge.className='alert-badge';
+        badge.style.cssText='position:absolute;top:-4px;right:-4px;background:'+(pct>=0?'var(--green)':'var(--red)')+';color:#fff;border-radius:8px;font-size:.6rem;padding:2px 5px;font-weight:700';
+        badge.textContent=(pct>=0?'▲':'▼')+Math.abs(pct).toFixed(0)+'%';
+        card.style.position='relative';
+        card.appendChild(badge);
+      }
+    });
+  });
+  if(triggered.length>0)showToast('🔔 '+triggered.length+' holding(s) boven '+priceAlertThreshold+'% rendement');
+}
+
+// ══════════════════════════════════════════
+// ── AUTO-REFRESH ──
+// ══════════════════════════════════════════
+
+let autoRefreshEnabled=localStorage.getItem('v_autorefresh')==='1';
+let autoRefreshTimer=null;
+const AUTO_REFRESH_MS=5*60*1000; // 5 minuten
+
+function toggleAutoRefresh(){
+  autoRefreshEnabled=!autoRefreshEnabled;
+  localStorage.setItem('v_autorefresh',autoRefreshEnabled?'1':'0');
+  updateAutoRefreshBadge();
+  if(autoRefreshEnabled)startAutoRefresh();
+  else stopAutoRefresh();
+  showToast('Auto-refresh '+(autoRefreshEnabled?'ingeschakeld (5 min)':'uitgeschakeld'));
+}
+
+function updateAutoRefreshBadge(){
+  const b=document.getElementById('autorefresh-badge');
+  const s=document.getElementById('autorefresh-sub');
+  if(b){b.textContent=autoRefreshEnabled?'AAN':'UIT';b.className='si-badge'+(autoRefreshEnabled?'':' off');}
+  if(s)s.textContent=autoRefreshEnabled?'Koersen elke 5 min verversen':'Tik om in te schakelen';
+}
+
+function startAutoRefresh(){
+  stopAutoRefresh();
+  if(!autoRefreshEnabled)return;
+  autoRefreshTimer=setInterval(()=>{
+    if(document.visibilityState==='visible')refreshAllPrices();
+  },AUTO_REFRESH_MS);
+}
+
+function stopAutoRefresh(){
+  if(autoRefreshTimer){clearInterval(autoRefreshTimer);autoRefreshTimer=null;}
+}
+
+
 // ── INIT ──
 (function init(){
   document.getElementById('header-date').textContent=new Date().toLocaleDateString('nl-BE',{weekday:'short',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
@@ -1861,6 +2189,11 @@ function parseRevolutPnL(text){
   const hasPIN=!!localStorage.getItem('v_hash');
   if(!hasPIN)hint('Stel je 6-cijferige PIN in');
   updateBioUI();updateApiKeyBadge();updateWorkerBadge();updateTdBadge();updateAvBadge();
+  updateAlertsBadge();updateAutoRefreshBadge();
+  priceAlertThreshold=localStorage.getItem('v_alert_pct')?parseFloat(localStorage.getItem('v_alert_pct')):5;
+  alertsEnabled=localStorage.getItem('v_alerts_on')==='1';
+  autoRefreshEnabled=localStorage.getItem('v_autorefresh')==='1';
+  if(autoRefreshEnabled)startAutoRefresh();
   const sp=sessionStorage.getItem('v_sp');
   if(sp&&hasPIN)unlockWith(sp);
   else if(bioEnabled&&bioCredId&&hasPIN)setTimeout(autoTriggerBiometric,600);
