@@ -396,24 +396,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="section-title">IMPORTEER BESTAND</div>
     <div class="form-card" style="padding:13px;margin-bottom:14px">
       <div style="font-size:.82rem;color:var(--text2);line-height:1.6">
-        Selecteer je broker en upload je bestand. De app detecteert automatisch het type PDF (transacties, portefeuille, P&amp;L) of Excel. Duplicaten worden overgeslagen.
+        Upload een bestand van <strong>Saxo Bank</strong> of <strong>Revolut</strong>. De app detecteert automatisch de broker en het type (transacties, P&amp;L, crypto, Excel). Duplicaten worden overgeslagen.
       </div>
     </div>
-    <!-- Hidden file inputs - triggered programmatically -->
-    <input type="file" id="saxo-file-input" accept=".pdf,.xlsx,.xls,.csv" style="display:none" onchange="importSaxoAuto(event)">
-    <input type="file" id="revolut-file-input" accept=".pdf" style="display:none" onchange="importRevolutAuto(event)">
-    <!-- Two big broker buttons -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 2px">
-      <div class="import-zone" onclick="document.getElementById('saxo-file-input').click()" style="cursor:pointer">
-        <div class="import-icon">&#127956;</div>
-        <div class="import-title">Saxo Bank</div>
-        <div class="import-sub">PDF of Excel<br><span style="color:var(--accent);font-weight:600">Tik om te selecteren</span></div>
-      </div>
-      <div class="import-zone" onclick="document.getElementById('revolut-file-input').click()" style="cursor:pointer">
-        <div class="import-icon">&#128260;</div>
-        <div class="import-title">Revolut</div>
-        <div class="import-sub">PDF statement<br><span style="color:var(--accent);font-weight:600">Tik om te selecteren</span></div>
-      </div>
+    <!-- Single smart file input -->
+    <input type="file" id="smart-file-input" accept=".pdf,.xlsx,.xls,.csv" style="display:none" onchange="importSmartAuto(event)">
+    <!-- One big button -->
+    <div class="import-zone" onclick="document.getElementById('smart-file-input').click()" style="cursor:pointer;max-width:100%">
+      <div class="import-icon">📂</div>
+      <div class="import-title">Bestand importeren</div>
+      <div class="import-sub">PDF of Excel — Saxo Bank of Revolut<br><span style="color:var(--accent);font-weight:600">Tik hier om te selecteren</span></div>
     </div>
     <div id="import-result" style="margin-top:14px"></div>
   </div>
@@ -1013,6 +1005,9 @@ function buildPortfolioHistory(range){
   while(d<=now){dates.add(d.toISOString().split('T')[0]);d.setDate(d.getDate()+7);}
   dates.add(now.toISOString().split('T')[0]);
   const sortedDates=[...dates].sort();
+  // Always ensure fromDate and today are included
+  sortedDates.unshift(fromDate.toISOString().split('T')[0]);
+  sortedDates.push(now.toISOString().split('T')[0]);
 
   // For each date: calculate (current_price * qty_at_date) - (cost_basis_at_date)
   // = unrealised P&L at that point in time
@@ -1048,8 +1043,9 @@ function buildPortfolioHistory(range){
       totalCostBasis+=costBasis;
     });
     const pl=totalCurrentValue-totalCostBasis;
-    // Only add points where we actually have holdings
-    if(totalCostBasis>0||totalCurrentValue>0)points.push({date,price:pl});
+    // Add point if any holdings exist at this date
+    if(totalCurrentValue>0||totalCostBasis>0||holdings.some(h=>h.qty>0))
+      points.push({date,price:pl});
   }
 
   // Ensure last point = actual current P&L
@@ -1061,8 +1057,11 @@ function drawPortfolioChart(){
   const canvas=document.getElementById('portfolio-canvas');
   if(!canvas)return;
   const wrap=canvas.parentElement;
-  canvas.width=wrap.clientWidth||window.innerWidth;
-  canvas.height=120;
+  // Use requestAnimationFrame to ensure layout is complete
+  const doRender=()=>{
+    const w=wrap.getBoundingClientRect().width||window.innerWidth;
+    canvas.width=w;
+    canvas.height=120;
   const plPoints=buildPortfolioHistory(portfolioRange);
   if(!plPoints||plPoints.length<2){
     const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -1070,19 +1069,20 @@ function drawPortfolioChart(){
   }
   // Draw the P&L sparkline - tooltip shows P&L value, NOT replacing hero-value
   drawSparkline(canvas,'portfolio-crosshair','portfolio-tooltip',null,plPoints,null,'');
-  // Hero-value stays as total portfolio value (set by renderOverview)
-  // Hero-change shows P&L for selected period
-  const first=plPoints[0].price, last=plPoints[plPoints.length-1].price;
-  const periodGain=last-first;  // gain IN the period (not total P&L)
-  const{tc,ti:inv}=portfolio();
-  const totalPL=last;  // last point IS current total P&L
-  const totalPct=inv>0?(totalPL/inv)*100:0;
-  const cc=totalPL>=0?'var(--green)':'var(--red)';
-  const hc=document.getElementById('hero-change');
-  if(hc)hc.innerHTML=
-    '<span style="color:'+cc+';font-weight:600">'+(totalPL>=0?'+':'')+fe(totalPL)+'</span>'+
-    '<span style="color:'+cc+'"> '+(totalPct>=0?'+':'')+totalPct.toFixed(2)+'%</span>'+
-    '<span style="color:var(--text3);font-size:.78rem;margin-left:4px">totale W/V</span>';
+    // Hero-change shows total P&L
+    const first=plPoints[0].price, last=plPoints[plPoints.length-1].price;
+    const{tc,ti:inv}=portfolio();
+    const totalPL=last;
+    const totalPct=inv>0?(totalPL/inv)*100:0;
+    const cc=totalPL>=0?'var(--green)':'var(--red)';
+    const hc=document.getElementById('hero-change');
+    if(hc)hc.innerHTML=
+      '<span style="color:'+cc+';font-weight:600">'+(totalPL>=0?'+':'')+fe(totalPL)+'</span>'+
+      '<span style="color:'+cc+'"> '+(totalPct>=0?'+':'')+totalPct.toFixed(2)+'%</span>'+
+      '<span style="color:var(--text3);font-size:.78rem;margin-left:4px">totale W/V</span>';
+  };
+  if(wrap.getBoundingClientRect().width>0){doRender();}
+  else{requestAnimationFrame(doRender);}
 }
 
 // ── HOLDING CHART (standalone modal) ──
@@ -1178,7 +1178,7 @@ async function loadModalChart(){
   if(loading)loading.style.display='none';
   if(canvas)canvas.style.display='block';
   const wrap=canvas.parentElement;
-  canvas.width=wrap.clientWidth||window.innerWidth;canvas.height=160;
+  canvas.width=wrap.getBoundingClientRect().width||wrap.clientWidth||window.innerWidth;canvas.height=160;
   drawSparkline(canvas,'modal-crosshair','modal-tooltip','modal-price-big',prices,h,'');
   const first=prices[0].price,last=prices[prices.length-1].price;
   const chg=last-first,pct=first>0?(chg/first)*100:0;
@@ -1548,6 +1548,53 @@ async function importPDF(event, broker){
     const result=broker==='saxo'?parseSaxoPDF(text):broker==='revolut-pnl'?parseRevolutPnL(text):parseRevolutPDF(text);
     showImportResult(result);
     if(result.newTx>0||result.updatedHoldings>0){await persist();renderAll();}
+  }catch(e){hideLoading();showToast('PDF lezen mislukt: '+e.message);console.error(e);}
+}
+
+async function importSmartAuto(event){
+  const file=event?.target?.files?.[0];if(!file)return;
+  event.target.value='';
+  const ext=file.name.split('.').pop().toLowerCase();
+
+  // Excel/CSV → always Saxo
+  if(['xlsx','xls','csv'].includes(ext)){
+    await importExcel({target:{files:[file]}});
+    return;
+  }
+
+  // PDF → read first page to detect broker + type
+  showLoading('Bestand analyseren...');
+  try{
+    const ab=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+    const page=await pdf.getPage(1);
+    const tc=await page.getTextContent();
+    let text='';
+    tc.items.forEach(item=>{if(item.str)text+=item.str+' ';});
+    hideLoading();
+
+    // ── BROKER DETECTION ──
+    const isSaxo=text.includes('Saxo Bank')||text.includes('Transactie- en saldorapport')||
+                 text.includes('AutoInvest')||text.includes('Self Investing')||
+                 text.includes('Portefeuillerapport');
+
+    const isRevolutPnL=text.includes('Profit and Loss')||text.includes('Cost basis')||
+                       text.includes('Gross proceeds')||text.includes('Date acquired');
+
+    const isRevolut=text.includes('Revolut')||text.includes('Account Statement')||
+                    text.includes('Crypto Account Statement')||text.includes('Trade - Market');
+
+    if(isSaxo){
+      await importPDF({target:{files:[file]}},'saxo');
+    } else if(isRevolutPnL){
+      await importPDF({target:{files:[file]}},'revolut-pnl');
+    } else if(isRevolut){
+      await importPDF({target:{files:[file]}},'revolut');
+    } else {
+      // Unknown - try Saxo first, then Revolut
+      showToast('Broker niet herkend, probeer Saxo formaat...');
+      await importPDF({target:{files:[file]}},'saxo');
+    }
   }catch(e){hideLoading();showToast('PDF lezen mislukt: '+e.message);console.error(e);}
 }
 
