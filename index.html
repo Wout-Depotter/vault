@@ -16,7 +16,6 @@
 @media(prefers-color-scheme:dark){:root{--bg:#0f0e0d;--bg2:#1a1814;--card:#1e1c18;--border:rgba(255,255,255,0.07);--text:#f0ece6;--text2:#9a9088;--text3:#5c5550;--accent:#d4913f;--accent2:#f0b86a;--green:#4caf7d;--green-bg:#0d2b1a;--red:#e05c4b;--red-bg:#2b0f0d;--shadow:0 2px 16px rgba(0,0,0,0.4);}}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-/* PIN */
 #pin-screen{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .35s ease,transform .35s ease}
 #pin-screen.hidden{opacity:0;transform:scale(.96);pointer-events:none}
 .pin-logo{font-family:'DM Serif Display',serif;font-size:2.6rem;color:var(--accent);margin-bottom:4px}
@@ -34,12 +33,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .pin-btn.empty{background:transparent;border:none;box-shadow:none;pointer-events:none}
 .pin-hint{margin-top:20px;font-size:.76rem;color:var(--text3);min-height:1.4em;text-align:center;padding:0 28px}
 .faceid-btn{margin-top:18px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;opacity:.85;transition:opacity .2s}
-.faceid-btn:active{opacity:.45}
-.faceid-btn.hidden{display:none}
+.faceid-btn:active{opacity:.45}.faceid-btn.hidden{display:none}
 .faceid-icon{width:52px;height:52px;border-radius:14px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:1.6rem}
 .faceid-label{font-size:.65rem;color:var(--text3);letter-spacing:.07em;font-weight:600}
 .security-badge{position:absolute;bottom:26px;font-size:.67rem;color:var(--text3);opacity:.6;display:flex;align-items:center;gap:4px}
-/* SETUP */
 #setup-screen{position:fixed;inset:0;z-index:2000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px;gap:14px}
 #setup-screen.visible{display:flex}
 .setup-title{font-family:'DM Serif Display',serif;font-size:1.8rem;color:var(--accent);text-align:center}
@@ -47,7 +44,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .setup-input{width:100%;max-width:320px;padding:12px 15px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.92rem;outline:none;transition:border-color .2s}
 .setup-input:focus{border-color:var(--accent)}
 .setup-btn{width:100%;max-width:320px;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(193,127,58,.35)}
-/* APP */
 #app{display:none;flex-direction:column;min-height:100dvh;padding-bottom:80px}
 #app.visible{display:flex}
 .app-header{padding:54px 20px 10px;display:flex;align-items:center;justify-content:space-between}
@@ -63,7 +59,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .page{display:none;flex-direction:column;gap:14px;padding:0 14px;animation:fadeUp .3s ease}
 .page.active{display:flex}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-/* CARDS */
 .total-card{background:linear-gradient(145deg,var(--accent),var(--accent2));border-radius:var(--radius);padding:22px 20px;color:#fff;position:relative;overflow:hidden}
 .total-card::before{content:'';position:absolute;top:-40px;right:-40px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.1)}
 .total-label{font-size:.74rem;letter-spacing:.08em;opacity:.85;margin-bottom:4px}
@@ -73,8 +68,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .total-stat{background:rgba(255,255,255,.18);border-radius:9px;padding:7px 10px}
 .total-stat .s-label{font-size:.62rem;opacity:.8;margin-bottom:1px;letter-spacing:.05em}
 .total-stat .s-val{font-family:'DM Mono',monospace;font-size:.86rem;font-weight:500}
-.eye-btn{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;color:#fff}
-.refresh-btn{position:absolute;top:16px;right:50px;background:rgba(255,255,255,.2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;color:#fff;transition:transform .4s ease}
+.eye-btn{position:absolute;top:16px;right:46px;background:rgba(255,255,255,.2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;color:#fff}
+.refresh-btn{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;color:#fff}
 .refresh-btn.spinning{animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .section-title{font-size:.68rem;font-weight:600;letter-spacing:.1em;color:var(--text3);text-transform:uppercase;padding:0 2px}
@@ -89,7 +84,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .legend-name{font-size:.78rem;color:var(--text2);flex:1}
 .legend-pct{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--text);font-weight:500}
-/* HOLDINGS */
 .holdings-list{display:flex;flex-direction:column;gap:9px}
 .holding-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);padding:12px 14px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:transform .15s ease}
 .holding-card:active{transform:scale(.98)}
@@ -106,7 +100,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .broker-tag{font-size:.54rem;letter-spacing:.06em;font-weight:600;padding:2px 5px;border-radius:4px;text-transform:uppercase}
 .broker-saxo{background:#003B6F18;color:#003B6F}.broker-revolut{background:#19191918;color:var(--text2)}
 @media(prefers-color-scheme:dark){.broker-saxo{background:#003B6F55;color:#6baee8}.broker-revolut{background:#ffffff15;color:var(--text2)}}
-/* FORMS */
 .form-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);padding:18px}
 .form-title{font-family:'DM Serif Display',serif;font-size:1.15rem;margin-bottom:14px}
 .form-group{margin-bottom:12px}
@@ -116,22 +109,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .btn-primary{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:600;cursor:pointer;transition:all .18s ease;box-shadow:0 4px 14px rgba(193,127,58,.35);margin-top:4px}
 .btn-primary:active{transform:scale(.97)}
+.btn-secondary{width:100%;padding:11px;background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;margin-top:6px;transition:all .18s ease}
 /* SEARCH */
 .search-wrap{position:relative}
 .search-input{width:100%;padding:11px 14px 11px 40px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;box-shadow:var(--shadow);transition:border-color .2s}
 .search-input:focus{border-color:var(--accent)}
 .search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:1rem;pointer-events:none}
-.search-results{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow2);overflow:hidden;margin-top:4px}
-.search-result-item{padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s ease}
+.search-results-wrap{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;margin-top:4px}
+.search-result-item{padding:11px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s ease}
 .search-result-item:last-child{border-bottom:none}
 .search-result-item:active{background:var(--bg2)}
-.sr-symbol{font-family:'DM Mono',monospace;font-size:.8rem;font-weight:600;color:var(--accent);width:52px;flex-shrink:0}
+.sr-symbol{font-family:'DM Mono',monospace;font-size:.78rem;font-weight:600;color:var(--accent);width:50px;flex-shrink:0}
 .sr-info{flex:1;min-width:0}
-.sr-name{font-size:.85rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sr-exchange{font-size:.7rem;color:var(--text3)}
+.sr-name{font-size:.84rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-exchange{font-size:.68rem;color:var(--text3)}
 .sr-price{text-align:right;flex-shrink:0}
-.sr-price-val{font-family:'DM Mono',monospace;font-size:.88rem;font-weight:600}
-.sr-price-chg{font-size:.7rem;font-family:'DM Mono',monospace}
+.sr-price-val{font-family:'DM Mono',monospace;font-size:.86rem;font-weight:600}
 /* TRANSACTIONS */
 .tx-filters{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .tx-filters::-webkit-scrollbar{display:none}
@@ -146,7 +139,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .tx-amount.buy{color:var(--green)}.tx-amount.sell{color:var(--red)}.tx-amount.div{color:#4a7cf6}
 /* PDF IMPORT */
 .import-zone{background:var(--card);border-radius:var(--radius);border:2px dashed var(--border);padding:26px 18px;text-align:center;cursor:pointer;transition:all .2s ease;position:relative}
-.import-zone:active,.import-zone.drag{border-color:var(--accent);background:rgba(193,127,58,.05)}
+.import-zone:active{border-color:var(--accent);background:rgba(193,127,58,.05)}
 .import-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .import-icon{font-size:2.2rem;margin-bottom:8px}
 .import-title{font-size:.95rem;font-weight:600;margin-bottom:3px}
@@ -158,18 +151,25 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .import-row .lbl{color:var(--text2)}
 .import-row .val{font-family:'DM Mono',monospace;font-weight:600}
 .val.new{color:var(--green)}.val.skip{color:var(--text3)}
+/* DELETED HOLDINGS */
+.deleted-item{background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);padding:11px 13px;display:flex;align-items:center;gap:10px;margin-bottom:6px;opacity:.8}
+.deleted-info{flex:1;min-width:0}
+.deleted-name{font-size:.88rem;font-weight:600}
+.deleted-meta{font-size:.7rem;color:var(--text3);margin-top:1px}
+.btn-restore{padding:7px 14px;background:var(--green-bg);color:var(--green);border:1px solid var(--green);border-radius:var(--radius-sm);font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap}
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s ease}
 .modal-overlay.open{opacity:1;pointer-events:all}
-.modal-sheet{background:var(--bg);border-radius:24px 24px 0 0;width:100%;padding:18px 18px 40px;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:85dvh;overflow-y:auto}
+.modal-sheet{background:var(--bg);border-radius:24px 24px 0 0;width:100%;padding:18px 18px 40px;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:88dvh;overflow-y:auto}
 .modal-overlay.open .modal-sheet{transform:translateY(0)}
 .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
 .modal-title{font-family:'DM Serif Display',serif;font-size:1.4rem;margin-bottom:3px}
-.modal-ticker{font-family:'DM Mono',monospace;font-size:.76rem;color:var(--text3);margin-bottom:16px}
-.modal-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.modal-ticker{font-family:'DM Mono',monospace;font-size:.76rem;color:var(--text3);margin-bottom:14px}
+.modal-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .modal-stat{background:var(--card);border-radius:var(--radius-sm);padding:10px 12px;border:1px solid var(--border)}
 .modal-stat .ms-label{font-size:.64rem;color:var(--text3);letter-spacing:.06em;margin-bottom:3px}
 .modal-stat .ms-val{font-family:'DM Mono',monospace;font-size:.95rem;font-weight:500}
+.modal-section{font-size:.68rem;font-weight:600;letter-spacing:.1em;color:var(--text3);text-transform:uppercase;margin:14px 0 8px}
 .btn-danger{width:100%;padding:11px;background:transparent;color:var(--red);border:1px solid var(--red);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;margin-top:8px}
 /* SETTINGS */
 .settings-section{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
@@ -183,7 +183,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .si-arrow{color:var(--text3);font-size:.9rem}
 .si-badge{font-size:.66rem;padding:2px 8px;border-radius:10px;background:var(--green-bg);color:var(--green);font-weight:600}
 .si-badge.off{background:var(--bg2);color:var(--text3)}
-/* MISC */
 .empty-state{text-align:center;padding:32px 16px;color:var(--text3)}
 ::-webkit-scrollbar{width:0}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:.82rem;font-weight:500;opacity:0;transition:all .3s ease;z-index:9999;white-space:nowrap;pointer-events:none}
@@ -192,12 +191,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .loading-overlay.visible{display:flex}
 .loading-spinner{width:46px;height:46px;border:4px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
 .loading-text{color:#fff;font-size:.88rem;font-weight:500}
-@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-
-<!-- SETUP -->
 <div id="setup-screen">
   <div class="setup-title">Vault instellen</div>
   <div class="setup-sub">Voer je EmailJS gegevens in voor meldingen bij nieuwe toestellen.<br>Dit is eenmalig.</div>
@@ -205,11 +201,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <input type="text" class="setup-input" id="setup-template" placeholder="EmailJS Template ID">
   <input type="text" class="setup-input" id="setup-pubkey" placeholder="EmailJS Public Key">
   <button class="setup-btn" onclick="saveEmailJS()">Opslaan &amp; doorgaan</button>
-  <div style="font-size:.72rem;color:var(--text3);text-align:center;max-width:300px;line-height:1.5">Nog geen EmailJS? Maak gratis account op emailjs.com</div>
+  <div style="font-size:.72rem;color:var(--text3);text-align:center;max-width:300px;line-height:1.5">Nog geen EmailJS? Gratis account op emailjs.com</div>
   <button onclick="skipEmailJS()" style="background:none;border:none;color:var(--text3);font-size:.78rem;cursor:pointer;margin-top:-4px">Sla over</button>
 </div>
-
-<!-- PIN -->
 <div id="pin-screen">
   <div class="pin-logo">Vault</div>
   <div class="pin-sub">PORTFOLIO TRACKER</div>
@@ -239,14 +233,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
   <div class="security-badge">&#128272; AES-256 versleuteld</div>
 </div>
-
-<!-- APP -->
 <div id="app">
   <div class="app-header">
-    <div>
-      <div class="app-logo">Vault</div>
-      <div class="header-date" id="header-date"></div>
-    </div>
+    <div><div class="app-logo">Vault</div><div class="header-date" id="header-date"></div></div>
     <div class="header-right">
       <button class="header-btn" title="Koersen verversen" onclick="refreshAllPrices()">&#128260;</button>
       <button class="header-btn" onclick="lockApp()">&#128274;</button>
@@ -259,21 +248,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <button class="tab-btn" onclick="switchTab('transactions',this)">Transacties</button>
     <button class="tab-btn" onclick="switchTab('import',this)">&#128229; Import PDF</button>
     <button class="tab-btn" onclick="switchTab('add',this)">+ Toevoegen</button>
+    <button class="tab-btn" onclick="switchTab('trash',this)">&#128465; Prullenbak</button>
     <button class="tab-btn" onclick="switchTab('settings',this)">Instellingen</button>
   </div>
-
-  <!-- OVERZICHT -->
   <div class="page active" id="page-overview">
     <div class="total-card">
       <button class="eye-btn" id="eye-btn" onclick="toggleBlur()">&#128065;</button>
-      <button class="refresh-btn" id="refresh-btn" onclick="refreshAllPrices()" title="Live koersen">&#128260;</button>
+      <button class="refresh-btn" id="refresh-btn" onclick="refreshAllPrices()">&#128260;</button>
       <div class="total-label">TOTALE PORTFOLIO</div>
       <div class="total-value" id="total-value">&#8364;0,00</div>
       <div class="total-row">
         <div class="total-stat"><div class="s-label">VANDAAG</div><div class="s-val" id="daily-change">&#8211;</div></div>
         <div class="total-stat"><div class="s-label">TOTAAL W/V</div><div class="s-val" id="total-pl">+&#8364;0,00</div></div>
         <div class="total-stat"><div class="s-label">RENDEMENT</div><div class="s-val" id="total-pct">0,00%</div></div>
-        <div class="total-stat"><div class="s-label">LIVE</div><div class="s-val" id="live-status">&#8211;</div></div>
       </div>
     </div>
     <div class="section-title">VERDELING</div>
@@ -287,68 +274,44 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       </div>
     </div>
     <div class="section-title">TOP HOLDINGS</div>
-    <div class="holdings-list" id="top-holdings-list">
-      <div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">&#128200;</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:5px">Nog geen holdings</div><div style="font-size:.8rem">Importeer je PDF of voeg manueel toe</div></div>
-    </div>
+    <div class="holdings-list" id="top-holdings-list"><div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">&#128200;</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:4px">Nog geen holdings</div><div style="font-size:.78rem">Importeer je PDF of voeg manueel toe</div></div></div>
   </div>
-
-  <!-- HOLDINGS -->
   <div class="page" id="page-holdings">
     <div class="section-title">ALLE HOLDINGS</div>
-    <div class="holdings-list" id="all-holdings-list">
-      <div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">&#128188;</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen holdings</div></div>
-    </div>
+    <div class="holdings-list" id="all-holdings-list"><div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">&#128188;</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen holdings</div></div></div>
   </div>
-
-  <!-- ZOEKEN -->
   <div class="page" id="page-search">
     <div class="section-title">ZOEK KOERS WERELDWIJD</div>
     <div class="search-wrap">
       <span class="search-icon">&#128269;</span>
-      <input type="text" class="search-input" id="search-input" placeholder="Zoek ticker, naam… bijv. AAPL, BTC, VWCE" oninput="onSearchInput()" autocomplete="off" autocorrect="off" spellcheck="false">
+      <input type="text" class="search-input" id="search-input" placeholder="Ticker of naam: AAPL, IWDA.AS, BTC-EUR, NVIDIA..." oninput="onSearchInput()" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
+    <div style="font-size:.75rem;color:var(--text3);padding:0 2px">Tip: gebruik exacte ticker voor beste resultaten</div>
     <div id="search-results"></div>
-    <div id="search-detail" style="display:none"></div>
+    <div id="search-detail"></div>
   </div>
-
-  <!-- TRANSACTIES -->
   <div class="page" id="page-transactions">
     <div class="section-title">FILTER</div>
     <div class="tx-filters" id="tx-filters"></div>
-    <div id="tx-list">
-      <div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">&#128336;</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen transacties</div><div style="font-size:.8rem;margin-top:4px">Importeer een PDF om te starten</div></div>
-    </div>
+    <div id="tx-list"><div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">&#128336;</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen transacties</div></div></div>
   </div>
-
-  <!-- PDF IMPORT -->
   <div class="page" id="page-import">
     <div class="section-title">IMPORTEER PDF AFSCHRIFT</div>
-    <div class="form-card" style="padding:14px">
-      <div style="font-size:.82rem;color:var(--text2);line-height:1.6">
-        Selecteer een rekeningafschrift van <strong>Saxo Bank</strong> of <strong>Revolut</strong>. Bestaande transacties worden automatisch overgeslagen.
-      </div>
-    </div>
-
-    <!-- SAXO -->
-    <div class="import-zone" id="saxo-zone">
+    <div class="form-card" style="padding:13px"><div style="font-size:.82rem;color:var(--text2);line-height:1.6">Importeer een afschrift van <strong>Saxo Bank</strong> of <strong>Revolut</strong>. Ondersteunt zowel transactierapport als portefeuillerapport. Duplicaten worden overgeslagen.</div></div>
+    <div class="import-zone">
       <input type="file" accept=".pdf" onchange="importPDF(event,'saxo')">
       <div class="import-icon">&#127956;</div>
       <div class="import-title">Saxo Bank PDF</div>
-      <div class="import-sub">Transactie- en saldorapport<br><span style="color:var(--accent);font-weight:600">Tik hier om bestand te selecteren</span></div>
+      <div class="import-sub">Transactie- &amp; saldorapport of Portefeuillerapport<br><span style="color:var(--accent);font-weight:600">Tik hier om te selecteren</span></div>
     </div>
-
-    <!-- REVOLUT -->
-    <div class="import-zone" id="revolut-zone">
+    <div class="import-zone">
       <input type="file" accept=".pdf" onchange="importPDF(event,'revolut')">
       <div class="import-icon">&#128260;</div>
       <div class="import-title">Revolut PDF</div>
-      <div class="import-sub">ETF, aandelen of crypto statement<br><span style="color:var(--accent);font-weight:600">Tik hier om bestand te selecteren</span></div>
+      <div class="import-sub">ETF, aandelen of crypto statement<br><span style="color:var(--accent);font-weight:600">Tik hier om te selecteren</span></div>
     </div>
-
     <div id="import-result"></div>
   </div>
-
-  <!-- MANUEEL TOEVOEGEN -->
   <div class="page" id="page-add">
     <div class="form-card">
       <div class="form-title">Investering toevoegen</div>
@@ -359,7 +322,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         </select>
       </div>
       <div class="form-group"><label class="form-label">Naam</label><input type="text" class="form-input" id="add-name" placeholder="bijv. VWCE, Apple, Bitcoin"></div>
-      <div class="form-group" id="ticker-group"><label class="form-label">Ticker</label><input type="text" class="form-input" id="add-ticker" placeholder="bijv. VWCE.AS, AAPL, BTC-EUR"></div>
+      <div class="form-group" id="ticker-group"><label class="form-label">Ticker</label><input type="text" class="form-input" id="add-ticker" placeholder="bijv. IWDA.AS, AAPL, BTC-EUR"></div>
       <div class="form-group"><label class="form-label">Broker</label>
         <select class="form-select" id="add-broker"><option value="Saxo Bank">Saxo Bank</option><option value="Revolut">Revolut</option><option value="Andere">Andere</option></select>
       </div>
@@ -373,8 +336,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <button class="btn-primary" onclick="addHolding()">Toevoegen aan portfolio</button>
     </div>
   </div>
-
-  <!-- INSTELLINGEN -->
+  <div class="page" id="page-trash">
+    <div class="section-title">VERWIJDERDE HOLDINGS</div>
+    <div style="font-size:.8rem;color:var(--text3);padding:0 2px 4px">Holdings die je hebt verwijderd. Klik op Herstel om ze terug toe te voegen.</div>
+    <div id="trash-list"><div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">&#128465;</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Prullenbak is leeg</div></div></div>
+  </div>
   <div class="page" id="page-settings">
     <div class="section-title">BEVEILIGING</div>
     <div class="settings-section">
@@ -385,8 +351,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
     <div class="section-title">LIVE KOERSEN</div>
     <div class="settings-section">
+      <div class="settings-item" onclick="showApiKeySetup()"><div class="si-icon">&#128273;</div><div class="si-info"><div class="si-label">Anthropic API Key</div><div class="si-sub" id="api-key-sub">Voor zoeken &amp; automatische koersen</div></div><div class="si-badge off" id="api-key-badge">NIET INGESTELD</div></div>
       <div class="settings-item" onclick="refreshAllPrices()"><div class="si-icon">&#128260;</div><div class="si-info"><div class="si-label">Koersen verversen</div><div class="si-sub" id="last-refresh-time">Nog niet vernieuwd</div></div><div class="si-arrow">&#8250;</div></div>
-      <div class="settings-item"><div class="si-icon">&#128200;</div><div class="si-info"><div class="si-label">Databron</div><div class="si-sub">Yahoo Finance (gratis, live)</div></div><div class="si-badge">LIVE</div></div>
     </div>
     <div class="section-title">DATA</div>
     <div class="settings-section">
@@ -394,40 +360,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="settings-item" onclick="importJsonData()"><div class="si-icon">&#128229;</div><div class="si-info"><div class="si-label">Importeer backup</div><div class="si-sub">Herstel vanuit JSON backup</div></div><div class="si-arrow">&#8250;</div></div>
       <div class="settings-item" onclick="clearData()"><div class="si-icon">&#128465;</div><div class="si-info"><div class="si-label">Alles wissen</div><div class="si-sub" style="color:var(--red)">Verwijder alle data</div></div><div class="si-arrow">&#8250;</div></div>
     </div>
-    <div class="section-title">API KEY (optioneel)</div>
-    <div class="settings-section">
-      <div class="settings-item" onclick="showApiKeySetup()">
-        <div class="si-icon">🔑</div>
-        <div class="si-info"><div class="si-label">Anthropic API Key</div><div class="si-sub" id="api-key-sub">Voor zoeken &amp; automatische koersen</div></div>
-        <div class="si-badge off" id="api-key-badge">NIET INGESTELD</div>
-      </div>
-    </div>
     <div class="section-title">OVER</div>
     <div class="settings-section">
-      <div class="settings-item"><div class="si-icon">&#128188;</div><div class="si-info"><div class="si-label">Vault v5.0</div><div class="si-sub">Live koersen &middot; PDF import &middot; AES-256</div></div></div>
+      <div class="settings-item"><div class="si-icon">&#128188;</div><div class="si-info"><div class="si-label">Vault v5.1</div><div class="si-sub">Live koersen &middot; PDF import &middot; AES-256 &middot; Prullenbak</div></div></div>
     </div>
   </div>
 </div>
-
 <!-- DETAIL MODAL -->
-<!-- API KEY MODAL -->
-<div class="modal-overlay" id="apikey-modal" onclick="closeApiModal(event)">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Anthropic API Key</div>
-    <div style="font-size:.82rem;color:var(--text2);line-height:1.6;margin-bottom:16px">
-      Met een gratis Anthropic API key werkt het <strong>zoeken</strong> wereldwijd en worden koersen automatisch opgehaald.<br><br>
-      Gratis key: <strong>console.anthropic.com</strong> → API Keys → Create Key
-    </div>
-    <div class="form-group">
-      <label class="form-label">API Key</label>
-      <input type="password" class="form-input" id="api-key-input" placeholder="sk-ant-...">
-    </div>
-    <button class="btn-primary" onclick="saveApiKey()">Opslaan</button>
-    <button class="btn-danger" onclick="clearApiKey()" style="margin-top:8px">Verwijderen</button>
-  </div>
-</div>
-
 <div class="modal-overlay" id="detail-modal" onclick="closeModal(event)">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -435,798 +374,340 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="modal-ticker" id="modal-ticker"></div>
     <div class="modal-stats" id="modal-stats"></div>
     <div id="modal-update-form"></div>
+    <div class="modal-section">TRANSACTIEGESCHIEDENIS</div>
+    <div id="modal-tx-history"></div>
     <button class="btn-danger" id="modal-delete-btn">Holding verwijderen</button>
   </div>
 </div>
-
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apikey-modal" onclick="closeApiModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Anthropic API Key</div>
+    <div style="font-size:.82rem;color:var(--text2);line-height:1.6;margin-bottom:14px">Met een Anthropic API key werkt het zoeken wereldwijd betrouwbaar.<br>Gratis key op <strong>console.anthropic.com</strong> → API Keys</div>
+    <div class="form-group"><label class="form-label">API Key</label><input type="password" class="form-input" id="api-key-input" placeholder="sk-ant-..."></div>
+    <button class="btn-primary" onclick="saveApiKey()">Opslaan</button>
+    <button class="btn-danger" onclick="clearApiKey()">Verwijderen</button>
+  </div>
+</div>
 <div class="loading-overlay" id="loading-overlay">
   <div class="loading-spinner"></div>
   <div class="loading-text" id="loading-text">Bezig...</div>
 </div>
-
 <div class="toast" id="toast"></div>
 <input type="file" id="json-import-input" accept=".json" style="display:none" onchange="handleJsonImport(event)">
-
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-// ── CRYPTO ──
 const ENC=new TextEncoder(),DEC=new TextDecoder();
 async function deriveKey(pin,salt){const km=await crypto.subtle.importKey('raw',ENC.encode(pin),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
 async function aesEncrypt(data,pin){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await deriveKey(pin,salt),ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,ENC.encode(JSON.stringify(data)));const out=new Uint8Array(28+ct.byteLength);out.set(salt,0);out.set(iv,16);out.set(new Uint8Array(ct),28);return btoa(String.fromCharCode(...out));}
 async function aesDecrypt(b64,pin){const buf=Uint8Array.from(atob(b64),c=>c.charCodeAt(0)),key=await deriveKey(pin,buf.slice(0,16)),plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:buf.slice(16,28)},key,buf.slice(28));return JSON.parse(DEC.decode(plain));}
 async function pinHash(pin){const d=await crypto.subtle.digest('SHA-256',ENC.encode('vault3:'+pin));return btoa(String.fromCharCode(...new Uint8Array(d)));}
 
-// ── STATE ──
-let holdings=[],transactions=[],currentPin='',pinInput='';
-let isSettingPin=false,pinConfirm='',blurValues=false;
-let bioEnabled=false,bioCredId=null;
-let ejsService='',ejsTemplate='',ejsKey='';
+// STATE
+let holdings=[],transactions=[],deletedHoldings=[],currentPin='',pinInput='';
+let isSettingPin=false,pinConfirm='',blurValues=false,bioEnabled=false,bioCredId=null;
+let ejsService='',ejsTemplate='',ejsKey='',ANTHROPIC_KEY='';
 const NOTIFY_EMAIL='wout.depotter@hotmail.com';
 const COLORS=['#c17f3a','#4caf7d','#5b8dd9','#e05c8a','#9b6dd4','#e8a855','#3dbdbd','#e87d3a'];
 const ICONS={etf:'📈',stock:'🏢',crypto:'₿',cash:'💶'};
 const LABELS={etf:'ETF',stock:'Aandeel',crypto:'Crypto',cash:'Cash'};
 
-// ── DEVICE FINGERPRINT (voor mail alleen bij nieuw toestel) ──
-async function getDeviceId(){
-  const ua=navigator.userAgent,lang=navigator.language,tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const str=ua+lang+tz+screen.width+'x'+screen.height;
-  const buf=await crypto.subtle.digest('SHA-256',ENC.encode(str));
-  return btoa(String.fromCharCode(...new Uint8Array(buf))).substring(0,16);
-}
+// DEVICE FINGERPRINT
+async function getDeviceId(){const str=navigator.userAgent+navigator.language+(Intl.DateTimeFormat().resolvedOptions().timeZone||'')+screen.width+'x'+screen.height;const buf=await crypto.subtle.digest('SHA-256',ENC.encode(str));return btoa(String.fromCharCode(...new Uint8Array(buf))).substring(0,16);}
 
-// ── EMAILJS ──
+// EMAILJS
 function loadEmailJS(){ejsService=localStorage.getItem('v_ejs_s')||'';ejsTemplate=localStorage.getItem('v_ejs_t')||'';ejsKey=localStorage.getItem('v_ejs_k')||'';updateEmailBadge();if(ejsKey)emailjs.init(ejsKey);}
-function saveEmailJS(){const s=document.getElementById('setup-service').value.trim(),t=document.getElementById('setup-template').value.trim(),k=document.getElementById('setup-pubkey').value.trim();if(!s||!t||!k){showToast('Vul alle velden in');return;}localStorage.setItem('v_ejs_s',s);localStorage.setItem('v_ejs_t',t);localStorage.setItem('v_ejs_k',k);ejsService=s;ejsTemplate=t;ejsKey=k;emailjs.init(k);document.getElementById('setup-screen').classList.remove('visible');document.getElementById('pin-screen').style.display='';updateEmailBadge();const hasPIN=!!localStorage.getItem('v_hash');if(!hasPIN)hint('Stel je 6-cijferige PIN in');showToast('EmailJS ingesteld ✓');}
+function saveEmailJS(){const s=document.getElementById('setup-service').value.trim(),t=document.getElementById('setup-template').value.trim(),k=document.getElementById('setup-pubkey').value.trim();if(!s||!t||!k){showToast('Vul alle velden in');return;}localStorage.setItem('v_ejs_s',s);localStorage.setItem('v_ejs_t',t);localStorage.setItem('v_ejs_k',k);ejsService=s;ejsTemplate=t;ejsKey=k;emailjs.init(k);document.getElementById('setup-screen').classList.remove('visible');document.getElementById('pin-screen').style.display='';updateEmailBadge();const hasPIN=!!localStorage.getItem('v_hash');if(!hasPIN)hint('Stel je 6-cijferige PIN in');showToast('EmailJS ingesteld');}
 function skipEmailJS(){localStorage.setItem('v_ejs_skipped','1');document.getElementById('setup-screen').classList.remove('visible');document.getElementById('pin-screen').style.display='';const hasPIN=!!localStorage.getItem('v_hash');if(!hasPIN)hint('Stel je 6-cijferige PIN in');}
 function updateEmailBadge(){const b=document.getElementById('email-badge'),s=document.getElementById('email-sub');if(!b)return;const a=!!(ejsService&&ejsTemplate&&ejsKey);b.textContent=a?'AAN':'UIT';b.className='si-badge'+(a?'':' off');if(s)s.textContent=a?'Mail bij nieuw toestel naar '+NOTIFY_EMAIL:'Niet ingesteld';}
 function showEmailSetup(){document.getElementById('setup-service').value=ejsService;document.getElementById('setup-template').value=ejsTemplate;document.getElementById('setup-pubkey').value=ejsKey;document.getElementById('setup-screen').classList.add('visible');}
+async function sendLoginNotificationIfNewDevice(){if(!ejsService||!ejsTemplate||!ejsKey)return;try{const deviceId=await getDeviceId();const known=JSON.parse(localStorage.getItem('v_known_devices')||'[]');if(known.includes(deviceId))return;const t=new Date().toLocaleString('nl-BE',{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});await emailjs.send(ejsService,ejsTemplate,{to_email:NOTIFY_EMAIL,to_name:'Wout',login_time:t,device:navigator.userAgent.includes('iPhone')?'iPhone':navigator.userAgent.includes('iPad')?'iPad':'Onbekend',app_name:'Vault Portfolio',message:'Nieuw toestel gedetecteerd!'});known.push(deviceId);localStorage.setItem('v_known_devices',JSON.stringify(known));}catch(e){}}
 
-async function sendLoginNotificationIfNewDevice(){
-  if(!ejsService||!ejsTemplate||!ejsKey)return;
-  try{
-    const deviceId=await getDeviceId();
-    const knownDevices=JSON.parse(localStorage.getItem('v_known_devices')||'[]');
-    if(knownDevices.includes(deviceId))return; // Bekend toestel, geen mail
-    // Nieuw toestel! Mail sturen
-    const t=new Date().toLocaleString('nl-BE',{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    await emailjs.send(ejsService,ejsTemplate,{
-      to_email:NOTIFY_EMAIL,to_name:'Wout',login_time:t,
-      device:navigator.userAgent.includes('iPhone')?'iPhone':navigator.userAgent.includes('iPad')?'iPad':navigator.userAgent.includes('Android')?'Android':'Desktop/Onbekend',
-      app_name:'Vault Portfolio',
-      message:'Nieuw toestel gedetecteerd! Als dit jijzelf niet was, verander dan onmiddellijk je PIN.'
-    });
-    // Sla toestel op als bekend
-    knownDevices.push(deviceId);
-    localStorage.setItem('v_known_devices',JSON.stringify(knownDevices));
-  }catch(e){console.log('Email fout:',e);}
-}
+// API KEY
+function showApiKeySetup(){document.getElementById('api-key-input').value=ANTHROPIC_KEY;document.getElementById('apikey-modal').classList.add('open');}
+function closeApiModal(e){if(e.target===document.getElementById('apikey-modal'))document.getElementById('apikey-modal').classList.remove('open');}
+function saveApiKey(){const k=document.getElementById('api-key-input').value.trim();ANTHROPIC_KEY=k;localStorage.setItem('v_api_key',k);updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');showToast(k?'API key opgeslagen':'API key verwijderd');}
+function clearApiKey(){ANTHROPIC_KEY='';localStorage.removeItem('v_api_key');updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');}
+function updateApiKeyBadge(){const b=document.getElementById('api-key-badge'),s=document.getElementById('api-key-sub');if(b){b.textContent=ANTHROPIC_KEY?'INGESTELD':'NIET INGESTELD';b.className='si-badge'+(ANTHROPIC_KEY?'':' off');}if(s)s.textContent=ANTHROPIC_KEY?'Zoeken actief':'Voor zoeken & automatische koersen';}
 
-// ── LIVE KOERSEN via Yahoo Finance proxy ──
-// ── LIVE KOERSEN via Anthropic API (geen CORS problemen) ──
-// Sla je Anthropic API key op in instellingen voor live koersen
-// Zonder key: koersen worden manueel bijgewerkt
-let ANTHROPIC_KEY = localStorage.getItem('v_api_key') || '';
-const EUR_USD_RATE = {rate:1.08, ts:0};
+// LIVE PRICES
+const EUR_USD={rate:1.08,ts:0};
+async function fetchYahoo(ticker){
+  const urls=['https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d','https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d'];
+  for(const url of urls){try{const r=await fetch(url,{mode:'cors'});if(!r.ok)continue;const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;if(!meta)continue;const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price,chg=price-prev,pct=prev>0?(chg/prev)*100:0;return{price,prev,change:chg,changePct:pct,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};}catch(e){}}return null;}
+async function fetchEurUsd(){if(Date.now()-EUR_USD.ts<300000)return EUR_USD.rate;const d=await fetchYahoo('EURUSD=X');if(d){EUR_USD.rate=d.price;EUR_USD.ts=Date.now();}return EUR_USD.rate;}
+async function fetchPriceInEur(ticker,instrCurrency){const data=await fetchYahoo(ticker);if(!data)return null;let priceEur=data.price;if((instrCurrency||data.currency)==='USD'){const rate=await fetchEurUsd();priceEur=data.price/rate;data.changeEur=(data.change||0)/rate;}else data.changeEur=data.change||0;data.priceEur=priceEur;data.changePctEur=data.changePct||0;return data;}
+const TICKER_MAP={'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA','SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS','UST':'UST.PA','EUNL':'EUNL.AS','VUAA':'VUAA.IE','FWIA':'FWIA.IE','BTC':'BTC-EUR','ETH':'ETH-EUR'};
+function getYahooTicker(h){if(h.yahooTicker)return h.yahooTicker;const t=(h.ticker||'').split(':')[0];return TICKER_MAP[t]||h.ticker||'';}
+async function refreshAllPrices(){if(!holdings.length){showToast('Geen holdings');return;}const btn=document.getElementById('refresh-btn');btn.classList.add('spinning');showToast('Koersen ophalen...');let ok=0,fail=0;for(const h of holdings){const t=getYahooTicker(h);if(!t||h.type==='cash')continue;const d=await fetchPriceInEur(t,h.instrumentCurrency);if(d&&d.priceEur>0){h.current=d.priceEur;h.dailyChange=d.changeEur||0;h.dailyChangePct=d.changePctEur||0;h.lastRefresh=Date.now();ok++;}else fail++;}await persist();btn.classList.remove('spinning');const now=new Date().toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'});document.getElementById('last-refresh-time').textContent='Laatste update: '+now;renderAll();showToast(ok+' koersen bijgewerkt'+(fail?' ('+fail+' mislukt)':''));}
 
-async function fetchPriceViaAnthropicAPI(ticker) {
-  if(!ANTHROPIC_KEY) return null;
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{
-          role: 'user',
-          content: 'What is the current price of ' + ticker + ' in EUR? Reply ONLY with a JSON object like: {"price": 123.45, "change_pct": 1.23, "currency": "EUR", "name": "Full Name"}. No other text.'
-        }]
-      })
-    });
-    if(!resp.ok) return null;
-    const data = await resp.json();
-    const text = data.content?.find(b => b.type === 'text')?.text || '';
-    const match = text.match(/\{[^}]+\}/);
-    if(match) {
-      const parsed = JSON.parse(match[0]);
-      return {
-        price: parsed.price,
-        priceEur: parsed.price,
-        changePct: parsed.change_pct || 0,
-        changeEur: 0,
-        changePctEur: parsed.change_pct || 0,
-        currency: 'EUR',
-        name: parsed.name || ticker
-      };
-    }
-  } catch(e) { console.log('API price error:', e); }
-  return null;
-}
-
-// Direct Yahoo Finance - works from github.io in most browsers
-async function fetchPriceYahoo(ticker) {
-  // Try multiple Yahoo endpoints and CORS approaches
-  const urls = [
-    'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(ticker) + '?interval=1d&range=2d',
-    'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(ticker) + '?interval=1d&range=2d',
-  ];
-  for(const url of urls) {
-    try {
-      const r = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
-        mode: 'cors'
-      });
-      if(!r.ok) continue;
-      const d = await r.json();
-      const meta = d?.chart?.result?.[0]?.meta;
-      if(!meta) continue;
-      const price = meta.regularMarketPrice;
-      const prev = meta.chartPreviousClose || meta.previousClose || price;
-      const chg = price - prev;
-      const chgPct = prev > 0 ? (chg/prev)*100 : 0;
-      return { price, prevClose: prev, change: chg, changePct: chgPct, currency: meta.currency||'EUR', name: meta.longName||meta.shortName||ticker };
-    } catch(e) {}
-  }
-  return null;
-}
-
-async function fetchEurUsd() {
-  if(Date.now()-EUR_USD_RATE.ts < 300000) return EUR_USD_RATE.rate;
-  const data = await fetchPriceYahoo('EURUSD=X');
-  if(data && data.price) { EUR_USD_RATE.rate = data.price; EUR_USD_RATE.ts = Date.now(); }
-  return EUR_USD_RATE.rate;
-}
-
-async function fetchPriceInEur(ticker, instrCurrency) {
-  let data = await fetchPriceYahoo(ticker);
-  if(!data && ANTHROPIC_KEY) data = await fetchPriceViaAnthropicAPI(ticker);
-  if(!data) return null;
-  let priceEur = data.price;
-  if((instrCurrency || data.currency) === 'USD') {
-    const rate = await fetchEurUsd();
-    priceEur = data.price / rate;
-    data.changeEur = (data.change || 0) / rate;
-  } else {
-    data.changeEur = data.change || 0;
-  }
-  data.priceEur = priceEur;
-  data.changePctEur = data.changePct || 0;
-  return data;
-}
-
-// Search via Anthropic API (no CORS issues)
-async function searchViaAnthropicAPI(query) {
-  if(!ANTHROPIC_KEY) return null;
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 600,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{
-          role: 'user',
-          content: 'Search for the stock/ETF/crypto "' + query + '". Give me the top 4 results with current prices. Reply ONLY with a JSON array like: [{"symbol":"AAPL","name":"Apple Inc","price":150.00,"change_pct":1.23,"type":"stock","exchange":"NASDAQ"}]. No other text.'
-        }]
-      })
-    });
-    if(!resp.ok) return null;
-    const data = await resp.json();
-    const text = data.content?.find(b => b.type === 'text')?.text || '';
-    const match = text.match(/\[[\s\S]*\]/);
-    if(match) return JSON.parse(match[0]);
-  } catch(e) {}
-  return null;
-}
-
-// Saxo ticker → Yahoo ticker mapping
-const TICKER_MAP={
-  'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA',
-  'SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS',
-  'UST':'UST.PA','EUNL':'EUNL.AS','QUTM':'QUTM.IE','VUAA':'VUAA.IE',
-  'FWIA':'FWIA.IE','NVDA':'NVDA','GSAT':'GSAT','BTC':'BTC-EUR'
-};
-
-function getYahooTicker(holding){
-  if(holding.yahooTicker)return holding.yahooTicker;
-  if(!holding.ticker)return null;
-  const t=holding.ticker.split(':')[0]; // strip exchange suffix like :xetr
-  return TICKER_MAP[t]||holding.ticker;
-}
-
-async function refreshAllPrices(){
-  if(!holdings.length){showToast('Geen holdings om te verversen');return;}
-  const btn=document.getElementById('refresh-btn');
-  btn.classList.add('spinning');
-  document.getElementById('live-status').textContent='...';
-  showToast('Koersen ophalen...');
-  let updated=0,failed=0;
-  for(const h of holdings){
-    const ticker=getYahooTicker(h);
-    if(!ticker||h.type==='cash')continue;
-    const data=await fetchPriceInEur(ticker,h.instrumentCurrency);
-    if(data&&data.priceEur>0){
-      h.current=data.priceEur;
-      h.dailyChange=data.changeEur||0;
-      h.dailyChangePct=data.changePctEur||0;
-      h.lastRefresh=Date.now();
-      updated++;
-    } else { failed++; }
-  }
-  await persist();
-  btn.classList.remove('spinning');
-  const now=new Date().toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'});
-  document.getElementById('live-status').textContent=now;
-  document.getElementById('last-refresh-time').textContent='Laatste update: '+now;
-  renderAll();
-  showToast(`${updated} koersen bijgewerkt${failed>0?' ('+failed+' mislukt)':''}`);
-}
-
-// ── SEARCH ──
-let searchTimeout=null;
-function onSearchInput(){
-  const q=document.getElementById('search-input').value.trim();
-  clearTimeout(searchTimeout);
-  document.getElementById('search-detail').style.display='none';
-  if(q.length<1){document.getElementById('search-results').innerHTML='';return;}
-  searchTimeout=setTimeout(()=>doSearch(q),400);
-}
-
+// SEARCH - dual approach: Yahoo direct + Anthropic fallback
+let searchTO=null;
+function onSearchInput(){const q=document.getElementById('search-input').value.trim();clearTimeout(searchTO);document.getElementById('search-detail').innerHTML='';if(q.length<1){document.getElementById('search-results').innerHTML='';return;}searchTO=setTimeout(()=>doSearch(q),500);}
 async function doSearch(q){
   const el=document.getElementById('search-results');
-  el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Zoeken...</div>';
-
-  // First try: direct Yahoo price lookup for known tickers
-  const directData = await fetchPriceYahoo(q.toUpperCase());
-  if(directData) { showDirectResult(q.toUpperCase(), directData); }
-
-  // Second try: Anthropic API search (best results, no CORS)
-  if(ANTHROPIC_KEY) {
-    el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Zoeken via AI...</div>';
-    const results = await searchViaAnthropicAPI(q);
-    if(results && results.length > 0) {
-      el.innerHTML = results.map(item => {
-        const safeSym=(item.symbol||'').replace(/['"<>]/g,'');
-        const chgPct=item.change_pct||0;
-        const typeIcon=item.type==='crypto'?'₿':item.type==='etf'?'📈':'🏢';
-        return '<div class="search-result-item" data-sym="'+safeSym+'" onclick="clickSearchResult(this)">'+
-          '<div class="sr-symbol">'+typeIcon+' '+item.symbol+'</div>'+
-          '<div class="sr-info"><div class="sr-name">'+(item.name||item.symbol)+'</div>'+
-          '<div class="sr-exchange">'+(item.exchange||'')+' &middot; '+(item.type||'')+'</div></div>'+
-          '<div class="sr-price">'+
-          '<div class="sr-price-val">'+fe(item.price||0)+'</div>'+
-          '<span class="'+(chgPct>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(chgPct>=0?'+':'')+chgPct.toFixed(2)+'%</span>'+
-          '</div></div>';
-      }).join('');
-      return;
-    }
+  el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--text3)">Zoeken...</div>';
+  // Try direct Yahoo price first (works for exact tickers)
+  const direct=await fetchPriceInEur(q.toUpperCase());
+  if(direct&&direct.priceEur>0){
+    renderSearchResult(el,[{symbol:q.toUpperCase(),name:direct.name||q,price:direct.priceEur,changePct:direct.changePctEur||0,exchange:'',type:''}]);
+    return;
   }
-
-  // Third try: Yahoo search via proxy
-  try{
-    const proxies = [
-      'https://api.allorigins.win/get?url=',
-      'https://corsproxy.io/?'
-    ];
-    for(const proxy of proxies) {
-      try {
-        const yahooUrl='https://query1.finance.yahoo.com/v1/finance/search?q='+encodeURIComponent(q)+'&quotesCount=6&newsCount=0';
-        const r=await fetch(proxy+encodeURIComponent(yahooUrl));
-        if(!r.ok) continue;
-        const wrapper=await r.json();
-        const d=JSON.parse(proxy.includes('allorigins')?wrapper.contents:wrapper);
-        const quotes=(d?.quotes||[]).filter(item=>item.quoteType&&['ETF','EQUITY','CRYPTOCURRENCY'].includes(item.quoteType));
-        if(!quotes.length) continue;
-        el.innerHTML=quotes.slice(0,5).map(item=>{
-          const safeSym=(item.symbol||'').replace(/['"<>]/g,'');
-          const typeIcon=item.quoteType==='CRYPTOCURRENCY'?'₿':item.quoteType==='ETF'?'📈':'🏢';
-          return '<div class="search-result-item" data-sym="'+safeSym+'" onclick="clickSearchResult(this)">'+
-            '<div class="sr-symbol">'+typeIcon+' '+item.symbol+'</div>'+
-            '<div class="sr-info"><div class="sr-name">'+(item.shortname||item.longname||item.symbol)+'</div>'+
-            '<div class="sr-exchange">'+(item.exchDisp||item.exchange||'')+' &middot; '+(item.quoteType||'')+'</div></div>'+
-            '<div class="sr-price" id="srp-'+safeSym+'"><span style="color:var(--text3);font-size:.75rem">...</span></div>'+
-          '</div>';
-        }).join('');
-        quotes.slice(0,5).forEach(async item=>{
-          const safeSym=(item.symbol||'').replace(/['"<>]/g,'');
-          const data=await fetchPriceInEur(item.symbol);
-          const pe=document.getElementById('srp-'+safeSym);
-          if(pe&&data){const cp=data.changePct||0;pe.innerHTML='<div class="sr-price-val">'+fe(data.priceEur||data.price)+'</div><span class="'+(cp>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</span>';}
-        });
-        return;
-      } catch(e2){}
-    }
-  }catch(e){}
-
-  if(!directData) {
-    el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">'+
-      (ANTHROPIC_KEY?'Geen resultaten gevonden.':'Voor zoeken: voeg een Anthropic API key toe in Instellingen, of gebruik exacte ticker (AAPL, IWDA.AS, BTC-EUR)')+
+  // Try Anthropic API if available
+  if(ANTHROPIC_KEY){
+    try{
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:400,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:'Current stock/ETF/crypto price for "'+q+'". Reply ONLY with JSON array: [{"symbol":"X","name":"Full Name","price":0.00,"change_pct":0.00,"exchange":"NASDAQ","type":"stock"}]. No other text.'}]})});
+      if(resp.ok){const data=await resp.json();const txt=data.content?.find(b=>b.type==='text')?.text||'';const match=txt.match(/\[[\s\S]*?\]/);if(match){const results=JSON.parse(match[0]);if(results.length){renderSearchResult(el,results.map(r=>({symbol:r.symbol,name:r.name,price:r.price,changePct:r.change_pct,exchange:r.exchange,type:r.type})));return;}}}
+    }catch(e){}
+  }
+  el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--text3)">Geen resultaten voor "'+q+'".<br>'+(ANTHROPIC_KEY?'':'Voeg een Anthropic API key toe in Instellingen voor betere zoekresultaten.')+'<br>Tip: gebruik exacte ticker zoals AAPL, IWDA.AS, BTC-EUR</div>';
+}
+function renderSearchResult(el,results){
+  el.innerHTML=results.map(item=>{
+    const sym=(item.symbol||'').replace(/['"<>]/g,'');
+    const cp=item.changePct||0;
+    const icon=item.type==='crypto'?'&#8383;':item.type==='etf'?'&#128200;':'&#127970;';
+    return '<div class="search-result-item" data-sym="'+sym+'" onclick="clickSearchResult(this)">'+
+      '<div class="sr-symbol">'+icon+' '+item.symbol+'</div>'+
+      '<div class="sr-info"><div class="sr-name">'+(item.name||item.symbol)+'</div><div class="sr-exchange">'+(item.exchange||'')+(item.type?' &middot; '+item.type:'')+'</div></div>'+
+      '<div class="sr-price"><div class="sr-price-val">'+fe(item.price||0)+'</div>'+
+      '<span class="'+(cp>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</span></div>'+
     '</div>';
-  }
+  }).join('');
 }
-
-function showDirectResult(sym,data){
-  const el=document.getElementById('search-results');
-  const cp=data.changePct||0;
-  const safeSym=sym.replace(/['"<>]/g,'');
-  el.innerHTML='<div class="search-result-item" onclick="showSearchDetail(\'' + safeSym + '\')">'+
-    '<div class="sr-symbol">\uD83D\uDCC8 '+sym+'</div>'+
-    '<div class="sr-info"><div class="sr-name">'+(data.name||sym)+'</div><div class="sr-exchange">Live koers gevonden</div></div>'+
-    '<div class="sr-price"><div class="sr-price-val">'+fe(data.priceEur||data.price)+'</div>'+
-    '<span class="'+(cp>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</span></div>'+
-  '</div>';
-}
-
+function clickSearchResult(el){showSearchDetail(el.dataset.sym);}
 async function showSearchDetail(symbol){
   const el=document.getElementById('search-detail');
-  el.style.display='block';
-  el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Koers laden...</div>';
+  el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--text3)">Koers laden...</div>';
   const data=await fetchPriceInEur(symbol);
-  if(!data){el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--red)">Koers niet beschikbaar</div>';return;}
-  const chgColor=data.changePct>=0?'var(--green)':'var(--red)';
-  el.innerHTML=`<div class="form-card" style="margin-top:0">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-      <div><div style="font-family:'DM Serif Display',serif;font-size:1.3rem">${data.name||symbol}</div><div style="font-family:'DM Mono',monospace;font-size:.8rem;color:var(--text3)">${symbol}</div></div>
-      <div style="text-align:right"><div style="font-family:'DM Mono',monospace;font-size:1.4rem;font-weight:600">${fe(data.priceEur||data.price)}</div><div style="font-size:.8rem;color:${chgColor};font-family:'DM Mono',monospace">${data.changePct>=0?'+':''}${(data.changePct||0).toFixed(2)}%</div></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-      <div class="modal-stat"><div class="ms-label">KOERS (EUR)</div><div class="ms-val">${fe(data.priceEur||data.price)}</div></div>
-      <div class="modal-stat"><div class="ms-label">DAGWIJZIGING</div><div class="ms-val" style="color:${chgColor}">${data.changePct>=0?'+':''}${(data.changePct||0).toFixed(2)}%</div></div>
-      <div class="modal-stat"><div class="ms-label">VORIGE SLOTKOERS</div><div class="ms-val">${fe(data.prevClose||0)}</div></div>
-      <div class="modal-stat"><div class="ms-label">VALUTA</div><div class="ms-val">${data.currency||'–'}</div></div>
-    </div>
-    <button class="btn-primary" onclick="addFromSearch('${symbol}','${(data.name||symbol).replace(/['"]/g,'')}',${data.priceEur||data.price})">+ Toevoegen aan portfolio</button>
-  </div>`;
+  if(!data){el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--red)">Koers niet beschikbaar</div>';return;}
+  const cp=data.changePct||0;const cc=cp>=0?'var(--green)':'var(--red)';
+  el.innerHTML='<div class="form-card" style="margin-top:0">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'+
+    '<div><div style="font-family:DM Serif Display,serif;font-size:1.2rem">'+(data.name||symbol)+'</div><div style="font-family:DM Mono,monospace;font-size:.78rem;color:var(--text3)">'+symbol+'</div></div>'+
+    '<div style="text-align:right"><div style="font-family:DM Mono,monospace;font-size:1.3rem;font-weight:600">'+fe(data.priceEur||data.price)+'</div><div style="font-size:.8rem;color:'+cc+';">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</div></div></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
+    '<div class="modal-stat"><div class="ms-label">KOERS EUR</div><div class="ms-val">'+fe(data.priceEur||data.price)+'</div></div>'+
+    '<div class="modal-stat"><div class="ms-label">DAGWIJZIGING</div><div class="ms-val" style="color:'+cc+'">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</div></div>'+
+    '<div class="modal-stat"><div class="ms-label">VORIGE SLOTKOERS</div><div class="ms-val">'+fe(data.prev||0)+'</div></div>'+
+    '<div class="modal-stat"><div class="ms-label">VALUTA</div><div class="ms-val">'+(data.currency||'–')+'</div></div>'+
+    '</div>'+
+    '<button class="btn-primary" onclick="addFromSearch(\''+symbol+'\',\''+((data.name||symbol).replace(/'/g,''))+'\',' +(data.priceEur||data.price)+')">+ Toevoegen aan portfolio</button>'+
+  '</div>';
 }
+function addFromSearch(symbol,name,price){document.querySelectorAll('.tab-btn')[5].click();document.getElementById('add-name').value=name;document.getElementById('add-ticker').value=symbol;document.getElementById('add-current').value=price.toFixed(2);if(symbol.includes('BTC')||symbol.includes('ETH'))document.getElementById('add-type').value='crypto';else if(['NVDA','AAPL','MSFT','TSLA','GSAT','GOOGL','AMZN','META'].includes(symbol))document.getElementById('add-type').value='stock';else document.getElementById('add-type').value='etf';showToast('Ticker ingevuld');}
 
-function addFromSearch(symbol,name,price){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.tab-btn')[5].classList.add('active');
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-add').classList.add('active');
-  document.getElementById('add-name').value=name;
-  document.getElementById('add-ticker').value=symbol;
-  document.getElementById('add-current').value=price.toFixed(2);
-  if(symbol==='BTC-EUR'||symbol==='BTC')document.getElementById('add-type').value='crypto';
-  else if(['NVDA','GSAT','AAPL','MSFT','GOOGL','AMZN','META','TSLA'].includes(symbol))document.getElementById('add-type').value='stock';
-  else document.getElementById('add-type').value='etf';
-  showToast('Ticker ingevuld ✓ Vul aankoop details in');
-}
-
-// ── STORAGE ──
-async function persist(){if(!currentPin)return;const enc=await aesEncrypt({holdings,transactions},currentPin);localStorage.setItem('v_enc',enc);localStorage.setItem('v_hash',await pinHash(currentPin));localStorage.setItem('v_bio',bioEnabled?'1':'0');if(bioCredId)localStorage.setItem('v_cred',bioCredId);else localStorage.removeItem('v_cred');}
-async function loadData(pin){const enc=localStorage.getItem('v_enc');if(!enc)return true;try{const d=await aesDecrypt(enc,pin);holdings=d.holdings||[];transactions=d.transactions||[];return true;}catch{return false;}}
+// STORAGE
+async function persist(){if(!currentPin)return;const enc=await aesEncrypt({holdings,transactions,deletedHoldings},currentPin);localStorage.setItem('v_enc',enc);localStorage.setItem('v_hash',await pinHash(currentPin));localStorage.setItem('v_bio',bioEnabled?'1':'0');if(bioCredId)localStorage.setItem('v_cred',bioCredId);else localStorage.removeItem('v_cred');}
+async function loadData(pin){const enc=localStorage.getItem('v_enc');if(!enc)return true;try{const d=await aesDecrypt(enc,pin);holdings=d.holdings||[];transactions=d.transactions||[];deletedHoldings=d.deletedHoldings||[];return true;}catch{return false;}}
 function loadPrefs(){bioEnabled=localStorage.getItem('v_bio')==='1';bioCredId=localStorage.getItem('v_cred')||null;}
 
-// ── BIOMETRICS ──
+// BIOMETRICS
 const bioOk=()=>!!window.PublicKeyCredential&&typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable==='function';
-async function enrollBio(){if(!bioOk()){showToast('Biometrie niet ondersteund');return false;}const ok=await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();if(!ok){showToast('Geen Face ID gevonden');return false;}try{const chal=crypto.getRandomValues(new Uint8Array(32)),uid=crypto.getRandomValues(new Uint8Array(16)),cred=await navigator.credentials.create({publicKey:{challenge:chal,rp:{name:'Vault',id:location.hostname||'localhost'},user:{id:uid,name:'vault',displayName:'Vault'},pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},timeout:60000,attestation:'none'}});bioCredId=btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));bioEnabled=true;await persist();updateBioUI();showToast('Face ID ingeschakeld ✓');return true;}catch(e){if(e.name!=='NotAllowedError')showToast('Instellen mislukt');return false;}}
+async function enrollBio(){if(!bioOk()){showToast('Niet ondersteund');return false;}const ok=await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();if(!ok){showToast('Geen Face ID gevonden');return false;}try{const chal=crypto.getRandomValues(new Uint8Array(32)),uid=crypto.getRandomValues(new Uint8Array(16)),cred=await navigator.credentials.create({publicKey:{challenge:chal,rp:{name:'Vault',id:location.hostname||'localhost'},user:{id:uid,name:'vault',displayName:'Vault'},pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},timeout:60000,attestation:'none'}});bioCredId=btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));bioEnabled=true;await persist();updateBioUI();showToast('Face ID ingeschakeld');return true;}catch(e){if(e.name!=='NotAllowedError')showToast('Instellen mislukt');return false;}}
 async function autoTriggerBiometric(){if(!bioEnabled||!bioCredId)return;await triggerBiometric();}
-async function triggerBiometric(){if(!bioEnabled||!bioCredId)return;try{const chal=crypto.getRandomValues(new Uint8Array(32)),cid=Uint8Array.from(atob(bioCredId),c=>c.charCodeAt(0));await navigator.credentials.get({publicKey:{challenge:chal,rpId:location.hostname||'localhost',allowCredentials:[{id:cid,type:'public-key'}],userVerification:'required',timeout:60000}});const bp=localStorage.getItem('v_bio_pin');if(bp)await unlockWith(atob(bp));else hint('Face ID gelukt ✓ Voer eenmalig PIN in');}catch(e){if(e.name!=='NotAllowedError')showToast('Biometrie mislukt');hint('Voer je 6-cijferige PIN in');}}
+async function triggerBiometric(){if(!bioEnabled||!bioCredId)return;try{const chal=crypto.getRandomValues(new Uint8Array(32)),cid=Uint8Array.from(atob(bioCredId),c=>c.charCodeAt(0));await navigator.credentials.get({publicKey:{challenge:chal,rpId:location.hostname||'localhost',allowCredentials:[{id:cid,type:'public-key'}],userVerification:'required',timeout:60000}});const bp=localStorage.getItem('v_bio_pin');if(bp)await unlockWith(atob(bp));else hint('Face ID gelukt - voer eenmalig PIN in');}catch(e){if(e.name!=='NotAllowedError')showToast('Biometrie mislukt');hint('Voer je 6-cijferige PIN in');}}
 async function toggleBiometric(){if(!currentPin){showToast('Ontgrendel eerst de app');return;}if(bioEnabled){bioEnabled=false;bioCredId=null;localStorage.removeItem('v_bio_pin');await persist();updateBioUI();showToast('Face ID uitgeschakeld');}else await enrollBio();}
 function updateBioUI(){const badge=document.getElementById('bio-badge'),sub=document.getElementById('bio-sub'),fb=document.getElementById('faceid-btn'),hp=!!localStorage.getItem('v_hash');if(badge){badge.textContent=bioEnabled?'AAN':'UIT';badge.className='si-badge'+(bioEnabled?'':' off');}if(sub)sub.textContent=bioEnabled?'Tik om uit te schakelen':'Tik om Face ID in te schakelen';if(fb)fb.classList.toggle('hidden',!(bioEnabled&&hp));}
 
-// ── PIN ──
+// PIN
 function pinPress(d){if(pinInput.length>=6)return;pinInput+=d;dots();if(pinInput.length===6)setTimeout(checkPin,130);}
 function pinDel(){pinInput=pinInput.slice(0,-1);dots();}
 function dots(){for(let i=0;i<6;i++){const el=document.getElementById('d'+i);el.classList.toggle('filled',i<pinInput.length);el.classList.remove('error');}}
 function pinErr(msg){pinInput='';for(let i=0;i<6;i++){const el=document.getElementById('d'+i);el.classList.remove('filled');el.classList.add('error');}hint(msg);setTimeout(()=>{for(let i=0;i<6;i++)document.getElementById('d'+i).classList.remove('error');hint(isSettingPin?'Voer je nieuwe PIN in':'Voer je 6-cijferige PIN in');},900);}
 function hint(t){document.getElementById('pin-hint').textContent=t;}
 async function checkPin(){
-  const entered=pinInput;pinInput='';dots();
-  const hasPIN=!!localStorage.getItem('v_hash');
+  const entered=pinInput;pinInput='';dots();const hasPIN=!!localStorage.getItem('v_hash');
   if(!hasPIN){if(!isSettingPin){isSettingPin=true;pinConfirm=entered;hint('Bevestig je PIN');return;}if(entered===pinConfirm){isSettingPin=false;pinConfirm='';currentPin=entered;sessionStorage.setItem('v_sp',currentPin);await persist();unlock();}else{isSettingPin=false;pinConfirm='';pinErr('PINs komen niet overeen');hint('Stel je 6-cijferige PIN in');}return;}
-  if(isSettingPin){if(!pinConfirm){pinConfirm=entered;hint('Bevestig je nieuwe PIN');return;}if(entered===pinConfirm){currentPin=pinConfirm;pinConfirm='';isSettingPin=false;sessionStorage.setItem('v_sp',currentPin);await persist();document.getElementById('pin-screen').classList.add('hidden');updateBioUI();showToast('PIN gewijzigd ✓');}else{pinConfirm='';isSettingPin=false;pinErr('PINs komen niet overeen');}return;}
+  if(isSettingPin){if(!pinConfirm){pinConfirm=entered;hint('Bevestig je nieuwe PIN');return;}if(entered===pinConfirm){currentPin=pinConfirm;pinConfirm='';isSettingPin=false;sessionStorage.setItem('v_sp',currentPin);await persist();document.getElementById('pin-screen').classList.add('hidden');updateBioUI();showToast('PIN gewijzigd');}else{pinConfirm='';isSettingPin=false;pinErr('PINs komen niet overeen');}return;}
   await unlockWith(entered);
 }
 async function unlockWith(pin){const stored=localStorage.getItem('v_hash'),h=await pinHash(pin);if(h!==stored){pinErr('Onjuiste PIN');return;}const ok=await loadData(pin);if(!ok){pinErr('Ontsleuteling mislukt');return;}currentPin=pin;sessionStorage.setItem('v_sp',pin);if(bioEnabled&&bioCredId)localStorage.setItem('v_bio_pin',btoa(pin));unlock();sendLoginNotificationIfNewDevice();}
-function unlock(){document.getElementById('pin-screen').classList.add('hidden');document.getElementById('app').classList.add('visible');updateBioUI();updateEmailBadge();renderAll();}
-function lockApp(){holdings=[];transactions=[];currentPin='';pinInput='';dots();hint('Voer je 6-cijferige PIN in');document.getElementById('pin-screen').classList.remove('hidden');document.getElementById('app').classList.remove('visible');updateBioUI();setTimeout(autoTriggerBiometric,600);}
+function unlock(){document.getElementById('pin-screen').classList.add('hidden');document.getElementById('app').classList.add('visible');updateBioUI();updateEmailBadge();updateApiKeyBadge();renderAll();}
+function lockApp(){holdings=[];transactions=[];deletedHoldings=[];currentPin='';pinInput='';dots();hint('Voer je 6-cijferige PIN in');document.getElementById('pin-screen').classList.remove('hidden');document.getElementById('app').classList.remove('visible');updateBioUI();setTimeout(autoTriggerBiometric,600);}
 function changePIN(){isSettingPin=true;pinConfirm='';pinInput='';dots();hint('Voer je nieuwe PIN in');document.getElementById('pin-screen').classList.remove('hidden');}
 
-// ── TABS ──
-function switchTab(page,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+page).classList.add('active');btn.classList.add('active');if(page==='overview')renderOverview();if(page==='holdings')renderHoldings();if(page==='transactions')renderTransactions();}
+// TABS
+function switchTab(page,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+page).classList.add('active');btn.classList.add('active');if(page==='overview')renderOverview();if(page==='holdings')renderHoldings();if(page==='transactions')renderTransactions();if(page==='trash')renderTrash();}
 
-// ── CALC ──
+// CALC
 function calc(h){const inv=h.qty*h.price,cur=h.qty*h.current,pl=cur-inv;return{inv,cur,pl,pct:inv>0?(pl/inv)*100:0};}
-function portfolio(){let ti=0,tc=0,td=0;holdings.forEach(h=>{const c=calc(h);ti+=c.inv;tc+=c.cur;td+=(h.dailyChange||0)*h.qty;});const pl=tc-ti;return{ti,tc,pl,pct:ti>0?(pl/ti)*100:0,td};}
+function portfolio(){let ti=0,tc=0,td=0;holdings.forEach(h=>{const c=calc(h);ti+=c.inv;tc+=c.cur;td+=(h.dailyChange||0)*h.qty;});return{ti,tc,pl:tc-ti,pct:ti>0?((tc-ti)/ti)*100:0,td};}
 const f=(n,d=2)=>new Intl.NumberFormat('nl-BE',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
 const fe=n=>'€'+f(n);const fp=n=>(n>=0?'+':'')+f(n)+'%';const fpl=n=>(n>=0?'+€':'-€')+f(Math.abs(n));
 
-// ── RENDER ──
-function renderOverview(){
-  const{tc,pl,pct,td}=portfolio();
-  const tv=document.getElementById('total-value');
-  tv.textContent=fe(tc);tv.classList.toggle('blur-value',blurValues);
-  document.getElementById('total-pl').textContent=fpl(pl);
-  document.getElementById('total-pct').textContent=fp(pct);
-  const hasLive=holdings.some(h=>h.lastRefresh);
-  document.getElementById('daily-change').textContent=hasLive?fpl(td):'–';
-  renderDonut();
-  const el=document.getElementById('top-holdings-list');
-  el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*b.current-a.qty*a.current).slice(0,5).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">📊</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:4px">Nog geen holdings</div><div style="font-size:.78rem">Importeer je PDF of voeg manueel toe</div></div>';
-}
+// RENDER
+function renderOverview(){const{tc,pl,pct,td}=portfolio();const tv=document.getElementById('total-value');tv.textContent=fe(tc);tv.classList.toggle('blur-value',blurValues);document.getElementById('total-pl').textContent=fpl(pl);document.getElementById('total-pct').textContent=fp(pct);document.getElementById('daily-change').textContent=holdings.some(h=>h.lastRefresh)?fpl(td):'–';renderDonut();const el=document.getElementById('top-holdings-list');el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*b.current-a.qty*a.current).slice(0,5).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">📊</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:4px">Nog geen holdings</div><div style="font-size:.78rem">Importeer je PDF of voeg manueel toe</div></div>';}
 function renderDonut(){const svg=document.getElementById('donut-svg'),leg=document.getElementById('donut-legend');document.getElementById('donut-count').textContent=holdings.length;if(!holdings.length){svg.innerHTML='<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>';leg.innerHTML='<div style="font-size:.78rem;color:var(--text3)">Nog geen holdings</div>';return;}const total=holdings.reduce((s,h)=>s+h.qty*h.current,0),C=2*Math.PI*40,g={};holdings.forEach(h=>{const k=LABELS[h.type]||h.type;g[k]=(g[k]||0)+h.qty*h.current;});let cir='',lh='',off=0,ci=0;Object.entries(g).sort((a,b)=>b[1]-a[1]).forEach(([lbl,val])=>{const p=total>0?val/total:0,col=COLORS[ci%COLORS.length];cir+=`<circle cx="55" cy="55" r="40" fill="none" stroke="${col}" stroke-width="18" stroke-dasharray="${(p*C).toFixed(2)} ${(C-p*C).toFixed(2)}" stroke-dashoffset="${(-off*C).toFixed(2)}" transform="rotate(-90 55 55)"/>`;lh+=`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div><div class="legend-name">${lbl}</div><div class="legend-pct">${(p*100).toFixed(1)}%</div></div>`;off+=p;ci++;});svg.innerHTML='<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>'+cir;leg.innerHTML=lh;}
-
-function cardHTML(h){
-  const{cur,pl,pct}=calc(h),bc=h.broker==='Saxo Bank'?'broker-saxo':h.broker==='Revolut'?'broker-revolut':'',cc=pl>0?'up':pl<0?'down':'neutral',col=COLORS[holdings.indexOf(h)%COLORS.length];
-  const hasLive=!!h.lastRefresh;
-  const dailyStr=hasLive&&h.dailyChangePct!==undefined?`<span class="${h.dailyChangePct>=0?'up':'down'}" style="font-size:.62rem;padding:1px 4px">${h.dailyChangePct>=0?'+':''}${(h.dailyChangePct||0).toFixed(2)}% vandaag</span>`:'';
-  return `<div class="holding-card" onclick="openDetail('${h.id}')">
-    <div class="holding-icon" style="background:${col}22">${ICONS[h.type]||'📦'}</div>
-    <div class="holding-info">
-      <div class="holding-name">${h.name}</div>
-      <div class="holding-meta">
-        ${h.ticker?`<span style="font-family:'DM Mono',monospace;font-size:.72rem">${h.ticker.split(':')[0]}</span>`:''}
-        <span class="broker-tag ${bc}">${h.broker}</span>
-        ${hasLive?'<span class="live-dot"></span>':''}
-        ${dailyStr}
-      </div>
-    </div>
-    <div class="holding-right">
-      <div class="holding-value">${fe(cur)}</div>
-      <div class="holding-change ${cc}">${fp(pct)}</div>
-    </div>
-  </div>`;
-}
+function cardHTML(h){const{cur,pl,pct}=calc(h),bc=h.broker==='Saxo Bank'?'broker-saxo':h.broker==='Revolut'?'broker-revolut':'',cc=pl>0?'up':pl<0?'down':'neutral',col=COLORS[holdings.indexOf(h)%COLORS.length];const hasLive=!!h.lastRefresh;const dpct=h.dailyChangePct||0;return '<div class="holding-card" onclick="openDetail(\''+h.id+'\')">'+'<div class="holding-icon" style="background:'+col+'22">'+(ICONS[h.type]||'📦')+'</div>'+'<div class="holding-info"><div class="holding-name">'+h.name+'</div>'+'<div class="holding-meta">'+(h.ticker?'<span style="font-family:DM Mono,monospace;font-size:.72rem">'+h.ticker.split(':')[0]+'</span>':'')+'<span class="broker-tag '+bc+'">'+h.broker+'</span>'+(hasLive?'<span class="live-dot"></span><span class="'+(dpct>=0?'up':'down')+'" style="font-size:.62rem;padding:1px 4px">'+(dpct>=0?'+':'')+dpct.toFixed(2)+'% vandaag</span>':'')+'</div></div>'+'<div class="holding-right"><div class="holding-value">'+fe(cur)+'</div><div class="holding-change '+cc+'">'+fp(pct)+'</div></div>'+'</div>';}
 function renderHoldings(){const el=document.getElementById('all-holdings-list');el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*b.current-a.qty*a.current).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">💼</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen holdings</div></div>';}
 
-// ── TRANSACTIONS ──
+// TRANSACTIONS
 let txFilter='all';
-function renderTransactions(){
-  const el=document.getElementById('tx-list'),filterEl=document.getElementById('tx-filters');
-  if(!transactions.length){el.innerHTML='<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">🕐</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen transacties</div><div style="font-size:.78rem;margin-top:4px">Importeer een PDF om te starten</div></div>';filterEl.innerHTML='';return;}
-  const years=[...new Set(transactions.map(t=>t.date?t.date.substring(0,4):'?'))].sort().reverse();
-  const months=[...new Set(transactions.map(t=>t.date?t.date.substring(0,7):'?'))].sort().reverse();
-  let fh=`<button class="filter-btn ${txFilter==='all'?'active':''}" onclick="setTxFilter('all')">Alles</button>`;
-  years.forEach(y=>fh+=`<button class="filter-btn ${txFilter===y?'active':''}" onclick="setTxFilter('${y}')">${y}</button>`);
-  months.forEach(m=>{const d=new Date(m+'-01');fh+=`<button class="filter-btn ${txFilter===m?'active':''}" onclick="setTxFilter('${m}')">${d.toLocaleDateString('nl-BE',{month:'short',year:'numeric'})}</button>`;});
-  filterEl.innerHTML=fh;
-  let filtered=transactions.filter(t=>txFilter==='all'?true:t.date&&t.date.startsWith(txFilter));
-  filtered.sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const groups={};
-  filtered.forEach(t=>{const m=t.date?t.date.substring(0,7):'?';if(!groups[m])groups[m]=[];groups[m].push(t);});
-  let html='';
-  Object.entries(groups).forEach(([month,txs])=>{
-    const d=new Date(month+'-01');const lbl=month==='?'?'Onbekend':d.toLocaleDateString('nl-BE',{month:'long',year:'numeric'}).toUpperCase();
-    html+=`<div class="tx-group-title">${lbl}</div>`;
-    txs.forEach(t=>{const icon=t.action==='buy'?'⬆️':t.action==='sell'?'⬇️':'💰';const ac=t.action==='buy'?'buy':t.action==='sell'?'sell':'div';const sign=t.action==='buy'?'-':'+';const amt=t.total?`${sign}${fe(Math.abs(t.total))}`:'';html+=`<div class="tx-item"><div class="tx-icon ${ac}">${icon}</div><div class="tx-info"><div class="tx-name">${t.action==='buy'?'Gekocht':t.action==='sell'?'Verkocht':'Dividend'}: ${t.name}</div><div class="tx-date">${t.date||''}${t.qty?' · '+f(t.qty,4)+' st':''}${t.price?' @ '+fe(t.price):''} &middot; ${t.broker||''}</div></div><div class="tx-amount ${ac}">${amt}</div></div>`;});
-  });
-  el.innerHTML=html||'<div class="empty-state">Geen resultaten</div>';
-}
+function renderTransactions(){const el=document.getElementById('tx-list'),fe2=document.getElementById('tx-filters');if(!transactions.length){el.innerHTML='<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">🕐</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen transacties</div></div>';fe2.innerHTML='';return;}const years=[...new Set(transactions.map(t=>t.date?t.date.substring(0,4):''))].filter(Boolean).sort().reverse();const months=[...new Set(transactions.map(t=>t.date?t.date.substring(0,7):''))].filter(Boolean).sort().reverse();let fh='<button class="filter-btn '+(txFilter==='all'?'active':'')+'" onclick="setTxFilter(\'all\')">Alles</button>';years.forEach(y=>fh+='<button class="filter-btn '+(txFilter===y?'active':'')+'" onclick="setTxFilter(\''+y+'\')">'+y+'</button>');months.forEach(m=>{const d=new Date(m+'-01');fh+='<button class="filter-btn '+(txFilter===m?'active':'')+'" onclick="setTxFilter(\''+m+'\')">'+d.toLocaleDateString('nl-BE',{month:'short',year:'numeric'})+'</button>';});fe2.innerHTML=fh;let filtered=transactions.filter(t=>txFilter==='all'?true:t.date&&t.date.startsWith(txFilter));filtered.sort((a,b)=>new Date(b.date)-new Date(a.date));const groups={};filtered.forEach(t=>{const m=t.date?t.date.substring(0,7):'?';if(!groups[m])groups[m]=[];groups[m].push(t);});let html='';Object.entries(groups).forEach(([month,txs])=>{const d=new Date(month+'-01');html+='<div class="tx-group-title">'+(month==='?'?'Onbekend':d.toLocaleDateString('nl-BE',{month:'long',year:'numeric'}).toUpperCase())+'</div>';txs.forEach(t=>{const ac=t.action==='buy'?'buy':t.action==='sell'?'sell':'div';const icon=t.action==='buy'?'⬆️':t.action==='sell'?'⬇️':'💰';const sign=t.action==='buy'?'-':'+';const amt=t.total?sign+fe(Math.abs(t.total)):'';html+='<div class="tx-item"><div class="tx-icon '+ac+'">'+icon+'</div><div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':t.action==='sell'?'Verkocht':'Dividend')+': '+t.name+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' &middot; '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+' &middot; '+(t.broker||'')+'</div></div><div class="tx-amount '+ac+'">'+amt+'</div></div>';});});el.innerHTML=html||'<div class="empty-state">Geen resultaten</div>';}
 function setTxFilter(v){txFilter=v;renderTransactions();}
 
-// ── PDF IMPORT ──
-async function importPDF(event,broker){
-  const file=event.target.files[0];if(!file)return;
-  event.target.value='';
-  showLoading('PDF verwerken...');
-  try{
-    const arrayBuffer=await file.arrayBuffer();
-    const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
-    let fullText='';
-    for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();fullText+=content.items.map(item=>item.str).join(' ')+'\n';}
-    hideLoading();
-    let result;
-    if(broker==='saxo')result=parseSaxoPDF(fullText);
-    else result=parseRevolutPDF(fullText);
-    showImportResult(result);
-    if(result.newTx>0||result.updatedHoldings>0){await persist();renderAll();}
-  }catch(e){hideLoading();showToast('PDF lezen mislukt: '+e.message);console.error(e);}
-}
+// TRASH - verwijderde holdings
+function renderTrash(){const el=document.getElementById('trash-list');if(!deletedHoldings.length){el.innerHTML='<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">🗑</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Prullenbak is leeg</div></div>';return;}el.innerHTML=deletedHoldings.map((h,i)=>'<div class="deleted-item">'+'<div class="holding-icon" style="background:'+COLORS[i%COLORS.length]+'22">'+(ICONS[h.type]||'📦')+'</div>'+'<div class="deleted-info"><div class="deleted-name">'+h.name+'</div><div class="deleted-meta">'+h.broker+' &middot; '+f(h.qty,4)+' stuks &middot; aankoopprijs '+fe(h.price)+(h.deletedAt?' &middot; Verwijderd op '+new Date(h.deletedAt).toLocaleDateString('nl-BE'):'')+'</div></div>'+'<button class="btn-restore" onclick="restoreHolding('+i+')">Herstel</button>'+'</div>').join('');}
 
+async function restoreHolding(i){const h=deletedHoldings[i];if(!h)return;// Remove duplicate transactions IDs block before restoring
+const txIds=new Set(transactions.map(t=>t.id));deletedHoldings.splice(i,1);holdings.push(h);// Restore related transactions too (ones with this holdingId)
+const restored=h.relatedTxIds||[];restored.forEach(id=>{if(!txIds.has(id)){const tx=h.deletedTxs?.find(t=>t.id===id);if(tx)transactions.push(tx);}});await persist();renderAll();renderTrash();showToast(h.name+' hersteld ✓');}
+
+function renderAll(){renderOverview();renderHoldings();renderTransactions();}
+
+// MANUAL ADD
+function onTypeChange(){const t=document.getElementById('add-type').value;document.getElementById('ticker-group').style.display=t==='cash'?'none':'block';document.getElementById('price-label').textContent=t==='cash'?'Bedrag gespaard (€)':'Aankoopprijs (€)';}
+async function addHolding(){const name=document.getElementById('add-name').value.trim();if(!name){showToast('Voer een naam in');return;}const id=Date.now().toString(),qty=parseFloat(document.getElementById('add-qty').value)||0,price=parseFloat(document.getElementById('add-price').value)||0,cur=parseFloat(document.getElementById('add-current').value)||price,ticker=document.getElementById('add-ticker').value.trim().toUpperCase();holdings.push({id,name,ticker,yahooTicker:TICKER_MAP[ticker]||ticker,type:document.getElementById('add-type').value,broker:document.getElementById('add-broker').value,qty,price,current:cur,date:document.getElementById('add-date').value,notes:document.getElementById('add-notes').value.trim()});transactions.push({id:'tx_'+id,name,ticker,type:document.getElementById('add-type').value,broker:document.getElementById('add-broker').value,qty,price,total:qty*price,date:document.getElementById('add-date').value,action:'buy'});await persist();renderAll();['add-name','add-ticker','add-qty','add-price','add-current','add-notes'].forEach(i=>document.getElementById(i).value='');showToast(name+' toegevoegd');document.querySelectorAll('.tab-btn')[1].click();}
+
+// DETAIL MODAL with transaction history
+function openDetail(id){
+  const h=holdings.find(x=>x.id===id);if(!h)return;
+  const{inv,cur,pl,pct}=calc(h);
+  document.getElementById('modal-name').textContent=h.name;
+  document.getElementById('modal-ticker').textContent=[h.ticker,LABELS[h.type]||h.type,h.broker,h.lastRefresh?'Live ●':''].filter(Boolean).join(' · ');
+  document.getElementById('modal-stats').innerHTML='<div class="modal-stat"><div class="ms-label">HUIDIGE WAARDE</div><div class="ms-val">'+fe(cur)+'</div></div><div class="modal-stat"><div class="ms-label">GEÏNVESTEERD</div><div class="ms-val">'+fe(inv)+'</div></div><div class="modal-stat"><div class="ms-label">W/V</div><div class="ms-val" style="color:'+(pl>=0?'var(--green)':'var(--red)')+'">'+fpl(pl)+'</div></div><div class="modal-stat"><div class="ms-label">RENDEMENT</div><div class="ms-val" style="color:'+(pct>=0?'var(--green)':'var(--red)')+'">'+fp(pct)+'</div></div><div class="modal-stat"><div class="ms-label">AANTAL</div><div class="ms-val">'+f(h.qty,6)+'</div></div><div class="modal-stat"><div class="ms-label">LIVE KOERS</div><div class="ms-val">'+fe(h.current)+'</div></div>';
+  document.getElementById('modal-update-form').innerHTML='<div class="form-group" style="margin-top:12px"><label class="form-label">Prijs bijwerken (€)</label><input type="number" class="form-input" id="update-price" value="'+h.current+'" step="any" min="0"></div><button class="btn-primary" onclick="updatePrice(\''+id+'\')">Opslaan</button><button class="btn-secondary" onclick="refreshOne(\''+id+'\')">&#128260; Live koers ophalen</button>';
+  // Transaction history for this holding
+  const htxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('modal-tx-history').innerHTML=htxs.length?htxs.map(t=>'<div class="tx-item" style="margin-bottom:5px"><div class="tx-icon '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'⬆️':'⬇️')+'</div><div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':'Verkocht')+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+'</div></div><div class="tx-amount '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'-':'+')+fe(Math.abs(t.total||0))+'</div></div>').join(''):'<div style="font-size:.8rem;color:var(--text3);padding:6px 2px">Geen transacties gevonden</div>';
+  document.getElementById('modal-delete-btn').onclick=()=>deleteHolding(id);
+  document.getElementById('detail-modal').classList.add('open');
+}
+function closeModal(e){if(e.target===document.getElementById('detail-modal'))document.getElementById('detail-modal').classList.remove('open');}
+async function updatePrice(id){const h=holdings.find(x=>x.id===id);if(!h)return;const p=parseFloat(document.getElementById('update-price').value);if(isNaN(p)||p<0){showToast('Ongeldige prijs');return;}h.current=p;await persist();renderAll();document.getElementById('detail-modal').classList.remove('open');showToast('Prijs bijgewerkt');}
+async function refreshOne(id){const h=holdings.find(x=>x.id===id);if(!h)return;const t=getYahooTicker(h);if(!t){showToast('Geen ticker bekend');return;}showToast('Ophalen...');const d=await fetchPriceInEur(t,h.instrumentCurrency);if(d&&d.priceEur>0){h.current=d.priceEur;h.dailyChange=d.changeEur||0;h.dailyChangePct=d.changePctEur||0;h.lastRefresh=Date.now();await persist();renderAll();document.getElementById('detail-modal').classList.remove('open');showToast('Koers bijgewerkt: '+fe(d.priceEur));}else showToast('Koers niet beschikbaar');}
+async function deleteHolding(id){
+  if(!confirm('Holding verwijderen? Je kunt dit ongedaan maken via Prullenbak.'))return;
+  const h=holdings.find(x=>x.id===id);
+  if(!h)return;
+  // Save related transactions with the holding for potential restore
+  const relatedTxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker);
+  h.deletedAt=Date.now();
+  h.relatedTxIds=relatedTxs.map(t=>t.id);
+  h.deletedTxs=relatedTxs;
+  deletedHoldings.push(h);
+  holdings=holdings.filter(x=>x.id!==id);
+  await persist();renderAll();
+  document.getElementById('detail-modal').classList.remove('open');
+  showToast('Verwijderd – herstelbaar via Prullenbak');
+}
+function toggleBlur(){blurValues=!blurValues;document.getElementById('eye-btn').textContent=blurValues?'🙈':'👁';renderOverview();}
+
+// PDF IMPORT
+async function importPDF(event,broker){const file=event.target.files[0];if(!file)return;event.target.value='';showLoading('PDF verwerken...');try{const ab=await file.arrayBuffer();const pdf=await pdfjsLib.getDocument({data:ab}).promise;let text='';for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);const c=await p.getTextContent();text+=c.items.map(x=>x.str).join(' ')+'\n';}hideLoading();const result=broker==='saxo'?parseSaxoPDF(text):parseRevolutPDF(text);showImportResult(result);if(result.updatedHoldings>0||result.newTx>0){await persist();renderAll();}}catch(e){hideLoading();showToast('PDF lezen mislukt: '+e.message);console.error(e);}}
 function showLoading(msg){document.getElementById('loading-text').textContent=msg;document.getElementById('loading-overlay').classList.add('visible');}
 function hideLoading(){document.getElementById('loading-overlay').classList.remove('visible');}
 
-// ── SAXO PARSER ──
-// Handles two Saxo PDF types:
-// 1. Transactie- en saldorapport (has Koop/Verkoop transactions)
-// 2. Portefeuillerupport (has positions with qty, hist.price, current price)
+// SAXO PARSER
 function parseSaxoPDF(text){
   let newTx=0,skipped=0,updatedHoldings=0;
   const existingIds=new Set(transactions.map(t=>t.id));
   const MM={jan:'01',feb:'02',mrt:'03',apr:'04',mei:'05',jun:'06',jul:'07',aug:'08',sep:'09',okt:'10',nov:'11',dec:'12'};
-  function saxoDate(s){const p=(s||'').split('-');return p.length===3?p[2]+'-'+(MM[p[1].toLowerCase()]||'01')+'-'+p[0].padStart(2,'0'):s||'2025-01-01';}
-
-  // Known instruments: key fragments -> [name, yahooTicker, type]
+  function sDate(s){const p=(s||'').split('-');return p.length===3?p[2]+'-'+(MM[p[1].toLowerCase()]||'01')+'-'+p[0].padStart(2,'0'):s||new Date().toISOString().split('T')[0];}
   const INST=[
     ['AmundiCoreEUROSTOXX50','Amundi Core EURO STOXX 50 ETF','CD5.PA','etf','CD5'],
     ['AmundiCoreNasdaq-100','Amundi Core Nasdaq-100 Swap ETF','UST.PA','etf','UST'],
+    ['AmundiCoreNasdaq100','Amundi Core Nasdaq-100 Swap ETF','UST.PA','etf','UST'],
     ['AmundiMSCIWater','Amundi MSCI Water UCITS ETF','WAT.PA','etf','WAT'],
     ['FranklinEuropeanQuality','Franklin European Quality Dividend ETF','FLXD.DE','etf','FLXD'],
     ['iSharesCoreMSCIEMIMI','iShares Core MSCI EM IMI ETF','EMIM.AS','etf','EMIM'],
     ['iSharesCoreMSCIWorld','iShares Core MSCI World ETF','IWDA.AS','etf','IWDA'],
-    ['StateStreetSPDRMSCIWorld(Acc)','SPDR MSCI World (Acc) ETF','SWRD.AS','etf','SWRD'],
     ['StateStreetSPDRMSCIWorldTech','SPDR MSCI World Tech ETF','WTCH.AS','etf','WTCH'],
-    ['XtrackersS&P500','Xtrackers S&P 500 Swap UCITS ETF','XSPU.L','etf','XSPU'],
+    ['StateStreetSPDRMSCIWorld','SPDR MSCI World (Acc) ETF','SWRD.AS','etf','SWRD'],
+    ['XtrackersS&P500','Xtrackers S&P 500 Swap ETF','XSPU.L','etf','XSPU'],
   ];
+  function findInst(raw){const c=raw.replace(/\s+/g,'');for(const [k,n,y,t,tk] of INST){if(c.includes(k.replace(/\s+/g,''))||c.toLowerCase().includes(k.toLowerCase().substring(0,10)))return{name:n,yahooTicker:y,type:t,ticker:tk};}return null;}
+  const isPortfolio=text.includes('Portefeuillerupport')||text.includes('Portefeuillerapport')||text.includes('Historische')||text.includes('UnrealizedP/L');
+  const isTx=text.includes('Koop')||text.includes('Verkoop')||text.includes('Transactie-');
+  const today=new Date().toISOString().split('T')[0];
 
-  function findInst(rawName){
-    const clean=rawName.replace(/\s+/g,'');
-    for(const [key,name,yahoo,type,ticker] of INST){
-      const cleanKey=key.replace(/\s+/g,'');
-      if(clean.includes(cleanKey)||clean.toLowerCase().includes(cleanKey.toLowerCase().substring(0,12))){
-        return{name,yahooTicker:yahoo,type,ticker};
-      }
-    }
-    return null;
-  }
-
-  const isPortfolioReport=text.includes('Portefeuillerupport')||text.includes('Posities, EUR')||text.includes('Historische');
-  const isTransactionReport=text.includes('Transactie- en saldorapport')||text.includes('Koop')||text.includes('Verkoop');
-
-  // ── TYPE 1: PORTFOLIO REPORT ──
-  // Parse position lines: "EUR Aandelen {qty} {exchRate} {histPrice} {curPrice} {%chg}% {unrealPL} {curValue} {curValue%}"
-  // The instrument name appears on previous lines (concatenated without spaces)
-  if(isPortfolioReport){
-    const lines=text.split('\n');
-    let currentInstrName='';
-    const today=new Date().toISOString().split('T')[0];
-
+  if(isPortfolio){
+    const lines=text.split('\n');let curName='';
     for(let i=0;i<lines.length;i++){
       const line=lines[i].trim();
-
-      // Accumulate instrument name text (lines before the data line)
-      if(line.match(/^[A-Z][a-zA-Z]/)){
-        currentInstrName=line;
-      } else if(line.length>0 && !line.match(/^(EUR|USD|Aandelen|Pagina|Saxo|Wout|Valuta|Rekening|Instrument|Product|Op de|Cash|Totaal|Alle|98900)/i)){
-        if(currentInstrName && !line.match(/^\d/)) currentInstrName+=line;
-      }
-
-      // Data line: EUR/USD Aandelen {qty} {rate} {histPrice} {curPrice} {%} ...
+      if(line.match(/^[A-Z][a-zA-Z&]/) && !line.match(/^(EUR|USD|Aandelen|Pagina|Saxo|Wout|Valuta|Rekening|Instrument|Product|Op de|Cash|Totaal|Alle|98900|Eindtotaal|Samenvatting)/i))curName=line;
       const m=line.match(/^(EUR|USD)\s+Aandelen\s+(\d+)\s+([\d,]+)\s+([\d,.]+)\s+([\d,.]+)\s+([-\d,.]+)%/);
       if(m){
-        const[,currency,qtyStr,rateStr,histStr,curStr]=m;
-        const qty=parseInt(qtyStr,10);
-        const exchRate=parseFloat(rateStr.replace(',','.'));
-        const histPrice=parseFloat(histStr.replace(',','.'));
-        const curPrice=parseFloat(curStr.replace(',','.'));
-
-        // Find instrument from accumulated name or look back in text
-        // Search backwards from current position for ISIN or name
-        let instData=findInst(currentInstrName);
-        if(!instData){
-          // Try looking at previous lines
-          for(let back=1;back<=8;back++){
-            if(i-back>=0){
-              instData=findInst(lines[i-back]);
-              if(instData)break;
-            }
-          }
-        }
-
-        if(instData){
-          const{name,yahooTicker,type,ticker}=instData;
-          const hId='h_saxo_'+ticker;
-          // Calculate EUR price (for USD instruments divide by exchange rate)
-          const curPriceEur=currency==='USD'?curPrice*exchRate:curPrice;
-          const histPriceEur=currency==='USD'?histPrice*exchRate:histPrice;
-
-          const existing=holdings.find(h=>h.ticker===ticker&&h.broker==='Saxo Bank');
-          if(existing){
-            existing.qty=qty;
-            existing.current=curPriceEur;
-            if(!existing.yahooTicker)existing.yahooTicker=yahooTicker;
-            updatedHoldings++;
-          } else {
-            holdings.push({id:hId,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price:histPriceEur,current:curPriceEur,date:today,notes:'',instrumentCurrency:currency});
-            updatedHoldings++;
-          }
-          // Also add as a synthetic transaction if none exists
+        const[,currency,qtyStr,,histStr,curStr]=m;
+        const qty=parseInt(qtyStr,10),hist=parseFloat(histStr.replace(',','.')),cur2=parseFloat(curStr.replace(',','.'));
+        let inst=findInst(curName);
+        if(!inst)for(let b=1;b<=10&&!inst;b++)inst=findInst(lines[i-b]||'');
+        if(inst){
+          const{name,yahooTicker,type,ticker}=inst;
+          const ex=holdings.find(h=>h.ticker===ticker&&h.broker==='Saxo Bank');
+          if(ex){ex.qty=qty;ex.current=cur2;if(!ex.yahooTicker)ex.yahooTicker=yahooTicker;updatedHoldings++;}
+          else{holdings.push({id:'h_saxo_'+ticker,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price:hist,current:cur2,date:today,notes:'',instrumentCurrency:currency});updatedHoldings++;}
           const txId='saxo_port_'+ticker;
-          if(!existingIds.has(txId)){
-            transactions.push({id:txId,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price:histPriceEur,total:qty*histPriceEur,date:today,action:'buy'});
-            existingIds.add(txId);newTx++;
-          } else {skipped++;}
+          if(!existingIds.has(txId)){transactions.push({id:txId,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price:hist,total:qty*hist,date:today,action:'buy'});existingIds.add(txId);newTx++;}
+          else skipped++;
         }
-        currentInstrName='';
+        curName='';
       }
     }
   }
-
-  // ── TYPE 2: TRANSACTION REPORT ──
-  if(isTransactionReport){
+  if(isTx){
     const lines=text.split('\n');
     for(const line of lines){
-      const m=line.match(/(\d{2}-\w{3}-\d{4})(?:\s+\S+)?\s+(\d{7,12})\s+ETF\s+(.*?)\s+(EUR|USD)\s+(Koop|Verkoop)\s+(?:OPENING|CLOSING)\s+(\d+)\s+([\d,]+)(?:\s+[\d,]+)?/);
+      const m=line.match(/(\d{2}-\w{3}-\d{4})(?:\s+\S+)?\s+(\d{7,12})\s+ETF\s+(.*?)\s+(EUR|USD)\s+(Koop|Verkoop)\s+(?:OPENING|CLOSING)\s+(\d+)\s+([\d,]+)/);
       if(!m)continue;
-      const[,dateStr,,txId,rawInstr,currency,typeStr,qtyStr,priceStr]=m;
-      const id='saxo_'+txId;
-      if(existingIds.has(id)){skipped++;continue;}
-      const date=saxoDate(dateStr);
-      const qty=parseInt(qtyStr,10);
-      const price=parseFloat(priceStr.replace(',','.'));
+      const[,ds,,txId,raw,currency,typeStr,qtyStr,prStr]=m;
+      const id='saxo_'+txId;if(existingIds.has(id)){skipped++;continue;}
+      const date=sDate(ds),qty=parseInt(qtyStr,10),price=parseFloat(prStr.replace(',','.'));
       const action=typeStr==='Koop'?'buy':'sell';
-      let instData=findInst(rawInstr);
-      if(!instData){
-        const symM=rawInstr.match(/([A-Z]{2,6})(?::|UCITS|ETF)/);
-        instData={name:rawInstr.trim(),yahooTicker:'',type:'etf',ticker:symM?symM[1]:''};
-      }
-      const{name,yahooTicker,type,ticker}=instData;
-      const tx={id,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price,total:qty*price,date,action};
-      transactions.push(tx);existingIds.add(id);newTx++;
-      upsertHolding({id:'h_saxo_'+(ticker||txId),name,ticker,yahooTicker,type,broker:'Saxo Bank',qty:action==='buy'?qty:-qty,price,date});
-      updatedHoldings++;
-    }
-
-    // Also parse positions from transaction report
-    const posRe=/([A-Z]{2,6}):x\w+\s+(\d{10})\s+(EUR|USD)\s+(\d{2}-\w{3}-\d{4})\s+(\d+)\s+[\d,]+\s+([\d,]+)\s+([\d,]+)/g;
-    let pm;
-    while((pm=posRe.exec(text))!==null){
-      const[,sym,,currency,dateStr,qtyStr,openStr,curStr]=pm;
-      const instData2=INST.find(([,,,, t])=>t===sym);
-      if(!instData2)continue;
-      const[,iname,yt,it,iticker]=instData2;
-      const qty=parseInt(qtyStr,10),op=parseFloat(openStr.replace(',','.')),cp=parseFloat(curStr.replace(',','.'));
-      const existing=holdings.find(h=>h.ticker===sym&&h.broker==='Saxo Bank');
-      if(existing){existing.qty=qty;existing.current=cp;existing.yahooTicker=yt;updatedHoldings++;}
-      else{holdings.push({id:'h_saxo_'+sym,name:iname,ticker:sym,yahooTicker:yt,type:it,broker:'Saxo Bank',qty,price:op,current:cp,date:saxoDate(dateStr),notes:''});updatedHoldings++;}
+      let inst=findInst(raw);if(!inst)inst={name:raw.trim(),yahooTicker:'',type:'etf',ticker:''};
+      const{name,yahooTicker,type,ticker}=inst;
+      transactions.push({id,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price,total:qty*price,date,action});existingIds.add(id);newTx++;
+      const ex=holdings.find(h=>h.ticker===ticker&&h.broker==='Saxo Bank');
+      if(ex){if(action==='buy')ex.qty+=qty;else ex.qty=Math.max(0,ex.qty-qty);ex.current=price;updatedHoldings++;}
+      else if(action==='buy'){holdings.push({id:'h_saxo_'+(ticker||txId),name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price,current:price,date,notes:'',instrumentCurrency:currency});updatedHoldings++;}
     }
   }
-
-  return{newTx,skipped,updatedHoldings,broker:'Saxo Bank',reportType:isPortfolioReport?'Portefeuillerapport':'Transactierapport'};
+  return{newTx,skipped,updatedHoldings,broker:'Saxo Bank',reportType:isPortfolio?'Portefeuillerapport':'Transactierapport'};
 }
 
-// ── REVOLUT PARSER ──
+// REVOLUT PARSER
 function parseRevolutPDF(text){
   let newTx=0,skipped=0,updatedHoldings=0;
   const existingIds=new Set(transactions.map(t=>t.id));
-  const MONTH_EN={jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
-  function revDate(s){const m1=s.match(/(\d{1,2})\s+(\w{3})\s+(\d{4})/i);if(m1)return`${m1[3]}-${MONTH_EN[m1[2].toLowerCase()]||'01'}-${m1[1].padStart(2,'0')}`;const m2=s.match(/(\w{3})\s+(\d{1,2}),\s*(\d{4})/i);if(m2)return`${m2[3]}-${MONTH_EN[m2[1].toLowerCase()]||'01'}-${m2[2].padStart(2,'0')}`;return s.substring(0,10);}
-  const RNAMES={NVDA:'NVIDIA',GSAT:'Globalstar',EUNL:'iShares Core MSCI World ETF',QUTM:'VanEck Quantum Computing ETF',VUAA:'Vanguard S&P 500 Acc ETF',FWIA:'Invesco FTSE All-World ETF',BTC:'Bitcoin',ETH:'Ethereum',SOL:'Solana'};
-  const RYAHOO={EUNL:'EUNL.AS',VUAA:'VUAA.IE',FWIA:'FWIA.IE',QUTM:'QUTM.IE',NVDA:'NVDA',GSAT:'GSAT',BTC:'BTC-EUR',ETH:'ETH-EUR',SOL:'SOL-EUR'};
+  const ME={jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+  function rDate(s){const m1=s.match(/(\d{1,2})\s+(\w{3})\s+(\d{4})/i);if(m1)return m1[3]+'-'+(ME[m1[2].toLowerCase()]||'01')+'-'+m1[1].padStart(2,'0');const m2=s.match(/(\w{3})\s+(\d{1,2}),\s*(\d{4})/i);if(m2)return m2[3]+'-'+(ME[m2[1].toLowerCase()]||'01')+'-'+m2[2].padStart(2,'0');return s.substring(0,10);}
+  const RN={NVDA:'NVIDIA',GSAT:'Globalstar',EUNL:'iShares Core MSCI World ETF',QUTM:'VanEck Quantum Computing ETF',VUAA:'Vanguard S&P 500 Acc ETF',FWIA:'Invesco FTSE All-World ETF',BTC:'Bitcoin',ETH:'Ethereum',SOL:'Solana'};
+  const RY={EUNL:'EUNL.AS',VUAA:'VUAA.IE',FWIA:'FWIA.IE',QUTM:'QUTM.IE',NVDA:'NVDA',GSAT:'GSAT',BTC:'BTC-EUR',ETH:'ETH-EUR',SOL:'SOL-EUR'};
   const isCrypto=text.includes('Crypto Account Statement')||text.includes('Staking rewards');
-
   if(isCrypto){
-    // Parse crypto: "BTC Buy 0.00344974 €57,975.25 €200.00 €2.97 Feb 17, 2026"
     const re=/(BTC|ETH|SOL|XRP|ADA)\s+(Buy|Sell|Buy - Revolut X)\s+([\d.]+)\s+[\$€]([\d,]+\.?\d*)\s+[\$€]([\d,]+\.?\d*)\s+[\$€][\d,]+\.?\d*\s+(\w+\s+\d+,\s*\d{4})/gi;
-    let m;
-    while((m=re.exec(text))!==null){
-      const [,sym,type,qty,price,total,dateStr]=m;
-      const id='rev_crypto_'+sym+'_'+dateStr.replace(/[\s,]+/g,'_')+'_'+qty;
-      if(existingIds.has(id)){skipped++;continue;}
-      const date=revDate(dateStr);
-      const action=type.startsWith('Buy')?'buy':'sell';
-      const name=RNAMES[sym]||sym;
-      const p=parseFloat(price.replace(',',''));
-      const tot=parseFloat(total.replace(',',''));
-      const tx={id,name,ticker:sym,yahooTicker:RYAHOO[sym]||sym+'-EUR',type:'crypto',broker:'Revolut',qty:parseFloat(qty),price:p,total:tot,date,action};
-      transactions.push(tx);existingIds.add(id);newTx++;
-      upsertHolding({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RYAHOO[sym]||sym+'-EUR',type:'crypto',broker:'Revolut',qty:action==='buy'?parseFloat(qty):-parseFloat(qty),price:p,date});updatedHoldings++;
-    }
-    // Portfolio summary: "BTC Bitcoin 0.11432956 €66,368.55 €7,587.89"
-    const portRe=/(BTC|ETH|SOL)\s+\S+\s+([\d.]+)\s+[€$]([\d,]+\.?\d*)\s+[€$]([\d,]+\.?\d*)/gi;
-    while((m=portRe.exec(text))!==null){
-      const [,sym,qty,price,]=m;
-      const h=holdings.find(x=>(x.ticker===sym||x.yahooTicker===RYAHOO[sym])&&x.broker==='Revolut');
-      if(h){h.qty=parseFloat(qty);h.current=parseFloat(price.replace(',',''));}
-    }
-  } else {
-    // ETF/stocks: "15 Oct 2025 04:45:03 GMT QUTM Trade - Market 1.18413276 €25.33 Buy €30"
+    let m;while((m=re.exec(text))!==null){const[,sym,type,qty,price,total,ds]=m;const id='rev_crypto_'+sym+'_'+ds.replace(/[\s,]+/g,'_')+'_'+qty;if(existingIds.has(id)){skipped++;continue;}const date=rDate(ds);const action=type.startsWith('Buy')?'buy':'sell';const name=RN[sym]||sym;const p=parseFloat(price.replace(',',''));const tot=parseFloat(total.replace(',',''));const tx={id,name,ticker:sym,yahooTicker:RY[sym]||sym+'-EUR',type:'crypto',broker:'Revolut',qty:parseFloat(qty),price:p,total:tot,date,action};transactions.push(tx);existingIds.add(id);newTx++;const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Revolut');if(ex){if(action==='buy')ex.qty+=parseFloat(qty);else ex.qty=Math.max(0,ex.qty-parseFloat(qty));ex.current=p;updatedHoldings++;}else if(action==='buy'){holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym+'-EUR',type:'crypto',broker:'Revolut',qty:parseFloat(qty),price:p,current:p,date,notes:''});updatedHoldings++;}}
+  }else{
     const re=/(\d{1,2}\s+\w{3}\s+\d{4}\s+[\d:]+\s+GMT)\s+([A-Z]{2,6})\s+Trade\s+-\s+Market\s+([\d.]+)\s+[€$]([\d.]+)\s+(Buy|Sell)\s+[€$]([\d.]+)/gi;
-    let m;
-    while((m=re.exec(text))!==null){
-      const [,dateStr,sym,qty,price,type,total]=m;
-      const id='rev_'+sym+'_'+dateStr.replace(/\s+/g,'_');
-      if(existingIds.has(id)){skipped++;continue;}
-      const date=revDate(dateStr);
-      const action=type==='Buy'?'buy':'sell';
-      const name=RNAMES[sym]||sym;
-      const asType=['NVDA','GSAT','AAPL','MSFT','TSLA','META','GOOGL','AMZN'].includes(sym)?'stock':'etf';
-      const tx={id,name,ticker:sym,yahooTicker:RYAHOO[sym]||sym,type:asType,broker:'Revolut',qty:parseFloat(qty),price:parseFloat(price),total:parseFloat(total),date,action};
-      transactions.push(tx);existingIds.add(id);newTx++;
-      upsertHolding({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RYAHOO[sym]||sym,type:asType,broker:'Revolut',qty:action==='buy'?parseFloat(qty):-parseFloat(qty),price:parseFloat(price),date});updatedHoldings++;
-    }
-    // Portfolio breakdown: "EUNL iShares... 0.9106647 €115.89 €105.54 27.12%"
-    const portRe=/([A-Z]{2,6})\s+[^\n]+?\s+([\d.]+)\s+[€$]([\d.]+)\s+[€$]([\d.]+)\s+[\d.]+%/g;
-    while((m=portRe.exec(text))!==null){
-      const [,sym,qty,price,]=m;
-      const h=holdings.find(x=>x.ticker===sym&&x.broker==='Revolut');
-      if(h){h.qty=parseFloat(qty);h.current=parseFloat(price);}
-    }
+    let m;while((m=re.exec(text))!==null){const[,ds,sym,qty,price,type,total]=m;const id='rev_'+sym+'_'+ds.replace(/\s+/g,'_');if(existingIds.has(id)){skipped++;continue;}const date=rDate(ds);const action=type==='Buy'?'buy':'sell';const name=RN[sym]||sym;const asType=['NVDA','GSAT','AAPL','MSFT','TSLA'].includes(sym)?'stock':'etf';const tx={id,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:parseFloat(qty),price:parseFloat(price),total:parseFloat(total),date,action};transactions.push(tx);existingIds.add(id);newTx++;const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Revolut');if(ex){if(action==='buy')ex.qty+=parseFloat(qty);else ex.qty=Math.max(0,ex.qty-parseFloat(qty));ex.current=parseFloat(price);updatedHoldings++;}else if(action==='buy'){holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:parseFloat(qty),price:parseFloat(price),current:parseFloat(price),date,notes:''});updatedHoldings++;}}
   }
   return{newTx,skipped,updatedHoldings,broker:'Revolut'};
 }
 
-function upsertHolding(data){
-  const existing=holdings.find(h=>h.ticker===data.ticker&&h.broker===data.broker);
-  if(existing){
-    if(data.qty>0)existing.qty+=data.qty;
-    else existing.qty=Math.max(0,existing.qty+data.qty);
-    if(!existing.current)existing.current=data.price;
-    if(data.yahooTicker&&!existing.yahooTicker)existing.yahooTicker=data.yahooTicker;
-  } else if(data.qty>0){
-    holdings.push({id:data.id||'h_'+Date.now(),name:data.name,ticker:data.ticker,yahooTicker:data.yahooTicker||'',type:data.type,broker:data.broker,qty:data.qty,price:data.price,current:data.price,date:data.date,notes:''});
-  }
-}
-
 function showImportResult(result){
-  const el=document.getElementById('import-result');
-  const ok=result.updatedHoldings>0||result.newTx>0;
-  const typeLabel=result.reportType?(' ('+result.reportType+')'):'';
-  el.innerHTML='<div class="import-result">'+
-    '<div class="import-result-title">'+(ok?'✅':'⚠️')+' Import '+(ok?'voltooid':'klaar')+' — '+result.broker+typeLabel+'</div>'+
-    '<div class="import-row"><span class="lbl">Holdings toegevoegd/bijgewerkt</span><span class="val '+(result.updatedHoldings>0?'new':'skip')+'">'+result.updatedHoldings+'</span></div>'+
-    '<div class="import-row"><span class="lbl">Nieuwe transacties</span><span class="val '+(result.newTx>0?'new':'skip')+'">+'+result.newTx+'</span></div>'+
-    '<div class="import-row"><span class="lbl">Overgeslagen (duplicaat)</span><span class="val skip">'+result.skipped+'</span></div>'+
-    (!ok?'<div style="font-size:.78rem;color:var(--text3);margin-top:8px">Geen data gevonden. Zorg dat je het Transactie- en saldorapport of Portefeuillerapport gebruikt.</div>':'')+
-  '</div>';
+  const el=document.getElementById('import-result');const ok=result.updatedHoldings>0||result.newTx>0;
+  el.innerHTML='<div class="import-result"><div class="import-result-title">'+(ok?'✅':'⚠️')+' Import '+(ok?'voltooid':'klaar')+' — '+result.broker+(result.reportType?' ('+result.reportType+')':'')+'</div><div class="import-row"><span class="lbl">Holdings toegevoegd/bijgewerkt</span><span class="val '+(result.updatedHoldings>0?'new':'skip')+'">'+result.updatedHoldings+'</span></div><div class="import-row"><span class="lbl">Nieuwe transacties</span><span class="val '+(result.newTx>0?'new':'skip')+'">+'+result.newTx+'</span></div><div class="import-row"><span class="lbl">Overgeslagen (duplicaat)</span><span class="val skip">'+result.skipped+'</span></div>'+(!ok?'<div style="font-size:.78rem;color:var(--text3);margin-top:8px">Geen data gevonden. Zorg dat je het correcte Saxo of Revolut PDF gebruikt.</div>':'')+'</div>';
 }
 
-function renderAll(){renderOverview();renderHoldings();renderTransactions();}
-
-// ── MANUAL ADD ──
-function onTypeChange(){const t=document.getElementById('add-type').value;document.getElementById('ticker-group').style.display=t==='cash'?'none':'block';document.getElementById('price-label').textContent=t==='cash'?'Bedrag gespaard (€)':'Aankoopprijs (€)';}
-async function addHolding(){
-  const name=document.getElementById('add-name').value.trim();if(!name){showToast('Voer een naam in');return;}
-  const id=Date.now().toString(),qty=parseFloat(document.getElementById('add-qty').value)||0,price=parseFloat(document.getElementById('add-price').value)||0,cur=parseFloat(document.getElementById('add-current').value)||price;
-  const ticker=document.getElementById('add-ticker').value.trim().toUpperCase();
-  holdings.push({id,name,ticker,yahooTicker:TICKER_MAP[ticker]||ticker,type:document.getElementById('add-type').value,broker:document.getElementById('add-broker').value,qty,price,current:cur,date:document.getElementById('add-date').value,notes:document.getElementById('add-notes').value.trim()});
-  transactions.push({id:'tx_'+id,name,ticker,type:document.getElementById('add-type').value,broker:document.getElementById('add-broker').value,qty,price,total:qty*price,date:document.getElementById('add-date').value,action:'buy'});
-  await persist();renderAll();
-  ['add-name','add-ticker','add-qty','add-price','add-current','add-notes'].forEach(i=>document.getElementById(i).value='');
-  showToast(name+' toegevoegd ✓');
-  document.querySelectorAll('.tab-btn')[1].click();
-}
-
-// ── DETAIL MODAL ──
-function openDetail(id){const h=holdings.find(x=>x.id===id);if(!h)return;const{inv,cur,pl,pct}=calc(h);document.getElementById('modal-name').textContent=h.name;document.getElementById('modal-ticker').textContent=[h.ticker,LABELS[h.type]||h.type,h.broker,h.lastRefresh?'Live ●':''].filter(Boolean).join(' · ');document.getElementById('modal-stats').innerHTML=`<div class="modal-stat"><div class="ms-label">HUIDIGE WAARDE</div><div class="ms-val">${fe(cur)}</div></div><div class="modal-stat"><div class="ms-label">GEÏNVESTEERD</div><div class="ms-val">${fe(inv)}</div></div><div class="modal-stat"><div class="ms-label">W/V</div><div class="ms-val" style="color:${pl>=0?'var(--green)':'var(--red)'}">${fpl(pl)}</div></div><div class="modal-stat"><div class="ms-label">RENDEMENT</div><div class="ms-val" style="color:${pct>=0?'var(--green)':'var(--red)'}">${fp(pct)}</div></div><div class="modal-stat"><div class="ms-label">AANTAL</div><div class="ms-val">${f(h.qty,6)}</div></div><div class="modal-stat"><div class="ms-label">LIVE KOERS</div><div class="ms-val">${fe(h.current)}</div></div>`;document.getElementById('modal-update-form').innerHTML=`<div class="form-group" style="margin-top:12px"><label class="form-label">Prijs manueel bijwerken (€)</label><input type="number" class="form-input" id="update-price" value="${h.current}" step="any" min="0"></div><button class="btn-primary" onclick="updatePrice('${id}')">Opslaan</button><button class="btn-primary" style="background:var(--bg2);color:var(--accent);box-shadow:none;margin-top:6px" onclick="refreshOne('${id}')">&#128260; Live koers ophalen</button>`;document.getElementById('modal-delete-btn').onclick=()=>deleteHolding(id);document.getElementById('detail-modal').classList.add('open');}
-function closeModal(e){if(e.target===document.getElementById('detail-modal'))document.getElementById('detail-modal').classList.remove('open');}
-async function updatePrice(id){const h=holdings.find(x=>x.id===id);if(!h)return;const p=parseFloat(document.getElementById('update-price').value);if(isNaN(p)||p<0){showToast('Ongeldige prijs');return;}h.current=p;await persist();renderAll();document.getElementById('detail-modal').classList.remove('open');showToast('Prijs bijgewerkt ✓');}
-async function refreshOne(id){const h=holdings.find(x=>x.id===id);if(!h)return;const ticker=getYahooTicker(h);if(!ticker){showToast('Geen ticker bekend');return;}showToast('Koers ophalen...');const data=await fetchPriceInEur(ticker,h.instrumentCurrency);if(data&&data.priceEur>0){h.current=data.priceEur;h.dailyChange=data.changeEur||0;h.dailyChangePct=data.changePctEur||0;h.lastRefresh=Date.now();await persist();renderAll();document.getElementById('detail-modal').classList.remove('open');showToast('Koers bijgewerkt: '+fe(data.priceEur));}else showToast('Koers niet beschikbaar');}
-async function deleteHolding(id){if(!confirm('Holding verwijderen?'))return;holdings=holdings.filter(h=>h.id!==id);await persist();renderAll();document.getElementById('detail-modal').classList.remove('open');showToast('Holding verwijderd');}
-function toggleBlur(){blurValues=!blurValues;document.getElementById('eye-btn').textContent=blurValues?'🙈':'👁';renderOverview();}
-
-// ── DATA ──
-async function exportData(){const enc=await aesEncrypt({holdings,transactions},currentPin);const blob=new Blob([JSON.stringify({vault_enc:enc,v:5})],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='vault-backup-'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup geëxporteerd ✓');}
+// DATA MANAGEMENT
+async function exportData(){const enc=await aesEncrypt({holdings,transactions,deletedHoldings},currentPin);const blob=new Blob([JSON.stringify({vault_enc:enc,v:5})],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='vault-backup-'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup geëxporteerd');}
 function importJsonData(){document.getElementById('json-import-input').click();}
-async function handleJsonImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async ev=>{try{const w=JSON.parse(ev.target.result),d=w.vault_enc?await aesDecrypt(w.vault_enc,currentPin):w;if(d.holdings)holdings=d.holdings;if(d.transactions)transactions=d.transactions;await persist();renderAll();showToast('Geïmporteerd ✓');}catch{showToast('Import mislukt');}};reader.readAsText(file);e.target.value='';}
-async function clearData(){if(!confirm('Alle data wissen?'))return;holdings=[];transactions=[];await persist();renderAll();showToast('Alle data gewist');}
+async function handleJsonImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async ev=>{try{const w=JSON.parse(ev.target.result),d=w.vault_enc?await aesDecrypt(w.vault_enc,currentPin):w;if(d.holdings)holdings=d.holdings;if(d.transactions)transactions=d.transactions;if(d.deletedHoldings)deletedHoldings=d.deletedHoldings;await persist();renderAll();showToast('Geïmporteerd');}catch{showToast('Import mislukt');}};reader.readAsText(file);e.target.value='';}
+async function clearData(){if(!confirm('Alle data wissen?'))return;holdings=[];transactions=[];deletedHoldings=[];await persist();renderAll();showToast('Alle data gewist');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
-// ── API KEY ──
-function showApiKeySetup(){
-  document.getElementById('api-key-input').value=ANTHROPIC_KEY;
-  document.getElementById('apikey-modal').classList.add('open');
-}
-function closeApiModal(e){if(e.target===document.getElementById('apikey-modal'))document.getElementById('apikey-modal').classList.remove('open');}
-function saveApiKey(){
-  const key=document.getElementById('api-key-input').value.trim();
-  ANTHROPIC_KEY=key;
-  localStorage.setItem('v_api_key',key);
-  updateApiKeyBadge();
-  document.getElementById('apikey-modal').classList.remove('open');
-  showToast(key?'API key opgeslagen ✓':'API key verwijderd');
-}
-function clearApiKey(){ANTHROPIC_KEY='';localStorage.removeItem('v_api_key');updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');showToast('API key verwijderd');}
-function updateApiKeyBadge(){
-  const badge=document.getElementById('api-key-badge'),sub=document.getElementById('api-key-sub');
-  if(badge){badge.textContent=ANTHROPIC_KEY?'INGESTELD':'NIET INGESTELD';badge.className='si-badge'+(ANTHROPIC_KEY?'':' off');}
-  if(sub)sub.textContent=ANTHROPIC_KEY?'Zoeken & koersen actief':'Voor zoeken & automatische koersen';
-}
-
-// ── INIT ──
+// INIT
 (function init(){
   document.getElementById('header-date').textContent=new Date().toLocaleDateString('nl-BE',{weekday:'short',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
   document.getElementById('add-date').value=new Date().toISOString().split('T')[0];
-  loadPrefs();loadEmailJS();ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
+  loadPrefs();loadEmailJS();
+  ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
   const hasPIN=!!localStorage.getItem('v_hash'),ejsSkipped=localStorage.getItem('v_ejs_skipped');
   if(!ejsService&&!ejsSkipped){document.getElementById('setup-screen').classList.add('visible');document.getElementById('pin-screen').style.display='none';return;}
   if(!hasPIN)hint('Stel je 6-cijferige PIN in');
-  updateBioUI();
+  updateBioUI();updateApiKeyBadge();
   const sp=sessionStorage.getItem('v_sp');
   if(sp&&hasPIN)unlockWith(sp);
   else if(bioEnabled&&bioCredId&&hasPIN)setTimeout(autoTriggerBiometric,600);
