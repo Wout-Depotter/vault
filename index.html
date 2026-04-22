@@ -456,7 +456,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
     <div class="section-title">LIVE KOERSEN</div>
     <div class="settings-section">
-      <div class="settings-item" onclick="showWorkerSetup()"><div class="si-icon">&#9889;</div><div class="si-info"><div class="si-label">Cloudflare Worker URL</div><div class="si-sub" id="worker-sub">Gratis proxy voor betrouwbare koersen</div></div><div class="si-badge off" id="worker-badge">NIET INGESTELD</div></div>
+      <div class="settings-item" onclick="showTwelveDataSetup()">
+        <div class="si-icon">📡</div>
+        <div class="si-info"><div class="si-label">Twelve Data API key</div><div class="si-sub" id="td-sub">Gratis: 800 req/dag — twelvedata.com</div></div>
+        <div class="si-badge off" id="td-badge">NIET INGESTELD</div>
+      </div>
+      <div class="settings-item" onclick="showAlphaVantageSetup()">
+        <div class="si-icon">📈</div>
+        <div class="si-info"><div class="si-label">Alpha Vantage API key</div><div class="si-sub" id="av-sub">Gratis: 25 req/dag — alphavantage.co</div></div>
+        <div class="si-badge off" id="av-badge">NIET INGESTELD</div>
+      </div>
+      <div class="settings-item" onclick="showWorkerSetup()"><div class="si-icon">&#9889;</div><div class="si-info"><div class="si-label">Cloudflare Worker URL</div><div class="si-sub" id="worker-sub">Optionele eigen proxy</div></div><div class="si-badge off" id="worker-badge">NIET INGESTELD</div></div>
       <div class="settings-item" onclick="refreshAllPrices()"><div class="si-icon">&#128260;</div><div class="si-info"><div class="si-label">Koersen verversen</div><div class="si-sub" id="last-refresh-time">Nog niet vernieuwd</div></div><div class="si-arrow">&#8250;</div></div>
     </div>
     <div class="section-title">DATA</div>
@@ -685,6 +695,17 @@ function manualCheckUpdate(){
 function updateApiKeyBadge(){const b=document.getElementById('api-key-badge'),s=document.getElementById('api-key-sub');if(b){b.textContent=ANTHROPIC_KEY?'INGESTELD':'NIET INGESTELD';b.className='si-badge'+(ANTHROPIC_KEY?'':' off');}if(s)s.textContent=ANTHROPIC_KEY?'Zoeken actief':'Voor zoeken & automatische koersen';}
 
 
+function showTwelveDataSetup(){document.getElementById('td-key-input').value=TWELVE_DATA_KEY;document.getElementById('td-modal').classList.add('open');}
+function closeTdModal(e){if(!e||e.target===document.getElementById('td-modal'))document.getElementById('td-modal').classList.remove('open');}
+function saveTdKey(){const k=(document.getElementById('td-key-input').value||'').trim();TWELVE_DATA_KEY=k;localStorage.setItem('v_td_key',k);updateTdBadge();document.getElementById('td-modal').classList.remove('open');showToast(k?'Twelve Data key opgeslagen':'Key verwijderd');}
+function clearTdKey(){TWELVE_DATA_KEY='';localStorage.removeItem('v_td_key');updateTdBadge();document.getElementById('td-modal').classList.remove('open');}
+function updateTdBadge(){const b=document.getElementById('td-badge'),s=document.getElementById('td-sub');if(b){b.textContent=TWELVE_DATA_KEY?'ACTIEF':'NIET INGESTELD';b.className='si-badge'+(TWELVE_DATA_KEY?'':' off');}if(s)s.textContent=TWELVE_DATA_KEY?'Actief — 800 req/dag':'Gratis: 800 req/dag — twelvedata.com';}
+function showAlphaVantageSetup(){document.getElementById('av-key-input').value=ALPHA_VANTAGE_KEY;document.getElementById('av-modal').classList.add('open');}
+function closeAvModal(e){if(!e||e.target===document.getElementById('av-modal'))document.getElementById('av-modal').classList.remove('open');}
+function saveAvKey(){const k=(document.getElementById('av-key-input').value||'').trim();ALPHA_VANTAGE_KEY=k;localStorage.setItem('v_av_key',k);updateAvBadge();document.getElementById('av-modal').classList.remove('open');showToast(k?'Alpha Vantage key opgeslagen':'Key verwijderd');}
+function clearAvKey(){ALPHA_VANTAGE_KEY='';localStorage.removeItem('v_av_key');updateAvBadge();document.getElementById('av-modal').classList.remove('open');}
+function updateAvBadge(){const b=document.getElementById('av-badge'),s=document.getElementById('av-sub');if(b){b.textContent=ALPHA_VANTAGE_KEY?'ACTIEF':'NIET INGESTELD';b.className='si-badge'+(ALPHA_VANTAGE_KEY?'':' off');}if(s)s.textContent=ALPHA_VANTAGE_KEY?'Actief — 25 req/dag':'Gratis: 25 req/dag — alphavantage.co';}
+
 function updateWorkerBadge(){
   const b=document.getElementById('worker-badge');
   const s=document.getElementById('worker-sub');
@@ -713,15 +734,21 @@ function clearWorkerUrl(){
   document.getElementById('worker-modal').classList.remove('open');
 }
 
-// LIVE PRICES
-// Strategy 1: Stooq.com (free, CORS*, works for all European ETFs)
-// Strategy 2: CoinGecko (free, CORS*, works for crypto)
-// Strategy 3: Yahoo Finance direct (works for some tickers in Safari)
-// Strategy 4: Cloudflare Worker (if configured)
+// ── LIVE PRICES ──
+// Sources (in order of preference):
+// 1. CoinGecko    - crypto, free, no key, CORS OK
+// 2. Twelve Data  - ETFs/stocks, free 800req/day, needs free API key
+// 3. Alpha Vantage - ETFs/stocks, free 25req/day, needs free API key
+// 4. Stooq + allorigins proxy - European ETFs, free, no key
+// 5. Yahoo Finance - fallback
+// 6. Cloudflare Worker - user-configured proxy
+
 const EUR_USD={rate:1.08,ts:0};
 let CF_WORKER_URL=localStorage.getItem('v_cf_worker')||'';
+let TWELVE_DATA_KEY=localStorage.getItem('v_td_key')||'';
+let ALPHA_VANTAGE_KEY=localStorage.getItem('v_av_key')||'';
 
-// Stooq ticker mapping (lowercase)
+// ── TICKER MAPPINGS ──
 const STOOQ_MAP={
   'IWDA.AS':'iwda.as','EMIM.AS':'emim.as','SWRD.AS':'swrd.as','WTCH.AS':'wtch.as',
   'EUNL.AS':'eunl.as','CD5.PA':'cd5.pa','WAT.PA':'wat.pa','UST.PA':'ust.pa',
@@ -729,921 +756,143 @@ const STOOQ_MAP={
   'QUTM.IE':'qutm.ie','NVDA':'nvda.us','GSAT':'gsat.us','AAPL':'aapl.us',
   'MSFT':'msft.us','TSLA':'tsla.us','GOOGL':'googl.us','AMZN':'amzn.us',
 };
-
-// CoinGecko ID mapping for crypto
 const GECKO_MAP={
   'BTC-EUR':'bitcoin','ETH-EUR':'ethereum','SOL-EUR':'solana',
   'BTC':'bitcoin','ETH':'ethereum','SOL':'solana',
 };
 
+// ── SOURCE 1: CoinGecko (crypto) ──
+async function fetchCoinGecko(ticker){
+  const geckoId=GECKO_MAP[ticker];if(!geckoId)return null;
+  try{
+    const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+geckoId+'&vs_currencies=eur&include_24hr_change=true',{signal:AbortSignal.timeout(7000)});
+    if(!r.ok)return null;
+    const d=await r.json();const data=d?.[geckoId];if(!data?.eur)return null;
+    const price=data.eur,pct=data.eur_24h_change||0;
+    return{price,prev:price/(1+pct/100),change:price*pct/100,changePct:pct,currency:'EUR',name:ticker};
+  }catch{return null;}
+}
+
+// ── SOURCE 2: Twelve Data (ETFs/stocks, needs free key) ──
+async function fetchTwelveData(ticker){
+  if(!TWELVE_DATA_KEY)return null;
+  try{
+    const r=await fetch('https://api.twelvedata.com/price?symbol='+encodeURIComponent(ticker)+'&apikey='+TWELVE_DATA_KEY,{signal:AbortSignal.timeout(7000)});
+    if(!r.ok)return null;
+    const d=await r.json();
+    if(d.status==='error'||!d.price)return null;
+    const price=parseFloat(d.price);
+    // Get previous close for change
+    const r2=await fetch('https://api.twelvedata.com/eod?symbol='+encodeURIComponent(ticker)+'&apikey='+TWELVE_DATA_KEY,{signal:AbortSignal.timeout(5000)});
+    const d2=r2.ok?await r2.json():null;
+    const prev=d2?.close?parseFloat(d2.close):price;
+    const chg=price-prev,pct=prev>0?(chg/prev)*100:0;
+    return{price,prev,change:chg,changePct:pct,currency:d.currency||'EUR',name:ticker};
+  }catch{return null;}
+}
+
+// ── SOURCE 3: Alpha Vantage (ETFs/stocks, needs free key) ──
+async function fetchAlphaVantage(ticker){
+  if(!ALPHA_VANTAGE_KEY)return null;
+  try{
+    const sym=ticker.replace('.AS','.AMS').replace('.PA','.PAR').replace('.L','.LON').replace('.DE','.FRK');
+    const r=await fetch('https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol='+encodeURIComponent(sym)+'&apikey='+ALPHA_VANTAGE_KEY,{signal:AbortSignal.timeout(8000)});
+    if(!r.ok)return null;
+    const d=await r.json();
+    const q=d['Global Quote'];if(!q||!q['05. price'])return null;
+    const price=parseFloat(q['05. price']),prev=parseFloat(q['08. previous close'])||price;
+    const chg=price-prev,pct=prev>0?(chg/prev)*100:0;
+    return{price,prev,change:chg,changePct:pct,currency:'EUR',name:ticker};
+  }catch{return null;}
+}
+
+// ── SOURCE 4: Stooq via CORS proxy ──
 async function fetchStooq(ticker){
-  const stooqTicker=STOOQ_MAP[ticker]||ticker.toLowerCase().replace('-eur','.v');
-  // Try direct Stooq first, then via CORS proxy
+  const st=STOOQ_MAP[ticker]||ticker.toLowerCase().replace('-eur','.v');
   const urls=[
-    'https://stooq.com/q/l/?s='+stooqTicker+'&f=sd2t2ohlcv&h&e=json',
-    'https://api.allorigins.win/get?url='+encodeURIComponent('https://stooq.com/q/l/?s='+stooqTicker+'&f=sd2t2ohlcv&h&e=json'),
+    'https://stooq.com/q/l/?s='+st+'&f=sd2t2ohlcv&h&e=json',
+    'https://api.allorigins.win/get?url='+encodeURIComponent('https://stooq.com/q/l/?s='+st+'&f=sd2t2ohlcv&h&e=json'),
   ];
   for(const url of urls){
     try{
-      const r=await fetch(url,{signal:AbortSignal.timeout(7000)});
+      const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
       if(!r.ok)continue;
       let d=await r.json();
-      // allorigins wraps response in {contents: "..."}
-      if(d.contents)d=JSON.parse(d.contents);
+      if(d.contents){try{d=JSON.parse(d.contents);}catch{continue;}}
       const sym=d?.symbols?.[0];
       if(!sym||!sym.close||sym.close<=0)continue;
       const price=sym.close,prev=sym.open||price;
-      const chg=price-prev,pct=prev>0?(chg/prev)*100:0;
-      return{price,prev,change:chg,changePct:pct,currency:'EUR',name:ticker};
-    }catch(e){}
+      return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:'EUR',name:ticker};
+    }catch{}
   }
   return null;
 }
 
-async function fetchCoinGecko(ticker){
-  const geckoId=GECKO_MAP[ticker];
-  if(!geckoId)return null;
-  try{
-    const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+geckoId+'&vs_currencies=eur&include_24hr_change=true',
-      {mode:'cors',signal:AbortSignal.timeout(6000)});
-    if(!r.ok)return null;
-    const d=await r.json();
-    const data=d?.[geckoId];
-    if(!data||!data.eur)return null;
-    const price=data.eur,pct=data.eur_24h_change||0;
-    return{price,prev:price/(1+pct/100),change:price*pct/100,changePct:pct,currency:'EUR',name:ticker};
-  }catch(e){return null;}
-}
-
+// ── SOURCE 5: Yahoo Finance ──
 async function fetchYahoo(ticker){
-  const urls=[
-    'https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d',
-    'https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d',
-  ];
-  for(const url of urls){
+  for(const base of ['https://query1.finance.yahoo.com','https://query2.finance.yahoo.com']){
     try{
-      const r=await fetch(url,{mode:'cors',signal:AbortSignal.timeout(5000)});
+      const r=await fetch(base+'/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d',{signal:AbortSignal.timeout(6000)});
       if(!r.ok)continue;
-      const d=await r.json();
-      const meta=d?.chart?.result?.[0]?.meta;
-      if(!meta||!meta.regularMarketPrice)continue;
+      const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;
+      if(!meta?.regularMarketPrice)continue;
       const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price;
-      return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};
-    }catch(e){}
+      return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:meta.currency||'EUR',name:meta.longName||ticker};
+    }catch{}
   }
   return null;
 }
 
+// ── SOURCE 6: Cloudflare Worker ──
 async function fetchCloudflare(ticker){
   if(!CF_WORKER_URL)return null;
   try{
-    const r=await fetch(CF_WORKER_URL+'?ticker='+encodeURIComponent(ticker),{signal:AbortSignal.timeout(6000)});
+    const r=await fetch(CF_WORKER_URL+'?ticker='+encodeURIComponent(ticker),{signal:AbortSignal.timeout(7000)});
     if(!r.ok)return null;
-    const d=await r.json();
-    const meta=d?.chart?.result?.[0]?.meta;
-    if(!meta||!meta.regularMarketPrice)return null;
+    const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;
+    if(!meta?.regularMarketPrice)return null;
     const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price;
-    return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};
-  }catch(e){return null;}
+    return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:meta.currency||'EUR',name:meta.longName||ticker};
+  }catch{return null;}
 }
 
+// ── EUR/USD rate ──
 async function fetchEurUsd(){
   if(Date.now()-EUR_USD.ts<300000)return EUR_USD.rate;
-  // Try Stooq for EUR/USD rate
   try{
-    const r=await fetch('https://stooq.com/q/l/?s=eurusd&f=sd2t2ohlcv&h&e=json',{mode:'cors',signal:AbortSignal.timeout(4000)});
-    const d=await r.json();
-    const rate=d?.symbols?.[0]?.close;
-    if(rate&&rate>0){EUR_USD.rate=rate;EUR_USD.ts=Date.now();return rate;}
-  }catch(e){}
+    const r=await fetch('https://api.frankfurter.app/latest?from=EUR&to=USD',{signal:AbortSignal.timeout(4000)});
+    const d=await r.json();const rate=d?.rates?.USD;
+    if(rate){EUR_USD.rate=rate;EUR_USD.ts=Date.now();return rate;}
+  }catch{}
   return EUR_USD.rate;
 }
 
+// ── MAIN PRICE FETCH ──
 async function fetchPriceInEur(ticker,instrCurrency){
-  const isCrypto=GECKO_MAP[ticker];
+  const isCrypto=!!GECKO_MAP[ticker];
   let data=null;
-  
   if(isCrypto){
-    // Crypto: CoinGecko first (best for crypto), then Yahoo
-    data=await fetchCoinGecko(ticker)||await fetchYahoo(ticker)||await fetchCloudflare(ticker);
+    data=await fetchCoinGecko(ticker)||await fetchYahoo(ticker);
   } else {
-    // ETFs/stocks: Stooq first (best for European), then Yahoo, then Cloudflare
-    data=await fetchStooq(ticker)||await fetchYahoo(ticker)||await fetchCloudflare(ticker);
+    // Try sources in order: Twelve Data → Stooq → Alpha Vantage → Yahoo → Cloudflare
+    data=await fetchTwelveData(ticker)
+      ||await fetchStooq(ticker)
+      ||await fetchAlphaVantage(ticker)
+      ||await fetchYahoo(ticker)
+      ||await fetchCloudflare(ticker);
   }
-  
   if(!data)return null;
-  
-  // Convert USD to EUR if needed
   let priceEur=data.price;
   if((instrCurrency||data.currency)==='USD'){
     const rate=await fetchEurUsd();
     priceEur=data.price/rate;
     data.changeEur=(data.change||0)/rate;
-  } else {
-    data.changeEur=data.change||0;
-  }
+  } else {data.changeEur=data.change||0;}
   data.priceEur=priceEur;
   data.changePctEur=data.changePct||0;
   return data;
 }
 
-
-// SEARCH - dual approach: Yahoo direct + Anthropic fallback
-let searchTO=null;
-function onSearchInput(){const q=document.getElementById('search-input').value.trim();clearTimeout(searchTO);document.getElementById('search-detail').innerHTML='';if(q.length<1){document.getElementById('search-results').innerHTML='';return;}searchTO=setTimeout(()=>doSearch(q),500);}
-async function doSearch(q){
-  const el=document.getElementById('search-results');
-  el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--text3)">Zoeken...</div>';
-  // Try direct Yahoo price first (works for exact tickers)
-  const direct=await fetchPriceInEur(q.toUpperCase());
-  if(direct&&direct.priceEur>0){
-    renderSearchResult(el,[{symbol:q.toUpperCase(),name:direct.name||q,price:direct.priceEur,changePct:direct.changePctEur||0,exchange:'',type:''}]);
-    return;
-  }
-  // Try Anthropic API if available
-  if(ANTHROPIC_KEY){
-    try{
-      const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:400,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:'Current stock/ETF/crypto price for "'+q+'". Reply ONLY with JSON array: [{"symbol":"X","name":"Full Name","price":0.00,"change_pct":0.00,"exchange":"NASDAQ","type":"stock"}]. No other text.'}]})});
-      if(resp.ok){const data=await resp.json();const txt=data.content?.find(b=>b.type==='text')?.text||'';const match=txt.match(/\[[\s\S]*?\]/);if(match){const results=JSON.parse(match[0]);if(results.length){renderSearchResult(el,results.map(r=>({symbol:r.symbol,name:r.name,price:r.price,changePct:r.change_pct,exchange:r.exchange,type:r.type})));return;}}}
-    }catch(e){}
-  }
-  el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--text3)">Geen resultaten voor "'+q+'".<br>'+(ANTHROPIC_KEY?'':'Voeg een Anthropic API key toe in Instellingen voor betere zoekresultaten.')+'<br>Tip: gebruik exacte ticker zoals AAPL, IWDA.AS, BTC-EUR</div>';
-}
-function renderSearchResult(el,results){
-  el.innerHTML=results.map(item=>{
-    const sym=(item.symbol||'').replace(/['"<>]/g,'');
-    const cp=item.changePct||0;
-    const icon=item.type==='crypto'?'&#8383;':item.type==='etf'?'&#128200;':'&#127970;';
-    return '<div class="search-result-item" data-sym="'+sym+'" onclick="clickSearchResult(this)">'+
-      '<div class="sr-symbol">'+icon+' '+item.symbol+'</div>'+
-      '<div class="sr-info"><div class="sr-name">'+(item.name||item.symbol)+'</div><div class="sr-exchange">'+(item.exchange||'')+(item.type?' &middot; '+item.type:'')+'</div></div>'+
-      '<div class="sr-price"><div class="sr-price-val">'+fe(item.price||0)+'</div>'+
-      '<span class="'+(cp>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</span></div>'+
-    '</div>';
-  }).join('');
-}
-function clickSearchResult(el){showSearchDetail(el.dataset.sym);}
-async function showSearchDetail(symbol){
-  const el=document.getElementById('search-detail');
-  el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--text3)">Koers laden...</div>';
-  const data=await fetchPriceInEur(symbol);
-  if(!data){el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--red)">Koers niet beschikbaar</div>';return;}
-  const cp=data.changePct||0;const cc=cp>=0?'var(--green)':'var(--red)';
-  el.innerHTML='<div class="form-card" style="margin-top:0">'+
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'+
-    '<div><div style="font-family:DM Serif Display,serif;font-size:1.2rem">'+(data.name||symbol)+'</div><div style="font-family:DM Mono,monospace;font-size:.78rem;color:var(--text3)">'+symbol+'</div></div>'+
-    '<div style="text-align:right"><div style="font-family:DM Mono,monospace;font-size:1.3rem;font-weight:600">'+fe(data.priceEur||data.price)+'</div><div style="font-size:.8rem;color:'+cc+';">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</div></div></div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
-    '<div class="modal-stat"><div class="ms-label">KOERS EUR</div><div class="ms-val">'+fe(data.priceEur||data.price)+'</div></div>'+
-    '<div class="modal-stat"><div class="ms-label">DAGWIJZIGING</div><div class="ms-val" style="color:'+cc+'">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</div></div>'+
-    '<div class="modal-stat"><div class="ms-label">VORIGE SLOTKOERS</div><div class="ms-val">'+fe(data.prev||0)+'</div></div>'+
-    '<div class="modal-stat"><div class="ms-label">VALUTA</div><div class="ms-val">'+(data.currency||'–')+'</div></div>'+
-    '</div>'+
-    '<button class="btn-primary" onclick="addFromSearch(\''+symbol+'\',\''+((data.name||symbol).replace(/'/g,''))+'\',' +(data.priceEur||data.price)+')">+ Toevoegen aan portfolio</button>'+
-  '</div>';
-}
-function addFromSearch(symbol,name,price){document.querySelectorAll('.tab-btn')[5].click();document.getElementById('add-name').value=name;document.getElementById('add-ticker').value=symbol;document.getElementById('add-current').value=price.toFixed(2);if(symbol.includes('BTC')||symbol.includes('ETH'))document.getElementById('add-type').value='crypto';else if(['NVDA','AAPL','MSFT','TSLA','GSAT','GOOGL','AMZN','META'].includes(symbol))document.getElementById('add-type').value='stock';else document.getElementById('add-type').value='etf';showToast('Ticker ingevuld');}
-
-// STORAGE
-async function persist(){if(!currentPin)return;const enc=await aesEncrypt({holdings,transactions,deletedHoldings},currentPin);localStorage.setItem('v_enc',enc);localStorage.setItem('v_hash',await pinHash(currentPin));localStorage.setItem('v_bio',bioEnabled?'1':'0');if(bioCredId)localStorage.setItem('v_cred',bioCredId);else localStorage.removeItem('v_cred');}
-async function loadData(pin){const enc=localStorage.getItem('v_enc');if(!enc)return true;try{const d=await aesDecrypt(enc,pin);holdings=d.holdings||[];transactions=d.transactions||[];deletedHoldings=d.deletedHoldings||[];return true;}catch{return false;}}
-function loadPrefs(){bioEnabled=localStorage.getItem('v_bio')==='1';bioCredId=localStorage.getItem('v_cred')||null;}
-
-// BIOMETRICS
-const bioOk=()=>!!window.PublicKeyCredential&&typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable==='function';
-async function enrollBio(){if(!bioOk()){showToast('Niet ondersteund');return false;}const ok=await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();if(!ok){showToast('Geen Face ID gevonden');return false;}try{const chal=crypto.getRandomValues(new Uint8Array(32)),uid=crypto.getRandomValues(new Uint8Array(16)),cred=await navigator.credentials.create({publicKey:{challenge:chal,rp:{name:'Savings',id:location.hostname||'localhost'},user:{id:uid,name:'savings',displayName:'Savings'},pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},timeout:60000,attestation:'none'}});bioCredId=btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));bioEnabled=true;await persist();updateBioUI();showToast('Face ID ingeschakeld');return true;}catch(e){if(e.name!=='NotAllowedError')showToast('Instellen mislukt');return false;}}
-async function autoTriggerBiometric(){if(!bioEnabled||!bioCredId)return;await triggerBiometric();}
-async function triggerBiometric(){if(!bioEnabled||!bioCredId)return;try{const chal=crypto.getRandomValues(new Uint8Array(32)),cid=Uint8Array.from(atob(bioCredId),c=>c.charCodeAt(0));await navigator.credentials.get({publicKey:{challenge:chal,rpId:location.hostname||'localhost',allowCredentials:[{id:cid,type:'public-key'}],userVerification:'required',timeout:60000}});const bp=localStorage.getItem('v_bio_pin');if(bp)await unlockWith(atob(bp));else hint('Face ID gelukt - voer eenmalig PIN in');}catch(e){if(e.name!=='NotAllowedError')showToast('Biometrie mislukt');hint('Voer je 6-cijferige PIN in');}}
-async function toggleBiometric(){if(!currentPin){showToast('Ontgrendel eerst de app');return;}if(bioEnabled){bioEnabled=false;bioCredId=null;localStorage.removeItem('v_bio_pin');await persist();updateBioUI();showToast('Face ID uitgeschakeld');}else await enrollBio();}
-function updateBioUI(){const badge=document.getElementById('bio-badge'),sub=document.getElementById('bio-sub'),fb=document.getElementById('faceid-btn'),hp=!!localStorage.getItem('v_hash');if(badge){badge.textContent=bioEnabled?'AAN':'UIT';badge.className='si-badge'+(bioEnabled?'':' off');}if(sub)sub.textContent=bioEnabled?'Tik om uit te schakelen':'Tik om Face ID in te schakelen';if(fb)fb.classList.toggle('hidden',!(bioEnabled&&hp));}
-
-// PIN
-function pinPress(d){if(pinInput.length>=6)return;pinInput+=d;dots();if(pinInput.length===6)setTimeout(checkPin,130);}
-function pinDel(){pinInput=pinInput.slice(0,-1);dots();}
-function dots(){for(let i=0;i<6;i++){const el=document.getElementById('d'+i);el.classList.toggle('filled',i<pinInput.length);el.classList.remove('error');}}
-function pinErr(msg){pinInput='';for(let i=0;i<6;i++){const el=document.getElementById('d'+i);el.classList.remove('filled');el.classList.add('error');}hint(msg);setTimeout(()=>{for(let i=0;i<6;i++)document.getElementById('d'+i).classList.remove('error');hint(isSettingPin?'Voer je nieuwe PIN in':'Voer je 6-cijferige PIN in');},900);}
-function hint(t){document.getElementById('pin-hint').textContent=t;}
-async function checkPin(){
-  const entered=pinInput;pinInput='';dots();const hasPIN=!!localStorage.getItem('v_hash');
-  if(!hasPIN){if(!isSettingPin){isSettingPin=true;pinConfirm=entered;hint('Bevestig je PIN');return;}if(entered===pinConfirm){isSettingPin=false;pinConfirm='';currentPin=entered;sessionStorage.setItem('v_sp',currentPin);await persist();unlock();}else{isSettingPin=false;pinConfirm='';pinErr('PINs komen niet overeen');hint('Stel je 6-cijferige PIN in');}return;}
-  if(isSettingPin){if(!pinConfirm){pinConfirm=entered;hint('Bevestig je nieuwe PIN');return;}if(entered===pinConfirm){currentPin=pinConfirm;pinConfirm='';isSettingPin=false;sessionStorage.setItem('v_sp',currentPin);await persist();document.getElementById('pin-screen').classList.add('hidden');updateBioUI();showToast('PIN gewijzigd');}else{pinConfirm='';isSettingPin=false;pinErr('PINs komen niet overeen');}return;}
-  await unlockWith(entered);
-}
-async function unlockWith(pin){const stored=localStorage.getItem('v_hash'),h=await pinHash(pin);if(h!==stored){pinErr('Onjuiste PIN');return;}const ok=await loadData(pin);if(!ok){pinErr('Ontsleuteling mislukt');return;}currentPin=pin;sessionStorage.setItem('v_sp',pin);if(bioEnabled&&bioCredId)localStorage.setItem('v_bio_pin',btoa(pin));unlock();sendLoginNotificationIfNewDevice();}
-function unlock(){document.getElementById('pin-screen').classList.add('hidden');document.getElementById('app').classList.add('visible');updateBioUI();updateApiKeyBadge();updateWorkerBadge();renderAll();}
-function lockApp(){holdings=[];transactions=[];deletedHoldings=[];currentPin='';pinInput='';dots();hint('Voer je 6-cijferige PIN in');document.getElementById('pin-screen').classList.remove('hidden');document.getElementById('app').classList.remove('visible');updateBioUI();setTimeout(autoTriggerBiometric,600);}
-function changePIN(){isSettingPin=true;pinConfirm='';pinInput='';dots();hint('Voer je nieuwe PIN in');document.getElementById('pin-screen').classList.remove('hidden');}
-
-// TABS
-function switchTab(page,btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  if(btn)btn.classList.add('active');
-  if(page==='overview')renderOverview();
-  if(page==='holdings')renderHoldings();
-  if(page==='transactions')renderTransactions();
-  if(page==='trash')renderTrash();
-  if(page==='saxo')renderBroker('saxo');
-  if(page==='revolut')renderBroker('revolut');
-}
-
-function renderBroker(broker){
-  const brokerName=broker==='saxo'?'Saxo Bank':'Revolut';
-  const bh=holdings.filter(h=>h.broker===brokerName);
-  const inv=bh.reduce((s,h)=>s+h.qty*h.price,0);
-  const cur=bh.reduce((s,h)=>s+h.qty*(h.current||h.price),0);
-  const pl=cur-inv, pct=inv>0?(pl/inv)*100:0;
-  const cc=pl>=0?'var(--green)':'var(--red)';
-  // Hero
-  const hv=document.getElementById(broker+'-hero-value');
-  if(hv)hv.textContent=fe(cur);
-  const hc=document.getElementById(broker+'-hero-change');
-  if(hc)hc.innerHTML=pl!==0?'<span style="color:'+cc+';font-weight:600">'+(pl>=0?'+':'')+fe(pl)+'</span><span style="color:'+cc+'"> '+(pct>=0?'+':'')+pct.toFixed(2)+'%</span>':'';
-  // Stats
-  const plEl=document.getElementById(broker+'-pl');
-  if(plEl){plEl.textContent=fpl(pl);plEl.style.color=cc;}
-  const pctEl=document.getElementById(broker+'-pct');
-  if(pctEl){pctEl.textContent=fp(pct);pctEl.style.color=cc;}
-  const invEl=document.getElementById(broker+'-inv');
-  if(invEl)invEl.textContent=fe(inv);
-  // Holdings list
-  const el=document.getElementById(broker+'-holdings-list');
-  if(!el)return;
-  el.innerHTML=bh.length
-    ?[...bh].sort((a,b)=>b.qty*b.current-a.qty*a.current).map(cardHTML).join('')
-    :'<div class="empty-state">Geen '+brokerName+' holdings</div>';
-}
-function renderDonut(){const svg=document.getElementById('donut-svg'),leg=document.getElementById('donut-legend');document.getElementById('donut-count').textContent=holdings.length;if(!holdings.length){svg.innerHTML='<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>';leg.innerHTML='<div style="font-size:.78rem;color:var(--text3)">Nog geen holdings</div>';return;}const total=holdings.reduce((s,h)=>s+h.qty*h.current,0),C=2*Math.PI*40,g={};holdings.forEach(h=>{const k=LABELS[h.type]||h.type;g[k]=(g[k]||0)+h.qty*h.current;});let cir='',lh='',off=0,ci=0;Object.entries(g).sort((a,b)=>b[1]-a[1]).forEach(([lbl,val])=>{const p=total>0?val/total:0,col=COLORS[ci%COLORS.length];cir+=`<circle cx="55" cy="55" r="40" fill="none" stroke="${col}" stroke-width="18" stroke-dasharray="${(p*C).toFixed(2)} ${(C-p*C).toFixed(2)}" stroke-dashoffset="${(-off*C).toFixed(2)}" transform="rotate(-90 55 55)"/>`;lh+=`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div><div class="legend-name">${lbl}</div><div class="legend-pct">${(p*100).toFixed(1)}%</div></div>`;off+=p;ci++;});svg.innerHTML='<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>'+cir;leg.innerHTML=lh;}
-// ── FORMATTING ──
-const f=(n,d=2)=>new Intl.NumberFormat('nl-BE',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
-const fe=n=>'€'+f(n);
-const fp=n=>(n>=0?'+':'')+f(n)+'%';
-const fpl=n=>(n>=0?'+€':'-€')+f(Math.abs(n));
-
-// ── CALC ──
-function calc(h){
-  const inv=h.qty*(h.price||0);
-  const cur=h.qty*(h.current||h.price||0);
-  const pl=cur-inv;
-  const pct=inv>0?(pl/inv)*100:0;
-  return{inv,cur,pl,pct};
-}
-
-function portfolio(){
-  let ti=0,tc=0,td=0;
-  holdings.forEach(h=>{
-    const c=calc(h);
-    ti+=c.inv;tc+=c.cur;
-    td+=(h.dailyChange||0)*h.qty;
-  });
-  return{ti,tc,pl:tc-ti,pct:ti>0?((tc-ti)/ti)*100:0,td};
-}
-
-// ── RENDER OVERVIEW ──
-function renderOverview(){
-  const{tc,pl,pct,td,ti}=portfolio();
-  const hv=document.getElementById('hero-value');
-  if(hv){hv.textContent=fe(tc);hv.style.filter=blurValues?'blur(8px)':'';}
-  const qpl=document.getElementById('qs-pl');if(qpl){qpl.textContent=fpl(pl);qpl.style.color=pl>=0?'var(--green)':'var(--red)';}
-  const qpct=document.getElementById('qs-pct');if(qpct){qpct.textContent=fp(pct);qpct.style.color=pct>=0?'var(--green)':'var(--red)';}
-  const qday=document.getElementById('qs-day');
-  if(qday){const hasLive=holdings.some(h=>h.lastRefresh);qday.textContent=hasLive?fpl(td):'–';qday.style.color=td>=0?'var(--green)':'var(--red)';}
-  drawPortfolioChart();
-  const el=document.getElementById('top-holdings-list');
-  if(el)el.innerHTML=holdings.length
-    ?[...holdings].sort((a,b)=>b.qty*(b.current||b.price)-a.qty*(a.current||a.price)).map(cardHTML).join('')
-    :'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">📊</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:4px">Nog geen holdings</div><div style="font-size:.78rem">Importeer je PDF of voeg manueel toe</div></div>';
-}
-
-function cardHTML(h){const{cur,pl,pct}=calc(h),bc=h.broker==='Saxo Bank'?'broker-saxo':h.broker==='Revolut'?'broker-revolut':'',cc=pl>0?'up':pl<0?'down':'neutral',col=COLORS[holdings.indexOf(h)%COLORS.length];const hasLive=!!h.lastRefresh;const dpct=h.dailyChangePct||0;return '<div class="holding-card" onclick="openDetail(\''+h.id+'\')">'+'<div class="holding-icon" style="background:'+col+'22">'+(ICONS[h.type]||'📦')+'</div>'+'<div class="holding-info"><div class="holding-name">'+h.name+'</div>'+'<div class="holding-meta">'+(h.ticker?'<span style="font-family:DM Mono,monospace;font-size:.72rem">'+h.ticker.split(':')[0]+'</span>':'')+'<span class="broker-tag '+bc+'">'+h.broker+'</span>'+(hasLive?'<span class="live-dot"></span><span class="'+(dpct>=0?'up':'down')+'" style="font-size:.62rem;padding:1px 4px">'+(dpct>=0?'+':'')+dpct.toFixed(2)+'% vandaag</span>':'')+'</div></div>'+'<div class="holding-right"><div class="holding-value">'+fe(cur)+'</div><div class="holding-change '+cc+'">'+fp(pct)+'</div>'+(hasLive&&h.dailyChangePct!==undefined?'<div style="font-size:.64rem;color:'+(h.dailyChangePct>=0?'var(--green)':'var(--red)')+'">'+( h.dailyChangePct>=0?'▲':'▼')+' '+(Math.abs(h.dailyChangePct||0)).toFixed(2)+'% vandaag</div>':'')+' </div>'+'</div>';}
-function renderHoldings(){const el=document.getElementById('all-holdings-list');el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*b.current-a.qty*a.current).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">💼</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen holdings</div></div>';}
-
-// TRANSACTIONS
-let txFilter='all';
-function renderTransactions(){const el=document.getElementById('tx-list'),fe2=document.getElementById('tx-filters');if(!transactions.length){el.innerHTML='<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">🕐</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen transacties</div></div>';fe2.innerHTML='';return;}const years=[...new Set(transactions.map(t=>t.date?t.date.substring(0,4):''))].filter(Boolean).sort().reverse();const months=[...new Set(transactions.map(t=>t.date?t.date.substring(0,7):''))].filter(Boolean).sort().reverse();let fh='<button class="filter-btn '+(txFilter==='all'?'active':'')+'" onclick="setTxFilter(\'all\')">Alles</button>';years.forEach(y=>fh+='<button class="filter-btn '+(txFilter===y?'active':'')+'" onclick="setTxFilter(\''+y+'\')">'+y+'</button>');months.forEach(m=>{const d=new Date(m+'-01');fh+='<button class="filter-btn '+(txFilter===m?'active':'')+'" onclick="setTxFilter(\''+m+'\')">'+d.toLocaleDateString('nl-BE',{month:'short',year:'numeric'})+'</button>';});fe2.innerHTML=fh;let filtered=transactions.filter(t=>txFilter==='all'?true:t.date&&t.date.startsWith(txFilter));filtered.sort((a,b)=>new Date(b.date)-new Date(a.date));const groups={};filtered.forEach(t=>{const m=t.date?t.date.substring(0,7):'?';if(!groups[m])groups[m]=[];groups[m].push(t);});let html='';Object.entries(groups).forEach(([month,txs])=>{const d=new Date(month+'-01');html+='<div class="tx-group-title">'+(month==='?'?'Onbekend':d.toLocaleDateString('nl-BE',{month:'long',year:'numeric'}).toUpperCase())+'</div>';txs.forEach(t=>{const ac=t.action==='buy'?'buy':t.action==='sell'?'sell':'div';const icon=t.action==='buy'?'⬆️':t.action==='sell'?'⬇️':'💰';const sign=t.action==='buy'?'-':'+';const amt=t.total?sign+fe(Math.abs(t.total)):'';html+='<div class="tx-item" style="position:relative"><div class="tx-icon '+ac+'">'+icon+'</div><div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':t.action==='sell'?'Verkocht':'Dividend')+': '+t.name+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' &middot; '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+' &middot; '+(t.broker||'')+(t.costs&&t.costs>0?' &middot; kosten '+fe(t.costs):'')+' '+'</div></div><div class="tx-amount '+ac+'">'+amt+'</div><button data-txid='+t.id+' onclick="deleteTx(this.dataset.txid)" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 6px;flex-shrink:0" title="Verwijderen">&times;</button></div>';});});el.innerHTML=html||'<div class="empty-state">Geen resultaten</div>';}
-function setTxFilter(v){txFilter=v;renderTransactions();}
-
-// TRASH - verwijderde holdings
-function renderTrash(){const el=document.getElementById('trash-list');if(!deletedHoldings.length){el.innerHTML='<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">🗑</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Prullenbak is leeg</div></div>';return;}el.innerHTML=deletedHoldings.map((h,i)=>'<div class="deleted-item">'+'<div class="holding-icon" style="background:'+COLORS[i%COLORS.length]+'22">'+(ICONS[h.type]||'📦')+'</div>'+'<div class="deleted-info"><div class="deleted-name">'+h.name+'</div><div class="deleted-meta">'+h.broker+' &middot; '+f(h.qty,4)+' stuks &middot; aankoopprijs '+fe(h.price)+(h.deletedAt?' &middot; Verwijderd op '+new Date(h.deletedAt).toLocaleDateString('nl-BE'):'')+'</div></div>'+'<button class="btn-restore" onclick="restoreHolding('+i+')">Herstel</button>'+'</div>').join('');}
-
-async function restoreHolding(i){const h=deletedHoldings[i];if(!h)return;// Remove duplicate transactions IDs block before restoring
-const txIds=new Set(transactions.map(t=>t.id));deletedHoldings.splice(i,1);holdings.push(h);// Restore related transactions too (ones with this holdingId)
-const restored=h.relatedTxIds||[];restored.forEach(id=>{if(!txIds.has(id)){const tx=h.deletedTxs?.find(t=>t.id===id);if(tx)transactions.push(tx);}});await persist();renderAll();renderTrash();showToast(h.name+' hersteld ✓');}
-
-async function deleteTx(id){
-  if(!confirm('Transactie verwijderen?'))return;
-  transactions=transactions.filter(t=>t.id!==id);
-  await persist();renderTransactions();showToast('Transactie verwijderd');
-}
-function openTxEdit(txId){
-  const t=transactions.find(x=>x.id===txId);if(!t)return;
-  document.getElementById('edit-tx-id').value=txId;
-  document.getElementById('edit-tx-date').value=t.date||'';
-  document.getElementById('edit-tx-action').value=t.action||'buy';
-  document.getElementById('edit-tx-qty').value=t.qty||'';
-  document.getElementById('edit-tx-price').value=t.price||'';
-  document.getElementById('edit-tx-total').value=t.total||'';
-  document.getElementById('edit-tx-costs').value=t.costs||'';
-  document.getElementById('edit-tx-note').value=t.note||'';
-  document.getElementById('tx-edit-modal').classList.add('open');
-}
-function closeTxEdit(e){
-  if(e&&e.target!==document.getElementById('tx-edit-modal'))return;
-  document.getElementById('tx-edit-modal').classList.remove('open');
-}
-async function saveTxEdit(){
-  const txId=document.getElementById('edit-tx-id').value;
-  const t=transactions.find(x=>x.id===txId);if(!t)return;
-  t.date=document.getElementById('edit-tx-date').value;
-  t.action=document.getElementById('edit-tx-action').value;
-  t.qty=parseFloat(document.getElementById('edit-tx-qty').value)||t.qty;
-  t.price=parseFloat(document.getElementById('edit-tx-price').value)||t.price;
-  t.total=parseFloat(document.getElementById('edit-tx-total').value)||t.total;
-  const costs=parseFloat(document.getElementById('edit-tx-costs').value);
-  if(!isNaN(costs)&&costs>=0)t.costs=costs;
-  const note=document.getElementById('edit-tx-note').value.trim();
-  if(note)t.note=note;
-  // Recalculate holding avg price if needed
-  const h=holdings.find(x=>x.name===t.name&&x.broker===t.broker);
-  if(h){
-    const buys=transactions.filter(x=>x.name===h.name&&x.broker===h.broker&&x.action==='buy');
-    if(buys.length){
-      const totalQty=buys.reduce((s,x)=>s+x.qty,0);
-      const totalCost=buys.reduce((s,x)=>s+(x.total||x.qty*x.price),0);
-      h.price=totalQty>0?totalCost/totalQty:h.price;
-      h.qty=totalQty;
-    }
-  }
-  await persist();renderAll();
-  document.getElementById('tx-edit-modal').classList.remove('open');
-  // Refresh modal tx list
-  if(currentDetailHolding)setModalTab('tx');
-  showToast('Transactie bijgewerkt');
-}
-
-async function deleteTxFromModal(txId,holdingId){
-  if(!confirm('Transactie verwijderen?'))return;
-  transactions=transactions.filter(t=>t.id!==txId);
-  await persist();
-  // Refresh modal tx history
-  const h=holdings.find(x=>x.id===holdingId);
-  if(h){const htxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker).sort((a,b)=>new Date(b.date)-new Date(a.date));document.getElementById('modal-tx-history').innerHTML=htxs.length?htxs.map(t=>'<div class="tx-item" style="margin-bottom:5px"><div class="tx-icon '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'⬆️':'⬇️')+'</div><div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':'Verkocht')+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+'</div></div><div class="tx-amount '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'-':'+')+fe(Math.abs(t.total||0))+'</div><button data-txid="'+t.id+'" data-hid="'+holdingId+'" onclick="deleteTxFromModal(this.dataset.txid,this.dataset.hid)" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 6px;flex-shrink:0" title="Verwijderen">&times;</button></div>').join(''):'<div style="font-size:.8rem;color:var(--text3);padding:6px 2px">Geen transacties meer</div>';}
-  renderTransactions();showToast('Transactie verwijderd');
-}
-function renderAll(){renderOverview();renderHoldings();renderTransactions();}
-
-// TICKER MAP & REFRESH
-const TICKER_MAP={'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA','SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS','UST':'UST.PA','EUNL':'EUNL.AS','VUAA':'VUAA.IE','FWIA':'FWIA.IE','BTC':'BTC-EUR','ETH':'ETH-EUR'};
-
-function getYahooTicker(h){if(h.yahooTicker)return h.yahooTicker;const t=(h.ticker||'').split(':')[0];return TICKER_MAP[t]||h.ticker||'';}
-
-async function refreshAllPrices(){
-  if(!holdings.length){showToast('Geen holdings');return;}
-  const btn=document.getElementById('refresh-btn');
-  if(btn)btn.classList.add('spinning');
-  showToast('Koersen ophalen...');
-  let ok=0,fail=0;
-  for(const h of holdings){
-    const t=getYahooTicker(h);
-    if(!t||h.type==='cash')continue;
-    const d=await fetchPriceInEur(t,h.instrumentCurrency);
-    if(d&&d.priceEur>0){
-      h.current=d.priceEur;
-      h.dailyChange=d.changeEur||0;
-      h.dailyChangePct=d.changePctEur||0;
-      h.lastRefresh=Date.now();
-      ok++;
-    } else {fail++;}
-  }
-  await persist();
-  if(btn)btn.classList.remove('spinning');
-  const now=new Date().toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'});
-  const lrt=document.getElementById('last-refresh-time');
-  if(lrt)lrt.textContent='Laatste update: '+now;
-  renderAll();
-  showToast(ok+' koersen bijgewerkt'+(fail?' ('+fail+' mislukt)':''));
-}
-
-// MANUAL ADD
-function onTypeChange(){const t=document.getElementById('add-type').value;document.getElementById('ticker-group').style.display=t==='cash'?'none':'block';document.getElementById('price-label').textContent=t==='cash'?'Bedrag gespaard (€)':'Aankoopprijs (€)';}
-async function addHolding(){const name=document.getElementById('add-name').value.trim();if(!name){showToast('Voer een naam in');return;}const id=Date.now().toString(),qty=parseFloat(document.getElementById('add-qty').value)||0,price=parseFloat(document.getElementById('add-price').value)||0,cur=parseFloat(document.getElementById('add-current').value)||price,ticker=document.getElementById('add-ticker').value.trim().toUpperCase();holdings.push({id,name,ticker,yahooTicker:TICKER_MAP[ticker]||ticker,type:document.getElementById('add-type').value,broker:document.getElementById('add-broker').value,qty,price,current:cur,date:document.getElementById('add-date').value,notes:document.getElementById('add-notes').value.trim()});transactions.push({id:'tx_'+id,name,ticker,type:document.getElementById('add-type').value,broker:document.getElementById('add-broker').value,qty,price,total:qty*price,date:document.getElementById('add-date').value,action:'buy'});await persist();renderAll();['add-name','add-ticker','add-qty','add-price','add-current','add-notes'].forEach(i=>document.getElementById(i).value='');showToast(name+' toegevoegd');document.querySelectorAll('.tab-btn')[1].click();}
-
-// ── DETAIL MODAL (Delta-style full screen) ──
-let currentDetailHolding=null, currentModalRange='1W';
-
-function openDetail(id){
-  const h=holdings.find(x=>x.id===id);if(!h)return;
-  currentDetailHolding=h;currentModalRange='1W';
-  const{inv,cur,pl,pct}=calc(h);
-  document.getElementById('modal-name').textContent=h.name;
-  document.getElementById('modal-ticker').textContent=[h.ticker,h.broker].filter(Boolean).join(' · ');
-  document.getElementById('modal-price-big').textContent=fe(h.current||0);
-  const chg=pl,chgPct=pct;
-  const cc=chg>=0?'var(--green)':'var(--red)';
-  document.getElementById('modal-price-change').innerHTML=
-    '<span style="color:'+cc+';font-weight:600">'+(chg>=0?'+':'')+fe(chg)+'</span>'+
-    '<span style="color:'+cc+'"> '+(chgPct>=0?'+':'')+chgPct.toFixed(2)+'%</span>';
-  // Stats grid
-  document.getElementById('modal-stats').innerHTML=[
-    {l:'HUIDIGE WAARDE',v:fe(cur)},
-    {l:'GEÏNVESTEERD',v:fe(inv)},
-    {l:'W/V',v:fpl(pl),c:pl>=0?'var(--green)':'var(--red)'},
-    {l:'RENDEMENT',v:fp(pct),c:pct>=0?'var(--green)':'var(--red)'},
-    {l:'AANTAL',v:f(h.qty,6)},
-    {l:'LIVE KOERS',v:fe(h.current||0)},
-  ].map(s=>'<div class="modal-stat"><div class="ms-label">'+s.l+'</div><div class="ms-val"'+(s.c?' style="color:'+s.c+'"':'')+'>'+s.v+'</div></div>').join('');
-  // Set tab to general
-  setModalTab('general');
-  // Reset range buttons
-  document.querySelectorAll('#detail-modal .range-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelector('#detail-modal .range-btn').classList.add('active');
-  // Delete button
-  document.getElementById('modal-delete-btn').onclick=()=>deleteHolding(id);
-  document.getElementById('detail-modal').classList.add('open');
-  // Load chart
-  loadModalChart();
-}
-
-function closeDetailModal(){
-  document.getElementById('detail-modal').classList.remove('open');
-  currentDetailHolding=null;
-}
-// Keep old closeModal for backdrop click compatibility
-function closeModal(e){if(e&&e.target===document.getElementById('detail-modal'))closeDetailModal();}
-
-function setModalTab(tab){
-  document.querySelectorAll('.modal-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('mtab-'+tab).classList.add('active');
-  const h=currentDetailHolding;if(!h)return;
-  const el=document.getElementById('modal-tab-content');
-  if(tab==='general'){
-    el.innerHTML='<div style="padding-bottom:8px"><div class="form-group" style="margin-bottom:10px"><label class="form-label">Prijs bijwerken (€)</label><input type="number" class="form-input" id="update-price" value="'+(h.current||0)+'" step="any" min="0"></div><button class="btn-primary" onclick="updateCurrentHoldingPrice()">Opslaan</button></div>';
-  } else {
-    const htxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker).sort((a,b)=>new Date(b.date)-new Date(a.date));
-    el.innerHTML=htxs.length?htxs.map(t=>{
-      const ac=t.action==='buy'?'buy':'sell';
-      const icon=t.action==='buy'?'⬆️':'⬇️';
-      const sign=t.action==='buy'?'-':'+';
-      return '<div class="tx-item" style="margin-bottom:6px"><div class="tx-icon '+ac+'">'+icon+'</div>'+
-        '<div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':'Verkocht')+'</div>'+
-        '<div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+(t.costs&&t.costs>0?' · kosten '+fe(t.costs):'')+'</div></div>'+
-        '<div class="tx-amount '+ac+'" style="flex-shrink:0">'+sign+fe(Math.abs(t.total||0))+'</div>'+
-        '<button data-txid="'+t.id+'" onclick="openTxEdit(this.dataset.txid)" style="background:none;border:none;color:var(--text3);font-size:.9rem;cursor:pointer;padding:4px 5px" title="Bewerken">✏️</button>'+
-        '<button data-txid="'+t.id+'" data-hid="'+h.id+'" onclick="deleteTxFromModal(this.dataset.txid,this.dataset.hid)" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 6px">&times;</button></div>';
-    }).join(''):'<div style="font-size:.82rem;color:var(--text3);padding:8px 0">Geen transacties</div>';
-  }
-}
-
-async function setModalRange(range,btn){
-  currentModalRange=range;
-  document.querySelectorAll('#detail-modal .range-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  await loadModalChart();
-}
-
-async function refreshOneFromModal(){
-  const h=currentDetailHolding;if(!h)return;
-  const btn=document.getElementById('modal-refresh-btn');
-  btn.style.animation='spin .8s linear infinite';
-  const t=getYahooTicker(h);
-  if(t){
-    const d=await fetchPriceInEur(t,h.instrumentCurrency);
-    if(d&&d.priceEur>0){
-      h.current=d.priceEur;h.dailyChange=d.changeEur||0;h.dailyChangePct=d.changePctEur||0;h.lastRefresh=Date.now();
-      await persist();renderAll();
-      document.getElementById('modal-price-big').textContent=fe(d.priceEur);
-    }
-  }
-  btn.style.animation='';
-  await loadModalChart();
-}
-
-async function loadModalChart(){
-  const h=currentDetailHolding;if(!h)return;
-  const canvas=document.getElementById('modal-canvas');
-  const loading=document.getElementById('modal-chart-loading');
-  canvas.style.display='none';loading.style.display='flex';
-  const ticker=getYahooTicker(h);
-  let prices=ticker?await fetchHistoricalStooq(ticker,currentModalRange):null;
-  if(!prices||prices.length<2)prices=buildPricesFromTransactions(h);
-  if(!prices||prices.length<2){loading.textContent='Geen historische data';return;}
-  loading.style.display='none';canvas.style.display='block';
-  const wrap=canvas.parentElement;
-  canvas.width=wrap.clientWidth;canvas.height=160;
-  drawSparkline(canvas,'modal-crosshair','modal-tooltip','modal-price-big',prices,h,'Investering: '+fe(h.price));
-  // Update price change for selected range
-  const first=prices[0].price,last=prices[prices.length-1].price;
-  const chg=last-first,pct=first>0?(chg/first)*100:0;
-  const cc=chg>=0?'var(--green)':'var(--red)';
-  document.getElementById('modal-price-change').innerHTML=
-    '<span style="color:'+cc+';font-weight:600">'+(chg>=0?'+':'')+fe(chg)+'</span>'+
-    '<span style="color:'+cc+'"> '+(pct>=0?'+':'')+pct.toFixed(2)+'% ('+currentModalRange+')</span>';
-}
-function closeModal(e){if(e.target===document.getElementById('detail-modal'))document.getElementById('detail-modal').classList.remove('open');}
-async function updatePrice(id){const h=holdings.find(x=>x.id===id);if(!h)return;const p=parseFloat(document.getElementById('update-price').value);if(isNaN(p)||p<0){showToast('Ongeldige prijs');return;}h.current=p;await persist();renderAll();document.getElementById('detail-modal').classList.remove('open');showToast('Prijs bijgewerkt');}
-async function refreshOne(id){const h=holdings.find(x=>x.id===id);if(!h)return;const t=getYahooTicker(h);if(!t){showToast('Geen ticker bekend');return;}showToast('Ophalen...');const d=await fetchPriceInEur(t,h.instrumentCurrency);if(d&&d.priceEur>0){h.current=d.priceEur;h.dailyChange=d.changeEur||0;h.dailyChangePct=d.changePctEur||0;h.lastRefresh=Date.now();await persist();renderAll();document.getElementById('detail-modal').classList.remove('open');showToast('Koers bijgewerkt: '+fe(d.priceEur));}else showToast('Koers niet beschikbaar');}
-async function deleteHolding(id){
-  if(!confirm('Holding verwijderen? Je kunt dit ongedaan maken via Prullenbak.'))return;
-  const h=holdings.find(x=>x.id===id);
-  if(!h)return;
-  // Save related transactions with the holding for potential restore
-  const relatedTxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker);
-  h.deletedAt=Date.now();
-  h.relatedTxIds=relatedTxs.map(t=>t.id);
-  h.deletedTxs=relatedTxs;
-  deletedHoldings.push(h);
-  holdings=holdings.filter(x=>x.id!==id);
-  await persist();renderAll();
-  document.getElementById('detail-modal').classList.remove('open');
-  showToast('Verwijderd – herstelbaar via Prullenbak');
-}
-function toggleBlur(){blurValues=!blurValues;document.getElementById('eye-btn').textContent=blurValues?'🙈':'👁';renderOverview();}
-
-// PDF IMPORT
-async function importPDF(event,broker){const file=event.target.files[0];if(!file)return;event.target.value='';showLoading('PDF verwerken...');try{const ab=await file.arrayBuffer();const pdf=await pdfjsLib.getDocument({data:ab}).promise;let text='';for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);const c=await p.getTextContent();
-      // Join items with newlines based on y-position changes (proper line detection)
-      let pageText='',lastY=null;
-      c.items.forEach(item=>{
-        if(!item.str)return;
-        const y=Math.round(item.transform[5]);
-        if(lastY!==null&&Math.abs(y-lastY)>3)pageText+='\n';
-        else if(lastY!==null)pageText+=' ';
-        pageText+=item.str;
-        lastY=y;
-      });
-      text+=pageText+'\n';}hideLoading();const result=broker==='saxo'?parseSaxoPDF(text):broker==='revolut-pnl'?parseRevolutPnL(text):parseRevolutPDF(text);showImportResult(result);if(result.updatedHoldings>0||result.newTx>0){await persist();renderAll();}}catch(e){hideLoading();showToast('PDF lezen mislukt: '+e.message);console.error(e);}}
-function showLoading(msg){document.getElementById('loading-text').textContent=msg;document.getElementById('loading-overlay').classList.add('visible');}
-function hideLoading(){document.getElementById('loading-overlay').classList.remove('visible');}
-
-// SAXO PARSER
-// PDF text format (after pdfjs extraction):
-// Line 1 (instrument name, concatenated): "XtrackersS&P500"
-// Line 2 (continuation):                 "SwapUCITSETF"  
-// Data line:                             "27-jun-2025 01-jul-2025 6319429765 ETF USD Koop OPENING 1 123,410 0,8545 - -109,10 -3,65 -3,91"
-function parseSaxoPDF(text){
-  let newTx=0,skipped=0,updatedHoldings=0;
-  const existingIds=new Set(transactions.map(t=>t.id));
-  const MM={jan:'01',feb:'02',mrt:'03',apr:'04',mei:'05',jun:'06',jul:'07',aug:'08',sep:'09',okt:'10',nov:'11',dec:'12'};
-  function sDate(s){const p=(s||'').split('-');return p.length===3?p[2]+'-'+(MM[p[1].toLowerCase()]||'01')+'-'+p[0].padStart(2,'0'):s||new Date().toISOString().split('T')[0];}
-
-  // Instrument lookup by fragments found in concatenated text
-  const INST=[
-    {keys:['XtrackersS&P500','XtrackersS&P 500','XSPU','SwapUCITSETF'],    name:'Xtrackers S&P 500 Swap ETF',            yahoo:'XSPU.L',  type:'etf',ticker:'XSPU'},
-    {keys:['FranklinEuropean','QualityDividend','FLXD'],                    name:'Franklin European Quality Dividend ETF', yahoo:'FLXD.DE', type:'etf',ticker:'FLXD'},
-    {keys:['AmundiCoreEURO','AmundiCoreEUROSTOXX','STOXX50','CD5'],         name:'Amundi Core EURO STOXX 50 ETF',          yahoo:'CD5.PA',  type:'etf',ticker:'CD5'},
-    {keys:['AmundiMSCIWater','AmundiMSCIWater','WAT'],                      name:'Amundi MSCI Water UCITS ETF',            yahoo:'WAT.PA',  type:'etf',ticker:'WAT'},
-    {keys:['MSCIWorldTech','WorldTech','WTCH','MSCIWorldT'],                 name:'SPDR MSCI World Tech ETF',               yahoo:'WTCH.AS', type:'etf',ticker:'WTCH'},
-    {keys:['StateStreetSPDR','MSCIWorld(Acc)','SWRD'],                      name:'SPDR MSCI World (Acc) ETF',              yahoo:'SWRD.AS', type:'etf',ticker:'SWRD'},
-    {keys:['EMIMIUCITSETF','EMIMIUCITS','EMIMI','EMIM'],                    name:'iShares Core MSCI EM IMI ETF',           yahoo:'EMIM.AS', type:'etf',ticker:'EMIM'},
-    {keys:['iSharesCoreMSCI','WorldUCITSETF','IWDA'],                       name:'iShares Core MSCI World ETF',            yahoo:'IWDA.AS', type:'etf',ticker:'IWDA'},
-    {keys:['Nasdaq-100Swap','AmundiCoreNasdaq','(Acc)UCITSETF','UST'],       name:'Amundi Core Nasdaq-100 Swap ETF',        yahoo:'UST.PA',  type:'etf',ticker:'UST'},
-  ];
-
-  function findInst(raw){
-    if(!raw)return null;
-    const c=raw.replace(/\s+/g,'');
-    for(const inst of INST){
-      for(const key of inst.keys){
-        const ck=key.replace(/\s+/g,'');
-        if(c.includes(ck)||ck.includes(c.substring(0,Math.min(c.length,8))))return inst;
-      }
-    }
-    return null;
-  }
-
-  const isPortfolio=text.includes('Portefeuillerupport')||text.includes('Portefeuillerapport')||
-                    (text.includes('Historische') && text.includes('Unrealized'));
-  const isTx=text.includes('Koop')||text.includes('Verkoop')||text.includes('Transactie-');
-  const today=new Date().toISOString().split('T')[0];
-
-  // ── PORTFOLIO REPORT ──
-  if(isPortfolio){
-    const lines=text.split('\n');
-    let nameBuf='';
-    for(let i=0;i<lines.length;i++){
-      const line=lines[i].trim();
-      // Data line pattern: EUR/USD Aandelen {qty} {rate} {histPrice} {curPrice} {%}%
-      const m=line.match(/^(EUR|USD)\s+Aandelen\s+(\d+)\s+([\d,]+)\s+([\d,.]+)\s+([\d,.]+)\s+[-\d,.]+%/);
-      if(m){
-        const[,currency,qtyStr,,histStr,curStr]=m;
-        const qty=parseInt(qtyStr,10);
-        const histPrice=parseFloat(histStr.replace(',','.'));
-        const curPrice=parseFloat(curStr.replace(',','.'));
-        // Look for instrument in buffered name + surrounding lines
-        let inst=findInst(nameBuf);
-        if(!inst)for(let b=1;b<=6&&!inst;b++)inst=findInst(lines[i-b]||'');
-        if(inst){
-          const ex=holdings.find(h=>h.ticker===inst.ticker&&h.broker==='Saxo Bank');
-          if(ex){ex.qty=qty;ex.current=curPrice;if(!ex.yahooTicker)ex.yahooTicker=inst.yahoo;updatedHoldings++;}
-          else{holdings.push({id:'h_saxo_'+inst.ticker,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price:histPrice,current:curPrice,date:today,notes:'',instrumentCurrency:currency});updatedHoldings++;}
-          const txId='saxo_port_'+inst.ticker;
-          if(!existingIds.has(txId)){transactions.push({id:txId,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price:histPrice,total:qty*histPrice,date:today,action:'buy'});existingIds.add(txId);newTx++;}
-          else skipped++;
-        }
-        nameBuf='';
-      } else {
-        // Accumulate name lines - skip header/footer lines
-        if(line&&!line.match(/^(Transactieda|Valutadatum|Transactie-|Instrumentval|Openen|Gerealiseerd|Boekingsbedr|Booked|Totale|Pagina|Saxo|Wout|Valuta|Rekening|Verslagperiode|Gegenereerd|Inleiding|Dit gedeelte|Totaal|Op de|Eindtotaal|Samenvatting|Product|Cash|98900)/i)){
-          nameBuf=line;
-        }
-      }
-    }
-  }
-
-  // ── TRANSACTION REPORT ──
-  if(isTx){
-    const lines=text.split('\n');
-    // EXACT PDF FORMAT (confirmed from real PDF):
-    // Line N-1: 'XtrackersS&P500'          <- part 1 of name (BEFORE data line)
-    // Line N:   '27-jun-2025 01-jul-2025 6319429765 ETF USD Koop OPENING 1 123,410 0,8545 ...'
-    // Line N+1: 'SwapUCITSETF'             <- part 2 of name (AFTER data line)
-    // Full name = combine lines[N-1] + lines[N+1]
-    const DATA_RE=/^(\d{2}-\w{3}-\d{4})\s+(?:\d{2}-\w{3}-\d{4}\s+)?(\d{7,12})\s+ETF\s+(EUR|USD)\s+(Koop|Verkoop)\s+(?:OPENING|CLOSING)\s+(\d+)\s+([\d,]+)\s+([\d,]+)/;
-    const SKIP_RE=/^(Transactieda|Valutadatum|Transactie-|tum\s|Saxo|Wout|Valuta|Rekening|Verslagperiode|Gegenereerd|Inleiding|Dit gedeelte|Totaal\s+-|Pagina\d|01-feb|21-apr|\d{2}-\w{3}-\d{4}.*Cashbedrag|\d{2}-\w{3}-\d{4}.*Commissie)/i;
-
-    for(let i=0;i<lines.length;i++){
-      const line=lines[i].trim();
-      const m=DATA_RE.exec(line);
-      if(!m)continue;
-      const[,dateStr,txId,currency,typeStr,qtyStr,priceStr]=m;
-      const id='saxo_'+txId;
-      if(existingIds.has(id)){skipped++;continue;}
-      // Combine lines before AND after for full instrument name (PDF splits name across lines)
-      const before=(lines[i-1]||'').trim();
-      const before2=(lines[i-2]||'').trim();
-      const after=(lines[i+1]||'').trim();
-      const after2=(lines[i+2]||'').trim();
-      // Also include fragment from data line itself (e.g. "ETF QualityDividend EUR Koop")
-      const inlineMatch=line.match(/ETF\s+([\w\s().-]+?)\s+(EUR|USD)\s+Koop/);
-      const inlinePart=inlineMatch?inlineMatch[1].trim():'';
-      const fullCtx=(before2+' '+before+' '+after+' '+after2+' '+inlinePart).replace(/\s+/g,' ').trim();
-      let inst=findInst(before)||findInst(after)||findInst(inlinePart)||findInst(before2)||findInst(after2)||findInst(fullCtx);
-      if(!inst)inst={name:(nameCtx||'Onbekend ETF').trim(),yahoo:'',type:'etf',ticker:''};
-      const date=sDate(dateStr);
-      const qty=parseInt(qtyStr,10);
-      const price=parseFloat(priceStr.replace(',','.'));
-      const action=typeStr==='Koop'?'buy':'sell';
-      const tx={id,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price,total:qty*price,date,action};
-      transactions.push(tx);existingIds.add(id);newTx++;
-      const ex=holdings.find(h=>h.ticker===inst.ticker&&h.broker==='Saxo Bank');
-      if(ex){if(action==='buy')ex.qty+=qty;else ex.qty=Math.max(0,ex.qty-qty);updatedHoldings++;}
-      else if(action==='buy'&&inst.ticker){holdings.push({id:'h_saxo_'+inst.ticker,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price,current:price,date,notes:'',instrumentCurrency:currency});updatedHoldings++;}
-    }
-    // Also parse position lines from tx report header pages
-    const posRe=/([A-Z]{2,6}):x\w+\s+(\d{10})\s+(EUR|USD)\s+(\d{2}-\w{3}-\d{4})\s+(\d+)\s+[\d,]+\s+([\d,]+)\s+([\d,]+)/g;
-    let pm;
-    while((pm=posRe.exec(text))!==null){
-      const[,sym,,currency,dateStr,qtyStr,openStr,curStr]=pm;
-      const inst=INST.find(x=>x.ticker===sym);
-      if(!inst)continue;
-      const qty=parseInt(qtyStr,10),op=parseFloat(openStr.replace(',','.')),cp=parseFloat(curStr.replace(',','.'));
-      const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Saxo Bank');
-      if(ex){ex.qty=qty;ex.current=cp;if(!ex.yahooTicker)ex.yahooTicker=inst.yahoo;updatedHoldings++;}
-      else{holdings.push({id:'h_saxo_'+sym,name:inst.name,ticker:sym,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price:op,current:cp,date:sDate(dateStr),notes:''});updatedHoldings++;}
-    }
-  }
-
-  return{newTx,skipped,updatedHoldings,broker:'Saxo Bank',reportType:isPortfolio?'Portefeuillerapport':'Transactierapport'};
-}
-
-// ── SMART AUTO-DETECT IMPORT ──
-async function importSaxoAuto(event){
-  const file=event.target.files[0];if(!file)return;
-  event.target.value='';
-  const ext=file.name.split('.').pop().toLowerCase();
-  if(ext==='pdf'){
-    await importPDF({target:{files:[file]}},'saxo');
-  } else {
-    await importExcel({target:{files:[file]}});
-  }
-}
-
-async function importRevolutAuto(event){
-  const file=event.target.files[0];if(!file)return;
-  event.target.value='';
-  // Read first ~2000 chars of text to detect PDF type
-  showLoading('PDF detecteren...');
-  try{
-    const ab=await file.arrayBuffer();
-    const pdf=await pdfjsLib.getDocument({data:ab}).promise;
-    // Read first page text
-    let firstPageText='';
-    const page=await pdf.getPage(1);
-    const tc=await page.getTextContent();
-    let lastY=null;
-    tc.items.forEach(item=>{
-      if(!item.str)return;
-      const y=Math.round(item.transform[5]);
-      if(lastY!==null&&Math.abs(y-lastY)>3)firstPageText+='\n';
-      else if(lastY!==null)firstPageText+=' ';
-      firstPageText+=item.str;
-      lastY=y;
-    });
-    hideLoading();
-    // Detect type based on keywords
-    const isPnL=firstPageText.includes('Profit and Loss')||firstPageText.includes('Cost basis')||firstPageText.includes('Gross proceeds')||firstPageText.includes('Date acquired');
-    const broker=isPnL?'revolut-pnl':'revolut';
-    // Now parse full PDF
-    await importPDF({target:{files:[file]}},broker);
-  }catch(e){
-    hideLoading();
-    showToast('PDF lezen mislukt: '+e.message);
-  }
-}
-
-// ── EXCEL / CSV PARSER (Saxo Bank transacties export) ──
-async function importExcel(event){
-  const file=event.target.files[0];if(!file)return;
-  event.target.value='';
-  showLoading('Excel verwerken...');
-  try{
-    const ab=await file.arrayBuffer();
-    const wb=XLSX.read(ab,{type:'arraybuffer',cellDates:true});
-    const ws=wb.Sheets[wb.SheetNames[0]];
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
-    hideLoading();
-    const result=parseSaxoExcel(rows);
-    showImportResult(result);
-    if(result.newTx>0||result.updatedHoldings>0){await persist();renderAll();}
-  }catch(e){hideLoading();showToast('Excel lezen mislukt: '+e.message);console.error(e);}
-}
-
-function parseSaxoExcel(rows){
-  let newTx=0,skipped=0,updatedHoldings=0;
-  const existingIds=new Set(transactions.map(t=>t.id));
-
-  // Column mapping based on Saxo export format:
-  // 0:Gebruikersnaam 1:Transactiedatum 2:Valutadatum 3:Type 4:Instrument 5:ISIN
-  // 6:Instrumentvaluta 7:Exchange 8:Symbool 9:Acties 10:Bedrag 11:Order-ID 12:Omrekeningskoers
-  const HDR=rows[0];
-  if(!HDR||!HDR.includes('Transactiedatum')){return{newTx:0,skipped:0,updatedHoldings:0,broker:'Saxo Bank',reportType:'Excel',error:'Ongeldig formaat'};}
-
-  // Map instrument symbol -> [ticker, yahooTicker, name]
-  const SYM={
-    'UST:xpar':  ['UST','UST.PA','Amundi Core Nasdaq-100 Swap ETF'],
-    'EMIM:xams': ['EMIM','EMIM.AS','iShares Core MSCI EM IMI ETF'],
-    'IWDA:xams': ['IWDA','IWDA.AS','iShares Core MSCI World ETF'],
-    'SWRD:xams': ['SWRD','SWRD.AS','SPDR MSCI World (Acc) ETF'],
-    'WTCH:xams': ['WTCH','WTCH.AS','SPDR MSCI World Tech ETF'],
-    'CD5:xpar':  ['CD5','CD5.PA','Amundi Core EURO STOXX 50 ETF'],
-    'WAT:xpar':  ['WAT','WAT.PA','Amundi MSCI Water ETF'],
-    'FLXD:xetr': ['FLXD','FLXD.DE','Franklin European Quality Dividend ETF'],
-    'XSPU:xlon': ['XSPU','XSPU.L','Xtrackers S&P 500 Swap ETF'],
-    'EUNL:xams': ['EUNL','EUNL.AS','iShares Core MSCI World ETF'],
-  };
-
-  for(let i=1;i<rows.length;i++){
-    const r=rows[i];if(!r||!r[1])continue;
-    const typ=r[3];
-    const actie=String(r[9]||'');
-    const amount=parseFloat(r[10])||0;
-    const symbol=r[8]||'';
-    const instrName=r[4]||'';
-    const isin=r[5]||'';
-    const currency=r[6]||'EUR';
-    const orderId=r[11];
-
-    // Parse date
-    let date='';
-    if(r[1] instanceof Date){date=r[1].toISOString().split('T')[0];}
-    else if(typeof r[1]==='string'){date=r[1].split('T')[0]||r[1].substring(0,10);}
-    else if(typeof r[1]==='number'){
-      // Excel serial date
-      const d=new Date(Math.round((r[1]-25569)*86400*1000));
-      date=d.toISOString().split('T')[0];
-    }
-
-    // Only process buy/sell transactions
-    if(typ!=='Transactie')continue;
-    const isBuy=actie.startsWith('Koop');
-    const isSell=actie.startsWith('Verkoop');
-    if(!isBuy&&!isSell)continue;
-
-    // Parse "Koop 3 @ 110.47 EUR" or "Verkoop 1 @ 95.00 EUR"
-    const m=actie.match(/(Koop|Verkoop)\s+(\d+)\s*@\s*([\d.]+)/);
-    if(!m)continue;
-    const action=m[1]==='Koop'?'buy':'sell';
-    const qty=parseInt(m[2],10);
-    const pricePerUnit=parseFloat(m[3]);
-    const totalPaid=Math.abs(amount); // includes costs
-    const subtotal=pricePerUnit*qty;
-    const costs=Math.round((totalPaid-subtotal)*100)/100;
-
-    // Use order ID as unique tx ID, fallback to date+symbol+price
-    const txId='saxo_xl_'+(orderId||date+'_'+symbol+'_'+pricePerUnit);
-    if(existingIds.has(txId)){skipped++;continue;}
-
-    // Find instrument info
-    const instInfo=SYM[symbol];
-    const ticker=instInfo?instInfo[0]:(symbol.split(':')[0]);
-    const yahooTicker=instInfo?instInfo[1]:TICKER_MAP[ticker]||ticker;
-    const name=instInfo?instInfo[2]:instrName;
-
-    // For USD instruments (XSPU), convert price using exchange rate
-    const exchRate=parseFloat(r[12])||1;
-    const priceEur=currency==='USD'?pricePerUnit*exchRate:pricePerUnit;
-
-    const tx={id:txId,name,ticker,yahooTicker,type:'etf',broker:'Saxo Bank',
-      qty,price:priceEur,total:totalPaid,costs,date,action,isin};
-    transactions.push(tx);existingIds.add(txId);newTx++;
-
-    // Update or create holding
-    const ex=holdings.find(h=>h.ticker===ticker&&h.broker==='Saxo Bank');
-    if(ex){
-      if(action==='buy')ex.qty+=qty;
-      else ex.qty=Math.max(0,ex.qty-qty);
-      if(!ex.yahooTicker)ex.yahooTicker=yahooTicker;
-      updatedHoldings++;
-    } else if(action==='buy'){
-      holdings.push({id:'h_saxo_'+ticker,name,ticker,yahooTicker,type:'etf',
-        broker:'Saxo Bank',qty,price:priceEur,current:priceEur,date,notes:'',instrumentCurrency:currency});
-      updatedHoldings++;
-    }
-  }
-  return{newTx,skipped,updatedHoldings,broker:'Saxo Bank',reportType:'Excel'};
-}
-
-// REVOLUT P&L PARSER (USD/EUR Profit and Loss Statement)
-function parseRevolutPnL(text){
-  let newTx=0,skipped=0,updatedHoldings=0;
-  const existingIds=new Set(transactions.map(t=>t.id));
-  const lines=text.split(/\r?\n/);
-  // Format: "2025-11-10 2026-03-31 GSAT Globalstar Inc. US3789735079 US 2.29819646 US$131.24 US$152.60 US$21.36 US$1.53"
-  const SELL_RE=/^(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})\s+(\w+)\s+(.+?)\s+(US\w{10,12})\s+(US|IE|LU|FR|DE)\s+([\d.]+)\s+(?:US\$|€)([\d.]+)\s+(?:US\$|€)([\d.]+)\s+(?:US\$|€)([\d.]+)/;
-  for(let i=0;i<lines.length;i++){
-    const line=lines[i].trim();
-    const m=SELL_RE.exec(line);
-    if(!m)continue;
-    const[,dateAcq,dateSold,symbol,name,isin,,qty,costBasis,proceeds,grossPnl]=m;
-    const id='rev_pnl_'+dateSold+'_'+symbol+'_'+qty;
-    if(existingIds.has(id)){skipped++;continue;}
-    // Check next line for EUR rate
-    const nextLine=(lines[i+1]||'').trim();
-    const eurMatch=nextLine.match(/€([\d.]+)/);
-    const proceedsEur=eurMatch?parseFloat(eurMatch[0].replace('€','')):(parseFloat(proceeds)*0.87);
-    const costEur=eurMatch?parseFloat((lines[i+1]||'').match(/€([\d.]+)/)?.[0]?.replace('€','')||costBasis):(parseFloat(costBasis)*0.87);
-    const qtyNum=parseFloat(qty);
-    const priceEur=qtyNum>0?proceedsEur/qtyNum:0;
-    const costPerShare=qtyNum>0?costEur/qtyNum:0;
-    // Record as SELL transaction
-    const sellTx={id,name:name.trim(),ticker:symbol,yahooTicker:STOOQ_MAP[symbol]||symbol,
-      type:'stock',broker:'Revolut',qty:qtyNum,price:priceEur,total:proceedsEur,
-      date:dateSold,action:'sell',isin,note:'P&L rapport - verkoop'};
-    transactions.push(sellTx);existingIds.add(id);newTx++;
-    // Also record original buy if we have the date
-    const buyId='rev_pnl_buy_'+dateAcq+'_'+symbol;
-    if(!existingIds.has(buyId)){
-      const buyTx={id:buyId,name:name.trim(),ticker:symbol,yahooTicker:STOOQ_MAP[symbol]||symbol,
-        type:'stock',broker:'Revolut',qty:qtyNum,price:costPerShare,total:costEur,
-        date:dateAcq,action:'buy',isin,note:'P&L rapport - aankoop'};
-      transactions.push(buyTx);existingIds.add(buyId);newTx++;
-    }
-    updatedHoldings++;
-  }
-  return{newTx,skipped,updatedHoldings,broker:'Revolut',reportType:'P&L Statement'};
-}
-
-// REVOLUT PARSER
-function parseRevolutPDF(text){
-  let newTx=0,skipped=0,updatedHoldings=0;
-  const existingIds=new Set(transactions.map(t=>t.id));
-  const ME={jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
-  function rDate(s){const m1=s.match(/(\d{1,2})\s+(\w{3})\s+(\d{4})/i);if(m1)return m1[3]+'-'+(ME[m1[2].toLowerCase()]||'01')+'-'+m1[1].padStart(2,'0');const m2=s.match(/(\w{3})\s+(\d{1,2}),\s*(\d{4})/i);if(m2)return m2[3]+'-'+(ME[m2[1].toLowerCase()]||'01')+'-'+m2[2].padStart(2,'0');return s.substring(0,10);}
-  const RN={NVDA:'NVIDIA',GSAT:'Globalstar',EUNL:'iShares Core MSCI World ETF',QUTM:'VanEck Quantum Computing ETF',VUAA:'Vanguard S&P 500 Acc ETF',FWIA:'Invesco FTSE All-World ETF',BTC:'Bitcoin',ETH:'Ethereum',SOL:'Solana'};
-  const RY={EUNL:'EUNL.AS',VUAA:'VUAA.IE',FWIA:'FWIA.IE',QUTM:'QUTM.IE',NVDA:'NVDA',GSAT:'GSAT',BTC:'BTC-EUR',ETH:'ETH-EUR',SOL:'SOL-EUR'};
-  const isCrypto=text.includes('Crypto Account Statement')||text.includes('Staking rewards');
-  if(isCrypto){
-    const re=/(BTC|ETH|SOL|XRP|ADA)\s+(Buy|Sell|Buy - Revolut X)\s+([\d.]+)\s+[\$€]([\d,]+\.?\d*)\s+[\$€]([\d,]+\.?\d*)\s+[\$€][\d,]+\.?\d*\s+(\w+\s+\d+,\s*\d{4})/gi;
-    let m;while((m=re.exec(text))!==null){const[,sym,type,qty,price,total,ds]=m;const id='rev_crypto_'+sym+'_'+ds.replace(/[\s,]+/g,'_')+'_'+qty;if(existingIds.has(id)){skipped++;continue;}const date=rDate(ds);const action=type.startsWith('Buy')?'buy':'sell';const name=RN[sym]||sym;const p=parseFloat(price.replace(',',''));const tot=parseFloat(total.replace(',',''));const qtyN=parseFloat(qty);
-      const tx={id,name,ticker:sym,yahooTicker:RY[sym]||sym+'-EUR',type:'crypto',broker:'Revolut',qty:qtyN,price:p,total:tot,date,action,note:'Revolut spread inbegrepen'};
-      transactions.push(tx);existingIds.add(id);newTx++;
-      const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Revolut');
-      if(ex){if(action==='buy')ex.qty+=qtyN;else ex.qty=Math.max(0,ex.qty-qtyN);ex.current=p;updatedHoldings++;}
-      else if(action==='buy'){holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym+'-EUR',type:'crypto',broker:'Revolut',qty:qtyN,price:p,current:p,date,notes:''});updatedHoldings++;}}
-  }else{
-    const re=/(\d{1,2}\s+\w{3}\s+\d{4}\s+[\d:]+\s+GMT)\s+([A-Z]{2,6})\s+Trade\s+-\s+Market\s+([\d.]+)\s+[€$]([\d.]+)\s+(Buy|Sell)\s+[€$]([\d.]+)/gi;
-    let m;while((m=re.exec(text))!==null){const[,ds,sym,qty,price,type,total]=m;const id='rev_'+sym+'_'+ds.replace(/\s+/g,'_');if(existingIds.has(id)){skipped++;continue;}const date=rDate(ds);const action=type==='Buy'?'buy':'sell';const name=RN[sym]||sym;const asType=['NVDA','GSAT','AAPL','MSFT','TSLA'].includes(sym)?'stock':'etf';const qtyF=parseFloat(qty),priceF=parseFloat(price),totalF=parseFloat(total);
-      const tx={id,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:qtyF,price:priceF,total:totalF,date,action,note:'Kosten inbegrepen in prijs/spread'};
-      transactions.push(tx);existingIds.add(id);newTx++;
-      const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Revolut');
-      if(ex){if(action==='buy')ex.qty+=qtyF;else ex.qty=Math.max(0,ex.qty-qtyF);ex.current=priceF;updatedHoldings++;}
-      else if(action==='buy'){holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:qtyF,price:priceF,current:priceF,date,notes:''});updatedHoldings++;}else if(action==='buy'){holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:parseFloat(qty),price:parseFloat(price),current:parseFloat(price),date,notes:''});updatedHoldings++;}}
-  }
-  return{newTx,skipped,updatedHoldings,broker:'Revolut'};
-}
-
-function showImportResult(result){
-  const el=document.getElementById('import-result');const ok=result.updatedHoldings>0||result.newTx>0;
-  el.innerHTML='<div class="import-result"><div class="import-result-title">'+(ok?'✅':'⚠️')+' Import '+(ok?'voltooid':'klaar')+' — '+result.broker+(result.reportType?' ('+result.reportType+')':'')+'</div><div class="import-row"><span class="lbl">Holdings toegevoegd/bijgewerkt</span><span class="val '+(result.updatedHoldings>0?'new':'skip')+'">'+result.updatedHoldings+'</span></div><div class="import-row"><span class="lbl">Nieuwe transacties</span><span class="val '+(result.newTx>0?'new':'skip')+'">+'+result.newTx+'</span></div><div class="import-row"><span class="lbl">Overgeslagen (duplicaat)</span><span class="val skip">'+result.skipped+'</span></div>'+(!ok?'<div style="font-size:.78rem;color:var(--text3);margin-top:8px">Geen data gevonden. Zorg dat je het correcte Saxo of Revolut PDF gebruikt.</div>':'')+'</div>';
-}
-
-// DATA MANAGEMENT
-async function exportData(){const enc=await aesEncrypt({holdings,transactions,deletedHoldings},currentPin);const blob=new Blob([JSON.stringify({savings_enc:enc,v:5})],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='savings-backup-'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup geëxporteerd');}
-function importJsonData(){document.getElementById('json-import-input').click();}
-async function handleJsonImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async ev=>{try{const w=JSON.parse(ev.target.result),d=w.savings_enc?await aesDecrypt(w.savings_enc,currentPin):w;if(d.holdings)holdings=d.holdings;if(d.transactions)transactions=d.transactions;if(d.deletedHoldings)deletedHoldings=d.deletedHoldings;await persist();renderAll();showToast('Geïmporteerd');}catch{showToast('Import mislukt');}};reader.readAsText(file);e.target.value='';}
-async function clearData(){if(!confirm('Alle data wissen?'))return;holdings=[];transactions=[];deletedHoldings=[];await persist();renderAll();showToast('Alle data gewist');}
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
 // ── CHART MODULE ──
 let currentChartHolding=null,currentChartRange='1W';
@@ -1890,6 +1139,188 @@ function updateCurrentHoldingPrice(){if(currentDetailHolding)updatePrice(current
 // ── SEARCH ──
 async function renderSearchResult(el,results){el.innerHTML=results.map(item=>{const sym=(item.symbol||'').replace(/['"<>]/g,'');const cp=item.changePct||0;return '<div class="search-result-item" data-sym="'+sym+'" onclick="clickSearchResult(this)"><div class="sr-symbol">📈 '+item.symbol+'</div><div class="sr-info"><div class="sr-name">'+(item.name||item.symbol)+'</div><div class="sr-exchange">'+(item.exchange||'')+'</div></div><div class="sr-price"><div class="sr-price-val">'+fe(item.price||0)+'</div><span class="'+(cp>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</span></div></div>';}).join('');}
 // ── DATA ──
+
+// ── LIVE PRICES ──
+let ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
+const TICKER_MAP={'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA','SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS','UST':'UST.PA','EUNL':'EUNL.AS','VUAA':'VUAA.IE','FWIA':'FWIA.IE','BTC':'BTC-EUR','ETH':'ETH-EUR'};
+function getYahooTicker(h){if(h.yahooTicker)return h.yahooTicker;const t=(h.ticker||'').split(':')[0];return TICKER_MAP[t]||h.ticker||'';}
+async function fetchCoinGecko(ticker){const id=GECKO_MAP[ticker];if(!id)return null;try{const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+id+'&vs_currencies=eur&include_24hr_change=true',{signal:AbortSignal.timeout(7000)});if(!r.ok)return null;const d=await r.json();const data=d?.[id];if(!data?.eur)return null;const price=data.eur,pct=data.eur_24h_change||0;return{price,prev:price/(1+pct/100),change:price*pct/100,changePct:pct,currency:'EUR',name:ticker};}catch{return null;}}
+async function fetchTwelveData(ticker){if(!TWELVE_DATA_KEY)return null;try{const r=await fetch('https://api.twelvedata.com/price?symbol='+encodeURIComponent(ticker)+'&apikey='+TWELVE_DATA_KEY,{signal:AbortSignal.timeout(7000)});if(!r.ok)return null;const d=await r.json();if(d.status==='error'||!d.price)return null;const price=parseFloat(d.price);return{price,prev:price,change:0,changePct:0,currency:'EUR',name:ticker};}catch{return null;}}
+async function fetchStooq(ticker){const st=STOOQ_MAP[ticker]||ticker.toLowerCase().replace('-eur','.v');for(const url of['https://stooq.com/q/l/?s='+st+'&f=sd2t2ohlcv&h&e=json','https://api.allorigins.win/get?url='+encodeURIComponent('https://stooq.com/q/l/?s='+st+'&f=sd2t2ohlcv&h&e=json')]){try{const r=await fetch(url,{signal:AbortSignal.timeout(8000)});if(!r.ok)continue;let d=await r.json();if(d.contents){try{d=JSON.parse(d.contents);}catch{continue;}}const sym=d?.symbols?.[0];if(!sym||!sym.close||sym.close<=0)continue;const price=sym.close,prev=sym.open||price;return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:'EUR',name:ticker};}catch{}}return null;}
+async function fetchYahoo(ticker){for(const base of['https://query1.finance.yahoo.com','https://query2.finance.yahoo.com']){try{const r=await fetch(base+'/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d',{signal:AbortSignal.timeout(6000)});if(!r.ok)continue;const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;if(!meta?.regularMarketPrice)continue;const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price;return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:meta.currency||'EUR',name:meta.longName||ticker};}catch{}}return null;}
+async function fetchCloudflare(ticker){if(!CF_WORKER_URL)return null;try{const r=await fetch(CF_WORKER_URL+'?ticker='+encodeURIComponent(ticker),{signal:AbortSignal.timeout(7000)});if(!r.ok)return null;const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;if(!meta?.regularMarketPrice)return null;const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price;return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:meta.currency||'EUR',name:meta.longName||ticker};}catch{return null;}}
+async function fetchEurUsd(){if(Date.now()-EUR_USD.ts<300000)return EUR_USD.rate;try{const r=await fetch('https://api.frankfurter.app/latest?from=EUR&to=USD',{signal:AbortSignal.timeout(4000)});const d=await r.json();const rate=d?.rates?.USD;if(rate){EUR_USD.rate=rate;EUR_USD.ts=Date.now();return rate;}}catch{}return EUR_USD.rate;}
+async function fetchPriceInEur(ticker,instrCurrency){const isCrypto=!!GECKO_MAP[ticker];let data=null;if(isCrypto){data=await fetchCoinGecko(ticker)||await fetchYahoo(ticker);}else{data=await fetchTwelveData(ticker)||await fetchStooq(ticker)||await fetchYahoo(ticker)||await fetchCloudflare(ticker);}if(!data)return null;let priceEur=data.price;if((instrCurrency||data.currency)==='USD'){const rate=await fetchEurUsd();priceEur=data.price/rate;data.changeEur=(data.change||0)/rate;}else{data.changeEur=data.change||0;}data.priceEur=priceEur;data.changePctEur=data.changePct||0;return data;}
+async function refreshAllPrices(){if(!holdings.length){showToast('Geen holdings');return;}const btn=document.getElementById('refresh-btn');if(btn)btn.style.animation='spin .8s linear infinite';showToast('Koersen ophalen...');let ok=0,fail=0;for(const h of holdings){const t=getYahooTicker(h);if(!t||h.type==='cash')continue;const d=await fetchPriceInEur(t,h.instrumentCurrency);if(d&&d.priceEur>0){h.current=d.priceEur;h.dailyChange=d.changeEur||0;h.dailyChangePct=d.changePctEur||0;h.lastRefresh=Date.now();ok++;}else fail++;}await persist();if(btn)btn.style.animation='';renderAll();showToast(ok+' koersen bijgewerkt'+(fail?' ('+fail+' mislukt)':''));}
+
+// ── FORMATTING ──
+const f=(n,d=2)=>new Intl.NumberFormat('nl-BE',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
+const fe=n=>'€'+f(n);
+const fp=n=>(n>=0?'+':'')+f(n)+'%';
+const fpl=n=>(n>=0?'+€':'-€')+f(Math.abs(n));
+
+// ── CALC ──
+function calc(h){const inv=h.qty*(h.price||0),cur=h.qty*(h.current||h.price||0),pl=cur-inv,pct=inv>0?(pl/inv)*100:0;return{inv,cur,pl,pct};}
+function portfolio(){let ti=0,tc=0,td=0;holdings.forEach(h=>{const c=calc(h);ti+=c.inv;tc+=c.cur;td+=(h.dailyChange||0)*h.qty;});return{ti,tc,pl:tc-ti,pct:ti>0?((tc-ti)/ti)*100:0,td};}
+
+// ── STORAGE ──
+function loadPrefs(){bioEnabled=localStorage.getItem('v_bio')==='1';bioCredId=localStorage.getItem('v_cred')||null;}
+async function persist(){if(!currentPin)return;const enc=await aesEncrypt({holdings,transactions,deletedHoldings},currentPin);localStorage.setItem('v_enc',enc);localStorage.setItem('v_hash',await pinHash(currentPin));localStorage.setItem('v_bio',bioEnabled?'1':'0');if(bioCredId)localStorage.setItem('v_cred',bioCredId);else localStorage.removeItem('v_cred');}
+async function loadData(pin){const enc=localStorage.getItem('v_enc');if(!enc)return true;try{const d=await aesDecrypt(enc,pin);holdings=d.holdings||[];transactions=d.transactions||[];deletedHoldings=d.deletedHoldings||[];return true;}catch{return false;}}
+
+// ── TABS ──
+function switchTab(page,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+page).classList.add('active');if(btn)btn.classList.add('active');if(page==='overview')renderOverview();if(page==='holdings')renderHoldings();if(page==='transactions')renderTransactions();if(page==='trash')renderTrash();if(page==='saxo')renderBroker('saxo');if(page==='revolut')renderBroker('revolut');}
+
+function renderBroker(broker){const brokerName=broker==='saxo'?'Saxo Bank':'Revolut';const bh=holdings.filter(h=>h.broker===brokerName);const inv=bh.reduce((s,h)=>s+h.qty*h.price,0),cur=bh.reduce((s,h)=>s+h.qty*(h.current||h.price),0),pl=cur-inv,pct=inv>0?(pl/inv)*100:0,cc=pl>=0?'var(--green)':'var(--red)';const hv=document.getElementById(broker+'-hero-value');if(hv)hv.textContent=fe(cur);const hc=document.getElementById(broker+'-hero-change');if(hc)hc.innerHTML=pl!==0?'<span style="color:'+cc+';font-weight:600">'+(pl>=0?'+':'')+fe(pl)+'</span><span style="color:'+cc+'"> '+(pct>=0?'+':'')+pct.toFixed(2)+'%</span>':'';const plEl=document.getElementById(broker+'-pl');if(plEl){plEl.textContent=fpl(pl);plEl.style.color=cc;}const pctEl=document.getElementById(broker+'-pct');if(pctEl){pctEl.textContent=fp(pct);pctEl.style.color=cc;}const invEl=document.getElementById(broker+'-inv');if(invEl)invEl.textContent=fe(inv);const el=document.getElementById(broker+'-holdings-list');if(!el)return;el.innerHTML=bh.length?[...bh].sort((a,b)=>b.qty*b.current-a.qty*a.current).map(cardHTML).join(''):'<div class="empty-state">Geen '+brokerName+' holdings</div>';}
+
+// ── RENDER ──
+function renderAll(){renderOverview();renderHoldings();renderTransactions();}
+function renderOverview(){const{tc,pl,pct,td,ti}=portfolio();const hv=document.getElementById('hero-value');if(hv){hv.textContent=fe(tc);hv.style.filter=blurValues?'blur(8px)':'';}const qpl=document.getElementById('qs-pl');if(qpl){qpl.textContent=fpl(pl);qpl.style.color=pl>=0?'var(--green)':'var(--red)';}const qpct=document.getElementById('qs-pct');if(qpct){qpct.textContent=fp(pct);qpct.style.color=pct>=0?'var(--green)':'var(--red)';}const qday=document.getElementById('qs-day');if(qday){const hasLive=holdings.some(h=>h.lastRefresh);qday.textContent=hasLive?fpl(td):'–';qday.style.color=td>=0?'var(--green)':'var(--red)';}drawPortfolioChart();const el=document.getElementById('top-holdings-list');if(el)el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*(b.current||b.price)-a.qty*(a.current||a.price)).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">📊</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:4px">Nog geen holdings</div><div style="font-size:.78rem">Importeer je PDF of voeg manueel toe</div></div>';}
+function renderHoldings(){const el=document.getElementById('all-holdings-list');if(!el)return;el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*(b.current||b.price)-a.qty*(a.current||a.price)).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">💼</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen holdings</div></div>';}
+function renderTransactions(){const el=document.getElementById('tx-list');if(!el)return;let txs=[...transactions];if(txFilter.year)txs=txs.filter(t=>(t.date||'').startsWith(txFilter.year));if(txFilter.month)txs=txs.filter(t=>(t.date||'').substring(0,7)===txFilter.year+'-'+txFilter.month);txs.sort((a,b)=>new Date(b.date)-new Date(a.date));el.innerHTML=txs.length?txs.map(t=>{const ac=t.action==='buy'?'buy':'sell',icon=t.action==='buy'?'⬆️':'⬇️',sign=t.action==='buy'?'-':'+';return'<div class="tx-item"><div class="tx-icon '+ac+'">'+icon+'</div><div class="tx-info"><div class="tx-name">'+t.name+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+(t.costs&&t.costs>0?' · kosten '+fe(t.costs):'')+'</div></div><div class="tx-amount '+ac+'">'+sign+fe(Math.abs(t.total||0))+'</div><button onclick="deleteTx(\''+t.id+'\')" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 8px">&times;</button></div>';}).join(''):'<div class="empty-state">Geen transacties</div>';}
+
+// TX FILTER
+let txFilter={year:'',month:''};
+function setTxFilter(y,m){txFilter={year:y||'',month:m||''};renderTransactions();}
+
+function cardHTML(h){const{cur,pl,pct}=calc(h),bc=h.broker==='Saxo Bank'?'broker-saxo':h.broker==='Revolut'?'broker-revolut':'',cc=pl>0?'up':pl<0?'down':'neutral',col=COLORS[holdings.indexOf(h)%COLORS.length];const hasLive=!!h.lastRefresh;const dpct=h.dailyChangePct||0;return'<div class="holding-card" onclick="openDetail(\''+h.id+'\')">'+'<div class="holding-icon" style="background:'+col+'22">'+(ICONS[h.type]||'📦')+'</div>'+'<div class="holding-info"><div class="holding-name">'+h.name+'</div>'+'<div class="holding-meta">'+(h.ticker?'<span style="font-family:DM Mono,monospace;font-size:.72rem">'+h.ticker+'</span> ':'')+' <span class="broker-tag '+bc+'">'+h.broker+'</span></div></div>'+'<div class="holding-right"><div class="holding-value">'+fe(cur)+'</div><div class="holding-change '+cc+'">'+fp(pct)+'</div>'+(hasLive&&h.dailyChangePct!==undefined?'<div style="font-size:.64rem;color:'+(h.dailyChangePct>=0?'var(--green)':'var(--red)')+'">'+( h.dailyChangePct>=0?'▲':'▼')+' '+(Math.abs(h.dailyChangePct||0)).toFixed(2)+'% vandaag</div>':'')+'</div></div>';}
+
+function renderTrash(){const el=document.getElementById('trash-list');if(!el)return;if(!deletedHoldings.length){el.innerHTML='<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">🗑</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Prullenbak is leeg</div></div>';return;}el.innerHTML=deletedHoldings.map((h,i)=>'<div class="deleted-item"><div class="holding-icon" style="background:'+COLORS[i%COLORS.length]+'22">'+(ICONS[h.type]||'📦')+'</div><div class="deleted-info"><div class="deleted-name">'+h.name+'</div><div class="deleted-meta">'+h.broker+' · '+f(h.qty,4)+' stuks'+(h.deletedAt?' · Verwijderd op '+new Date(h.deletedAt).toLocaleDateString('nl-BE'):'')+'</div></div><button class="btn-restore" onclick="restoreHolding('+i+')">Herstel</button></div>').join('');}
+async function restoreHolding(i){const h=deletedHoldings[i];if(!h)return;const txIds=new Set(transactions.map(t=>t.id));deletedHoldings.splice(i,1);holdings.push(h);(h.relatedTxIds||[]).forEach(id=>{if(!txIds.has(id)){const tx=h.deletedTxs?.find(t=>t.id===id);if(tx)transactions.push(tx);}});await persist();renderAll();renderTrash();showToast(h.name+' hersteld ✓');}
+
+// ── LOCK/UNLOCK ──
+function lockApp(){holdings=[];transactions=[];deletedHoldings=[];currentPin='';sessionStorage.removeItem('v_sp');document.getElementById('pin-screen').classList.remove('hidden');renderAll();}
+function unlock(){document.getElementById('pin-screen').classList.add('hidden');renderAll();}
+async function unlockWith(pin){const ok=await loadData(pin);if(!ok){pinErr('Ontsleuteling mislukt');return;}currentPin=pin;sessionStorage.setItem('v_sp',currentPin);unlock();}
+function changePIN(){if(!currentPin){showToast('Ontgrendel eerst');return;}isSettingPin=true;pinConfirm='';hint('Voer je nieuwe PIN in');document.getElementById('pin-screen').classList.remove('hidden');}
+function showToast(msg){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+function showLoading(msg){const el=document.getElementById('loading-overlay');const txt=document.getElementById('loading-text');if(txt)txt.textContent=msg||'Laden...';if(el)el.classList.add('visible');}
+function hideLoading(){const el=document.getElementById('loading-overlay');if(el)el.classList.remove('visible');}
+function toggleBlur(){blurValues=!blurValues;const eb=document.getElementById('eye-btn');if(eb)eb.textContent=blurValues?'🙈':'👁';renderOverview();}
+function showImportResult(result){const el=document.getElementById('import-result');if(!el)return;if(result.error){el.innerHTML='<div class="form-card" style="border-left:3px solid var(--red);padding:12px"><strong>Fout:</strong> '+result.error+'</div>';return;}el.innerHTML='<div class="form-card" style="border-left:3px solid var(--green);padding:12px"><strong>'+result.broker+'</strong> ('+result.reportType+')<br>✓ '+result.newTx+' nieuwe transacties · '+result.skipped+' duplicaten · '+result.updatedHoldings+' holdings bijgewerkt</div>';}
+
+// ── UPDATE ──
+function showUpdateBanner(){const b=document.getElementById('update-banner');if(b)b.classList.add('show');}
+function applyUpdate(){window._swUpdating=true;const b=document.getElementById('update-banner');if(b)b.classList.remove('show');if('serviceWorker' in navigator){navigator.serviceWorker.getRegistration().then(reg=>{if(reg&&reg.waiting){reg.waiting.postMessage({type:'SKIP_WAITING'});}else window.location.reload();});}else window.location.reload();}
+function manualCheckUpdate(){const status=document.getElementById('update-status');if(status)status.textContent='Controleren...';if('serviceWorker' in navigator){navigator.serviceWorker.getRegistration().then(reg=>{if(!reg){showToast('Geen service worker');return;}reg.update().then(()=>{if(reg.waiting){showUpdateBanner();showToast('Update gevonden!');}else{showToast('Up-to-date ✓');if(status)status.textContent='Up-to-date ✓';}});});}else{showToast('Cache wissen...');setTimeout(()=>{window.location.href=window.location.href.split('?')[0]+'?nocache='+Date.now();},400);}}
+function hardRefresh(){if(!confirm('Cache wissen en app herladen?'))return;if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(regs=>{Promise.all(regs.map(r=>r.unregister())).then(()=>{caches.keys().then(keys=>{Promise.all(keys.map(k=>caches.delete(k))).then(()=>{window.location.href=window.location.href.split('?')[0]+'?nocache='+Date.now();});});});});}else{window.location.href=window.location.href.split('?')[0]+'?nocache='+Date.now();}}
+
+// ── API KEY BADGES ──
+function updateApiKeyBadge(){const b=document.getElementById('api-key-badge'),s=document.getElementById('api-key-sub');if(b){b.textContent=ANTHROPIC_KEY?'INGESTELD':'NIET INGESTELD';b.className='si-badge'+(ANTHROPIC_KEY?'':' off');}if(s)s.textContent=ANTHROPIC_KEY?'Zoeken actief':'Voor zoeken';}
+function updateWorkerBadge(){const b=document.getElementById('worker-badge'),s=document.getElementById('worker-sub');if(b){b.textContent=CF_WORKER_URL?'ACTIEF':'NIET INGESTELD';b.className='si-badge'+(CF_WORKER_URL?'':' off');}if(s)s.textContent=CF_WORKER_URL?'Via: '+CF_WORKER_URL.replace('https://','').split('/')[0]:'Optionele eigen proxy';}
+function updateTdBadge(){const b=document.getElementById('td-badge'),s=document.getElementById('td-sub');if(b){b.textContent=TWELVE_DATA_KEY?'ACTIEF':'NIET INGESTELD';b.className='si-badge'+(TWELVE_DATA_KEY?'':' off');}if(s)s.textContent=TWELVE_DATA_KEY?'Actief — 800 req/dag':'Gratis: 800 req/dag — twelvedata.com';}
+function updateAvBadge(){const b=document.getElementById('av-badge'),s=document.getElementById('av-sub');if(b){b.textContent=ALPHA_VANTAGE_KEY?'ACTIEF':'NIET INGESTELD';b.className='si-badge'+(ALPHA_VANTAGE_KEY?'':' off');}if(s)s.textContent=ALPHA_VANTAGE_KEY?'Actief — 25 req/dag':'Gratis: 25 req/dag — alphavantage.co';}
+function updateBioUI(){const badge=document.getElementById('bio-badge'),sub=document.getElementById('bio-sub'),fb=document.getElementById('faceid-btn'),hp=!!localStorage.getItem('v_hash');if(badge){badge.textContent=bioEnabled?'AAN':'UIT';badge.className='si-badge'+(bioEnabled?'':' off');}if(sub)sub.textContent=bioEnabled?'Tik om uit te schakelen':'Tik om Face ID in te schakelen';if(fb)fb.classList.toggle('hidden',!(bioEnabled&&hp));}
+
+// ── WORKER/API MODALS ──
+function showWorkerSetup(){const el=document.getElementById('worker-url-input');if(el)el.value=CF_WORKER_URL;document.getElementById('worker-modal').classList.add('open');}
+function closeWorkerModal(e){if(!e||e.target===document.getElementById('worker-modal'))document.getElementById('worker-modal').classList.remove('open');}
+function saveWorkerUrl(){const u=(document.getElementById('worker-url-input')?.value||'').trim();CF_WORKER_URL=u;localStorage.setItem('v_cf_worker',u);updateWorkerBadge();document.getElementById('worker-modal').classList.remove('open');showToast(u?'Worker URL opgeslagen':'Worker URL verwijderd');}
+function clearWorkerUrl(){CF_WORKER_URL='';localStorage.removeItem('v_cf_worker');updateWorkerBadge();document.getElementById('worker-modal').classList.remove('open');}
+function showApiKeySetup(){document.getElementById('api-key-input').value=ANTHROPIC_KEY;document.getElementById('apikey-modal').classList.add('open');}
+function closeApiModal(e){if(!e||e.target===document.getElementById('apikey-modal'))document.getElementById('apikey-modal').classList.remove('open');}
+function saveApiKey(){const k=(document.getElementById('api-key-input')?.value||'').trim();ANTHROPIC_KEY=k;localStorage.setItem('v_api_key',k);updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');showToast(k?'API key opgeslagen':'API key verwijderd');}
+function clearApiKey(){ANTHROPIC_KEY='';localStorage.removeItem('v_api_key');updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');}
+function showTwelveDataSetup(){document.getElementById('td-key-input').value=TWELVE_DATA_KEY;document.getElementById('td-modal').classList.add('open');}
+function closeTdModal(e){if(!e||e.target===document.getElementById('td-modal'))document.getElementById('td-modal').classList.remove('open');}
+function saveTdKey(){const k=(document.getElementById('td-key-input')?.value||'').trim();TWELVE_DATA_KEY=k;localStorage.setItem('v_td_key',k);updateTdBadge();document.getElementById('td-modal').classList.remove('open');showToast(k?'Twelve Data key opgeslagen':'Key verwijderd');}
+function clearTdKey(){TWELVE_DATA_KEY='';localStorage.removeItem('v_td_key');updateTdBadge();document.getElementById('td-modal').classList.remove('open');}
+function showAlphaVantageSetup(){document.getElementById('av-key-input').value=ALPHA_VANTAGE_KEY;document.getElementById('av-modal').classList.add('open');}
+function closeAvModal(e){if(!e||e.target===document.getElementById('av-modal'))document.getElementById('av-modal').classList.remove('open');}
+function saveAvKey(){const k=(document.getElementById('av-key-input')?.value||'').trim();ALPHA_VANTAGE_KEY=k;localStorage.setItem('v_av_key',k);updateAvBadge();document.getElementById('av-modal').classList.remove('open');showToast(k?'Alpha Vantage key opgeslagen':'Key verwijderd');}
+function clearAvKey(){ALPHA_VANTAGE_KEY='';localStorage.removeItem('v_av_key');updateAvBadge();document.getElementById('av-modal').classList.remove('open');}
+
+// ── DELETE ──
+async function deleteHolding(id){if(!confirm('Holding verwijderen?'))return;const h=holdings.find(x=>x.id===id);if(!h)return;const relatedTxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker);h.deletedAt=Date.now();h.relatedTxIds=relatedTxs.map(t=>t.id);h.deletedTxs=relatedTxs;deletedHoldings.push(h);holdings=holdings.filter(x=>x.id!==id);await persist();renderAll();closeDetailModal();showToast('Verwijderd — herstelbaar via Prullenbak');}
+async function deleteTx(id){if(!confirm('Transactie verwijderen?'))return;transactions=transactions.filter(t=>t.id!==id);await persist();renderTransactions();showToast('Transactie verwijderd');}
+async function deleteTxFromModal(txId,holdingId){if(!confirm('Transactie verwijderen?'))return;transactions=transactions.filter(t=>t.id!==txId);await persist();setModalTab('tx');renderTransactions();showToast('Transactie verwijderd');}
+
+// ── UPDATE PRICE ──
+function updateCurrentHoldingPrice(){if(currentDetailHolding)updatePrice(currentDetailHolding.id);}
+async function updatePrice(id){const h=holdings.find(x=>x.id===id);if(!h)return;const p=parseFloat(document.getElementById('update-price').value);if(isNaN(p)||p<0){showToast('Ongeldige prijs');return;}h.current=p;await persist();renderAll();showToast('Prijs bijgewerkt');const{inv,cur,pl,pct}=calc(h);document.getElementById('modal-price-big').textContent=fe(cur);document.getElementById('modal-stats').innerHTML=[{l:'HUIDIGE WAARDE',v:fe(cur)},{l:'GEÏNVESTEERD',v:fe(inv)},{l:'W/V',v:fpl(pl),c:pl>=0?'var(--green)':'var(--red)'},{l:'RENDEMENT',v:fp(pct),c:pct>=0?'var(--green)':'var(--red)'},{l:'AANTAL',v:f(h.qty,6)},{l:'LIVE KOERS',v:fe(h.current)},].map(s=>'<div class="modal-stat"><div class="ms-label">'+s.l+'</div><div class="ms-val"'+(s.c?' style="color:'+s.c+'"':'')+'>'+s.v+'</div></div>').join('');}
+
+// ── TX EDIT ──
+function openTxEdit(txId){const t=transactions.find(x=>x.id===txId);if(!t)return;document.getElementById('edit-tx-id').value=txId;document.getElementById('edit-tx-date').value=t.date||'';document.getElementById('edit-tx-action').value=t.action||'buy';document.getElementById('edit-tx-qty').value=t.qty||'';document.getElementById('edit-tx-price').value=t.price||'';document.getElementById('edit-tx-total').value=t.total||'';document.getElementById('edit-tx-costs').value=t.costs||'';document.getElementById('edit-tx-note').value=t.note||'';document.getElementById('tx-edit-modal').classList.add('open');}
+function closeTxEdit(e){if(e&&e.target!==document.getElementById('tx-edit-modal'))return;document.getElementById('tx-edit-modal').classList.remove('open');}
+async function saveTxEdit(){const txId=document.getElementById('edit-tx-id').value;const t=transactions.find(x=>x.id===txId);if(!t)return;t.date=document.getElementById('edit-tx-date').value;t.action=document.getElementById('edit-tx-action').value;t.qty=parseFloat(document.getElementById('edit-tx-qty').value)||t.qty;t.price=parseFloat(document.getElementById('edit-tx-price').value)||t.price;t.total=parseFloat(document.getElementById('edit-tx-total').value)||t.total;const costs=parseFloat(document.getElementById('edit-tx-costs').value);if(!isNaN(costs)&&costs>=0)t.costs=costs;const note=document.getElementById('edit-tx-note').value.trim();if(note)t.note=note;await persist();renderAll();document.getElementById('tx-edit-modal').classList.remove('open');if(currentDetailHolding)setModalTab('tx');showToast('Transactie bijgewerkt');}
+
+// ── MANUAL ADD ──
+function onTypeChange(){const t=document.getElementById('add-type').value;document.getElementById('ticker-group').style.display=t==='cash'?'none':'block';document.getElementById('price-label').textContent=t==='cash'?'Bedrag gespaard (€)':'Aankoopprijs (€)';}
+async function addHolding(){const name=document.getElementById('add-name').value.trim();if(!name){showToast('Voer een naam in');return;}const id=Date.now().toString(),qty=parseFloat(document.getElementById('add-qty').value)||0,price=parseFloat(document.getElementById('add-price').value)||0,cur=parseFloat(document.getElementById('add-current').value)||price,ticker=document.getElementById('add-ticker').value.trim().toUpperCase();holdings.push({id,name,ticker,yahooTicker:TICKER_MAP[ticker]||ticker,type:document.getElementById('add-type').value,broker:document.getElementById('add-broker').value,qty,price,current:cur,date:document.getElementById('add-date').value,notes:document.getElementById('add-notes').value.trim()});transactions.push({id:'tx_'+id,name,ticker,type:document.getElementById('add-type').value,broker:document.getElementById('add-broker').value,qty,price,total:qty*price,date:document.getElementById('add-date').value,action:'buy'});await persist();renderAll();['add-name','add-ticker','add-qty','add-price','add-current','add-notes'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});showToast(name+' toegevoegd');document.querySelectorAll('.tab-btn')[1].click();}
+
+// ── SEARCH ──
+let searchTO=null;
+function onSearchInput(){const q=document.getElementById('search-input').value.trim();clearTimeout(searchTO);document.getElementById('search-detail').innerHTML='';if(q.length<1){document.getElementById('search-results').innerHTML='';return;}searchTO=setTimeout(()=>doSearch(q),500);}
+async function doSearch(q){const el=document.getElementById('search-results');el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--text3)">Zoeken...</div>';const direct=await fetchPriceInEur(q.toUpperCase());if(direct&&direct.priceEur>0){renderSearchResult(el,[{symbol:q.toUpperCase(),name:direct.name||q,price:direct.priceEur,changePct:direct.changePctEur||0}]);return;}el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--text3)">Geen resultaten. Probeer exacte ticker: AAPL, IWDA.AS, BTC-EUR</div>';}
+function renderSearchResult(el,results){el.innerHTML=results.map(item=>{const sym=(item.symbol||'').replace(/['"<>]/g,'');const cp=item.changePct||0;return'<div class="search-result-item" data-sym="'+sym+'" onclick="clickSearchResult(this)"><div class="sr-symbol">📈 '+item.symbol+'</div><div class="sr-info"><div class="sr-name">'+(item.name||item.symbol)+'</div></div><div class="sr-price"><div class="sr-price-val">'+fe(item.price||0)+'</div><span class="'+(cp>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</span></div></div>';}).join('');}
+function clickSearchResult(el){showSearchDetail(el.dataset.sym);}
+async function showSearchDetail(symbol){const el=document.getElementById('search-detail');el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--text3)">Laden...</div>';const data=await fetchPriceInEur(symbol);if(!data){el.innerHTML='<div style="padding:12px;font-size:.82rem;color:var(--red)">Koers niet beschikbaar</div>';return;}const cp=data.changePct||0;const cc=cp>=0?'var(--green)':'var(--red)';el.innerHTML='<div class="form-card" style="margin-top:0"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div><div style="font-family:DM Serif Display,serif;font-size:1.2rem">'+(data.name||symbol)+'</div><div style="font-family:DM Mono,monospace;font-size:.78rem;color:var(--text3)">'+symbol+'</div></div><div style="text-align:right"><div style="font-family:DM Mono,monospace;font-size:1.3rem;font-weight:600">'+fe(data.priceEur||data.price)+'</div><div style="font-size:.8rem;color:'+cc+'">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</div></div></div><button class="btn-primary" onclick="addFromSearch(\''+symbol+'\',\''+(data.name||symbol).replace(/'/g,'')+'\','+(data.priceEur||data.price)+')">+ Toevoegen aan portfolio</button></div>';}
+function addFromSearch(symbol,name,price){document.querySelectorAll('.tab-btn')[5].click();document.getElementById('add-name').value=name;document.getElementById('add-ticker').value=symbol;document.getElementById('add-current').value=price.toFixed(2);document.getElementById('add-type').value=symbol.includes('BTC')||symbol.includes('ETH')?'crypto':['NVDA','AAPL','MSFT','TSLA'].includes(symbol)?'stock':'etf';showToast('Ticker ingevuld');}
+
+// ── DATA EXPORT/IMPORT ──
+async function exportData(){const enc=await aesEncrypt({holdings,transactions,deletedHoldings},currentPin);const blob=new Blob([JSON.stringify({vault_enc:enc,v:5})],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='savings-backup-'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup geëxporteerd');}
+function importJsonData(){document.getElementById('json-import-input').click();}
+async function handleJsonImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async ev=>{try{const w=JSON.parse(ev.target.result),d=w.vault_enc?await aesDecrypt(w.vault_enc,currentPin):w;if(d.holdings)holdings=d.holdings;if(d.transactions)transactions=d.transactions;if(d.deletedHoldings)deletedHoldings=d.deletedHoldings;await persist();renderAll();showToast('Geïmporteerd');}catch{showToast('Import mislukt');}};reader.readAsText(file);e.target.value='';}
+async function clearData(){if(!confirm('Alle data wissen?'))return;holdings=[];transactions=[];deletedHoldings=[];await persist();renderAll();showToast('Alle data gewist');}
+
+// ── PIN ──
+function hint(t){const el=document.getElementById('pin-hint');if(el)el.textContent=t;}
+function pinPress(d){if(pinInput.length>=6)return;pinInput+=d;dots();if(pinInput.length===6)setTimeout(checkPin,130);}
+function pinDel(){pinInput=pinInput.slice(0,-1);dots();}
+function dots(){for(let i=0;i<6;i++){const el=document.getElementById('d'+i);if(!el)return;el.classList.toggle('filled',i<pinInput.length);el.classList.remove('error');}}
+function pinErr(msg){pinInput='';for(let i=0;i<6;i++){const el=document.getElementById('d'+i);if(el){el.classList.remove('filled');el.classList.add('error');}}hint(msg);setTimeout(()=>{for(let i=0;i<6;i++){const el=document.getElementById('d'+i);if(el)el.classList.remove('error');}hint(isSettingPin?'Voer je nieuwe PIN in':'Voer je 6-cijferige PIN in');},900);}
+async function checkPin(){
+  const entered=pinInput;pinInput='';dots();
+  const hasPIN=!!localStorage.getItem('v_hash');
+  if(!hasPIN){
+    if(!isSettingPin){isSettingPin=true;pinConfirm=entered;hint('Bevestig je PIN');return;}
+    if(entered===pinConfirm){isSettingPin=false;pinConfirm='';currentPin=entered;sessionStorage.setItem('v_sp',currentPin);await persist();unlock();}
+    else{isSettingPin=false;pinConfirm='';pinErr('PINs komen niet overeen');hint('Stel je 6-cijferige PIN in');}
+    return;
+  }
+  if(isSettingPin){
+    if(!pinConfirm){pinConfirm=entered;hint('Bevestig je nieuwe PIN');return;}
+    if(entered===pinConfirm){currentPin=pinConfirm;pinConfirm='';isSettingPin=false;sessionStorage.setItem('v_sp',currentPin);await persist();document.getElementById('pin-screen').classList.add('hidden');updateBioUI();showToast('PIN gewijzigd');}
+    else{pinConfirm='';isSettingPin=false;pinErr('PINs komen niet overeen');}
+    return;
+  }
+  await unlockWith(entered);
+}
+
+// ── BIOMETRICS ──
+const bioOk=()=>!!window.PublicKeyCredential&&typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable==='function';
+async function enrollBio(){
+  if(!bioOk()){showToast('Niet ondersteund');return false;}
+  const ok=await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  if(!ok){showToast('Geen Face ID gevonden');return false;}
+  try{
+    const chal=crypto.getRandomValues(new Uint8Array(32)),uid=crypto.getRandomValues(new Uint8Array(16));
+    const cred=await navigator.credentials.create({publicKey:{challenge:chal,rp:{name:'Savings',id:location.hostname||'localhost'},user:{id:uid,name:'savings',displayName:'Savings'},pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},timeout:60000,attestation:'none'}});
+    bioCredId=btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+    bioEnabled=true;
+    // Store PIN encrypted for biometric unlock
+    localStorage.setItem('v_bio_pin',btoa(currentPin));
+    await persist();updateBioUI();showToast('Face ID ingeschakeld');return true;
+  }catch(e){if(e.name!=='NotAllowedError')showToast('Instellen mislukt');return false;}
+}
+async function autoTriggerBiometric(){if(!bioEnabled||!bioCredId)return;await triggerBiometric();}
+async function triggerBiometric(){
+  if(!bioEnabled||!bioCredId)return;
+  try{
+    const chal=crypto.getRandomValues(new Uint8Array(32)),cid=Uint8Array.from(atob(bioCredId),c=>c.charCodeAt(0));
+    await navigator.credentials.get({publicKey:{challenge:chal,rpId:location.hostname||'localhost',allowCredentials:[{id:cid,type:'public-key'}],userVerification:'required',timeout:60000}});
+    const bp=localStorage.getItem('v_bio_pin');
+    if(bp)await unlockWith(atob(bp));
+    else hint('Face ID gelukt — voer eenmalig PIN in');
+  }catch(e){if(e.name!=='NotAllowedError')showToast('Biometrie mislukt');hint('Voer je 6-cijferige PIN in');}
+}
+async function toggleBiometric(){
+  if(!currentPin){showToast('Ontgrendel eerst de app');return;}
+  if(bioEnabled){bioEnabled=false;bioCredId=null;localStorage.removeItem('v_bio_pin');await persist();updateBioUI();showToast('Face ID uitgeschakeld');}
+  else await enrollBio();
+}
+
+
 // ── INIT ──
 (function init(){
   document.getElementById('header-date').textContent=new Date().toLocaleDateString('nl-BE',{weekday:'short',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
@@ -1897,15 +1328,45 @@ async function renderSearchResult(el,results){el.innerHTML=results.map(item=>{co
   loadPrefs();
   ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
   CF_WORKER_URL=localStorage.getItem('v_cf_worker')||'';
+  TWELVE_DATA_KEY=localStorage.getItem('v_td_key')||'';
+  ALPHA_VANTAGE_KEY=localStorage.getItem('v_av_key')||'';
   const hasPIN=!!localStorage.getItem('v_hash');
   if(!hasPIN)hint('Stel je 6-cijferige PIN in');
-  updateBioUI();updateApiKeyBadge();updateWorkerBadge();
+  updateBioUI();updateApiKeyBadge();updateWorkerBadge();updateTdBadge();updateAvBadge();
   const sp=sessionStorage.getItem('v_sp');
   if(sp&&hasPIN)unlockWith(sp);
   else if(bioEnabled&&bioCredId&&hasPIN)setTimeout(autoTriggerBiometric,600);
 })();
 </script>
 
+<!-- TWELVE DATA MODAL -->
+<div class="modal-overlay" id="td-modal" onclick="closeTdModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Twelve Data API key</div>
+    <div style="font-size:.82rem;color:var(--text2);margin-bottom:14px;line-height:1.6">
+      Gratis account op <strong>twelvedata.com</strong> — geeft 800 requests/dag.<br>
+      Werkt voor alle ETFs op Euronext, NYSE, NASDAQ en meer.
+    </div>
+    <input type="text" class="form-input" id="td-key-input" placeholder="bijv. a1b2c3d4e5f6..." style="margin-bottom:10px;font-family:DM Mono,monospace">
+    <button class="btn-primary" onclick="saveTdKey()" style="margin-bottom:8px">Opslaan</button>
+    <button class="btn-secondary" onclick="clearTdKey()">Verwijderen</button>
+  </div>
+</div>
+<!-- ALPHA VANTAGE MODAL -->
+<div class="modal-overlay" id="av-modal" onclick="closeAvModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Alpha Vantage API key</div>
+    <div style="font-size:.82rem;color:var(--text2);margin-bottom:14px;line-height:1.6">
+      Gratis account op <strong>alphavantage.co</strong> — geeft 25 requests/dag.<br>
+      Gebruikt als backup voor ETFs en aandelen.
+    </div>
+    <input type="text" class="form-input" id="av-key-input" placeholder="bijv. ABCDEFGHIJ123..." style="margin-bottom:10px;font-family:DM Mono,monospace">
+    <button class="btn-primary" onclick="saveAvKey()" style="margin-bottom:8px">Opslaan</button>
+    <button class="btn-secondary" onclick="clearAvKey()">Verwijderen</button>
+  </div>
+</div>
 <!-- TX EDIT MODAL -->
 <div class="tx-edit-modal" id="tx-edit-modal" onclick="closeTxEdit(event)">
   <div class="tx-edit-sheet">
