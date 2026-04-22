@@ -975,6 +975,47 @@ function renderBroker(broker){
     :'<div class="empty-state">Geen '+brokerName+' holdings</div>';
 }
 function renderDonut(){const svg=document.getElementById('donut-svg'),leg=document.getElementById('donut-legend');document.getElementById('donut-count').textContent=holdings.length;if(!holdings.length){svg.innerHTML='<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>';leg.innerHTML='<div style="font-size:.78rem;color:var(--text3)">Nog geen holdings</div>';return;}const total=holdings.reduce((s,h)=>s+h.qty*h.current,0),C=2*Math.PI*40,g={};holdings.forEach(h=>{const k=LABELS[h.type]||h.type;g[k]=(g[k]||0)+h.qty*h.current;});let cir='',lh='',off=0,ci=0;Object.entries(g).sort((a,b)=>b[1]-a[1]).forEach(([lbl,val])=>{const p=total>0?val/total:0,col=COLORS[ci%COLORS.length];cir+=`<circle cx="55" cy="55" r="40" fill="none" stroke="${col}" stroke-width="18" stroke-dasharray="${(p*C).toFixed(2)} ${(C-p*C).toFixed(2)}" stroke-dashoffset="${(-off*C).toFixed(2)}" transform="rotate(-90 55 55)"/>`;lh+=`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div><div class="legend-name">${lbl}</div><div class="legend-pct">${(p*100).toFixed(1)}%</div></div>`;off+=p;ci++;});svg.innerHTML='<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>'+cir;leg.innerHTML=lh;}
+// ── FORMATTING ──
+const f=(n,d=2)=>new Intl.NumberFormat('nl-BE',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
+const fe=n=>'€'+f(n);
+const fp=n=>(n>=0?'+':'')+f(n)+'%';
+const fpl=n=>(n>=0?'+€':'-€')+f(Math.abs(n));
+
+// ── CALC ──
+function calc(h){
+  const inv=h.qty*(h.price||0);
+  const cur=h.qty*(h.current||h.price||0);
+  const pl=cur-inv;
+  const pct=inv>0?(pl/inv)*100:0;
+  return{inv,cur,pl,pct};
+}
+
+function portfolio(){
+  let ti=0,tc=0,td=0;
+  holdings.forEach(h=>{
+    const c=calc(h);
+    ti+=c.inv;tc+=c.cur;
+    td+=(h.dailyChange||0)*h.qty;
+  });
+  return{ti,tc,pl:tc-ti,pct:ti>0?((tc-ti)/ti)*100:0,td};
+}
+
+// ── RENDER OVERVIEW ──
+function renderOverview(){
+  const{tc,pl,pct,td,ti}=portfolio();
+  const hv=document.getElementById('hero-value');
+  if(hv){hv.textContent=fe(tc);hv.style.filter=blurValues?'blur(8px)':'';}
+  const qpl=document.getElementById('qs-pl');if(qpl){qpl.textContent=fpl(pl);qpl.style.color=pl>=0?'var(--green)':'var(--red)';}
+  const qpct=document.getElementById('qs-pct');if(qpct){qpct.textContent=fp(pct);qpct.style.color=pct>=0?'var(--green)':'var(--red)';}
+  const qday=document.getElementById('qs-day');
+  if(qday){const hasLive=holdings.some(h=>h.lastRefresh);qday.textContent=hasLive?fpl(td):'–';qday.style.color=td>=0?'var(--green)':'var(--red)';}
+  drawPortfolioChart();
+  const el=document.getElementById('top-holdings-list');
+  if(el)el.innerHTML=holdings.length
+    ?[...holdings].sort((a,b)=>b.qty*(b.current||b.price)-a.qty*(a.current||a.price)).map(cardHTML).join('')
+    :'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">📊</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:4px">Nog geen holdings</div><div style="font-size:.78rem">Importeer je PDF of voeg manueel toe</div></div>';
+}
+
 function cardHTML(h){const{cur,pl,pct}=calc(h),bc=h.broker==='Saxo Bank'?'broker-saxo':h.broker==='Revolut'?'broker-revolut':'',cc=pl>0?'up':pl<0?'down':'neutral',col=COLORS[holdings.indexOf(h)%COLORS.length];const hasLive=!!h.lastRefresh;const dpct=h.dailyChangePct||0;return '<div class="holding-card" onclick="openDetail(\''+h.id+'\')">'+'<div class="holding-icon" style="background:'+col+'22">'+(ICONS[h.type]||'📦')+'</div>'+'<div class="holding-info"><div class="holding-name">'+h.name+'</div>'+'<div class="holding-meta">'+(h.ticker?'<span style="font-family:DM Mono,monospace;font-size:.72rem">'+h.ticker.split(':')[0]+'</span>':'')+'<span class="broker-tag '+bc+'">'+h.broker+'</span>'+(hasLive?'<span class="live-dot"></span><span class="'+(dpct>=0?'up':'down')+'" style="font-size:.62rem;padding:1px 4px">'+(dpct>=0?'+':'')+dpct.toFixed(2)+'% vandaag</span>':'')+'</div></div>'+'<div class="holding-right"><div class="holding-value">'+fe(cur)+'</div><div class="holding-change '+cc+'">'+fp(pct)+'</div>'+(hasLive&&h.dailyChangePct!==undefined?'<div style="font-size:.64rem;color:'+(h.dailyChangePct>=0?'var(--green)':'var(--red)')+'">'+( h.dailyChangePct>=0?'▲':'▼')+' '+(Math.abs(h.dailyChangePct||0)).toFixed(2)+'% vandaag</div>':'')+' </div>'+'</div>';}
 function renderHoldings(){const el=document.getElementById('all-holdings-list');el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*b.current-a.qty*a.current).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">💼</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen holdings</div></div>';}
 
