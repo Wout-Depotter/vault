@@ -625,6 +625,21 @@ export default {<br>
 <div class="toast" id="toast"></div>
 <input type="file" id="json-import-input" accept=".json" style="display:none" onchange="handleJsonImport(event)">
 <script>
+// Global error catcher - shows errors visibly for debugging
+window.onerror = function(msg, src, line, col, err) {
+  const div = document.createElement('div');
+  div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:12px;font-family:monospace;font-size:.8rem;z-index:99999;white-space:pre-wrap;max-height:50vh;overflow:auto';
+  div.textContent = '❌ JS ERROR:\n' + msg + '\n' + src + ':' + line;
+  document.body.appendChild(div);
+  return false;
+};
+window.addEventListener('unhandledrejection', function(e) {
+  const div = document.createElement('div');
+  div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#e67e22;color:#fff;padding:12px;font-family:monospace;font-size:.8rem;z-index:99999;white-space:pre-wrap;max-height:50vh;overflow:auto';
+  div.textContent = '❌ PROMISE ERROR:\n' + (e.reason?.message || e.reason || 'Unknown');
+  document.body.appendChild(div);
+});
+
 // Service Worker - auto-update
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').then(reg=>{
