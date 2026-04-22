@@ -1887,22 +1887,24 @@ function parseRevolutPDF(text){
       const fees=isRevX?m[5]:m[6];
       const dateStr=isRevX?m[6]:m[7];
       const action='buy';
+      // Revolut X transactions are already included in the closing balance
+      // so we skip them to avoid double counting
+      if(isRevX){skipped++;break;}
+      const holdingName=sym==='BTC'?'Bitcoin':sym==='ETH'?'Ethereum':'Solana';
       const id='rev_crypto_'+sym+'_'+dateStr.replace(/[\s,]/g,'')+'_'+qty;
       if(!existingIds.has(id)){
         const date=parseDate(dateStr);
         const qtyN=parseFloat(qty),priceN=parsePrice(price);
         const valueN=parsePrice(value),feesN=parsePrice(fees);
-        const name=sym==='BTC'?'Bitcoin':sym==='ETH'?'Ethereum':'Solana';
-        // If price is in USD (Revolut X), convert to EUR
-        const priceEur=line.includes('$')?priceN*0.92:priceN;
-        const valueEur=line.includes('$')?valueN*0.92:valueN;
-        const tx={id,name,ticker:sym,yahooTicker:sym+'-EUR',type:'crypto',broker:'Revolut',
+        const priceEur=priceN;
+        const valueEur=valueN;
+        const tx={id,name:holdingName,ticker:sym,yahooTicker:sym+'-EUR',type:'crypto',broker:'Revolut',
           qty:qtyN,price:priceEur,total:valueEur,costs:feesN>0?feesN:undefined,
-          date,action,note:isRevX?'Revolut X aankoop':'Revolut crypto'};
+          date,action,note:'Revolut crypto'};
         transactions.push(tx);existingIds.add(id);newTx++;
         const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Revolut');
         if(ex){ex.qty+=qtyN;ex.current=priceEur;}
-        else{holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:sym+'-EUR',
+        else{holdings.push({id:'h_rev_'+sym,name:holdingName,ticker:sym,yahooTicker:sym+'-EUR',
           type:'crypto',broker:'Revolut',qty:qtyN,price:priceEur,current:priceEur,date,notes:''});}
         updatedHoldings++;
       } else skipped++;
