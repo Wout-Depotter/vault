@@ -394,6 +394,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="settings-item" onclick="importJsonData()"><div class="si-icon">&#128229;</div><div class="si-info"><div class="si-label">Importeer backup</div><div class="si-sub">Herstel vanuit JSON backup</div></div><div class="si-arrow">&#8250;</div></div>
       <div class="settings-item" onclick="clearData()"><div class="si-icon">&#128465;</div><div class="si-info"><div class="si-label">Alles wissen</div><div class="si-sub" style="color:var(--red)">Verwijder alle data</div></div><div class="si-arrow">&#8250;</div></div>
     </div>
+    <div class="section-title">API KEY (optioneel)</div>
+    <div class="settings-section">
+      <div class="settings-item" onclick="showApiKeySetup()">
+        <div class="si-icon">🔑</div>
+        <div class="si-info"><div class="si-label">Anthropic API Key</div><div class="si-sub" id="api-key-sub">Voor zoeken &amp; automatische koersen</div></div>
+        <div class="si-badge off" id="api-key-badge">NIET INGESTELD</div>
+      </div>
+    </div>
     <div class="section-title">OVER</div>
     <div class="settings-section">
       <div class="settings-item"><div class="si-icon">&#128188;</div><div class="si-info"><div class="si-label">Vault v5.0</div><div class="si-sub">Live koersen &middot; PDF import &middot; AES-256</div></div></div>
@@ -402,6 +410,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </div>
 
 <!-- DETAIL MODAL -->
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apikey-modal" onclick="closeApiModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Anthropic API Key</div>
+    <div style="font-size:.82rem;color:var(--text2);line-height:1.6;margin-bottom:16px">
+      Met een gratis Anthropic API key werkt het <strong>zoeken</strong> wereldwijd en worden koersen automatisch opgehaald.<br><br>
+      Gratis key: <strong>console.anthropic.com</strong> → API Keys → Create Key
+    </div>
+    <div class="form-group">
+      <label class="form-label">API Key</label>
+      <input type="password" class="form-input" id="api-key-input" placeholder="sk-ant-...">
+    </div>
+    <button class="btn-primary" onclick="saveApiKey()">Opslaan</button>
+    <button class="btn-danger" onclick="clearApiKey()" style="margin-top:8px">Verwijderen</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="detail-modal" onclick="closeModal(event)">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -477,59 +503,133 @@ async function sendLoginNotificationIfNewDevice(){
 }
 
 // ── LIVE KOERSEN via Yahoo Finance proxy ──
-const YAHOO_PROXY='https://query1.finance.yahoo.com/v8/finance/chart/';
-const EUR_USD_RATE={rate:1.08,ts:0}; // fallback
+// ── LIVE KOERSEN via Anthropic API (geen CORS problemen) ──
+// Sla je Anthropic API key op in instellingen voor live koersen
+// Zonder key: koersen worden manueel bijgewerkt
+let ANTHROPIC_KEY = localStorage.getItem('v_api_key') || '';
+const EUR_USD_RATE = {rate:1.08, ts:0};
 
-async function fetchEurUsd(){
-  if(Date.now()-EUR_USD_RATE.ts<300000)return EUR_USD_RATE.rate;
-  try{
-    const yahooUrl='https://query1.finance.yahoo.com/v8/finance/chart/EURUSD%3DX?interval=1d&range=1d';
-    const proxyUrl='https://api.allorigins.win/get?url='+encodeURIComponent(yahooUrl);
-    const r=await fetch(proxyUrl);
-    const wrapper=await r.json();
-    const d=JSON.parse(wrapper.contents);
-    const price=d?.chart?.result?.[0]?.meta?.regularMarketPrice;
-    if(price){EUR_USD_RATE.rate=price;EUR_USD_RATE.ts=Date.now();}
-  }catch(e){}
+async function fetchPriceViaAnthropicAPI(ticker) {
+  if(!ANTHROPIC_KEY) return null;
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: 'What is the current price of ' + ticker + ' in EUR? Reply ONLY with a JSON object like: {"price": 123.45, "change_pct": 1.23, "currency": "EUR", "name": "Full Name"}. No other text.'
+        }]
+      })
+    });
+    if(!resp.ok) return null;
+    const data = await resp.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+    const match = text.match(/\{[^}]+\}/);
+    if(match) {
+      const parsed = JSON.parse(match[0]);
+      return {
+        price: parsed.price,
+        priceEur: parsed.price,
+        changePct: parsed.change_pct || 0,
+        changeEur: 0,
+        changePctEur: parsed.change_pct || 0,
+        currency: 'EUR',
+        name: parsed.name || ticker
+      };
+    }
+  } catch(e) { console.log('API price error:', e); }
+  return null;
+}
+
+// Direct Yahoo Finance - works from github.io in most browsers
+async function fetchPriceYahoo(ticker) {
+  // Try multiple Yahoo endpoints and CORS approaches
+  const urls = [
+    'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(ticker) + '?interval=1d&range=2d',
+    'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(ticker) + '?interval=1d&range=2d',
+  ];
+  for(const url of urls) {
+    try {
+      const r = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
+        mode: 'cors'
+      });
+      if(!r.ok) continue;
+      const d = await r.json();
+      const meta = d?.chart?.result?.[0]?.meta;
+      if(!meta) continue;
+      const price = meta.regularMarketPrice;
+      const prev = meta.chartPreviousClose || meta.previousClose || price;
+      const chg = price - prev;
+      const chgPct = prev > 0 ? (chg/prev)*100 : 0;
+      return { price, prevClose: prev, change: chg, changePct: chgPct, currency: meta.currency||'EUR', name: meta.longName||meta.shortName||ticker };
+    } catch(e) {}
+  }
+  return null;
+}
+
+async function fetchEurUsd() {
+  if(Date.now()-EUR_USD_RATE.ts < 300000) return EUR_USD_RATE.rate;
+  const data = await fetchPriceYahoo('EURUSD=X');
+  if(data && data.price) { EUR_USD_RATE.rate = data.price; EUR_USD_RATE.ts = Date.now(); }
   return EUR_USD_RATE.rate;
 }
 
-async function fetchPrice(ticker){
-  if(!ticker)return null;
-  try{
-    const yahooUrl=YAHOO_PROXY+encodeURIComponent(ticker)+'?interval=1d&range=2d';
-    const proxyUrl='https://api.allorigins.win/get?url='+encodeURIComponent(yahooUrl);
-    const r=await fetch(proxyUrl);
-    if(!r.ok)return null;
-    const wrapper=await r.json();
-    const d=JSON.parse(wrapper.contents);
-    const result=d?.chart?.result?.[0];
-    if(!result)return null;
-    const meta=result.meta;
-    const price=meta.regularMarketPrice;
-    const prevClose=meta.chartPreviousClose||meta.previousClose||price;
-    const currency=meta.currency||'EUR';
-    const change=price-prevClose;
-    const changePct=(prevClose>0?(change/prevClose)*100:0);
-    return{price,prevClose,change,changePct,currency,symbol:meta.symbol,name:meta.longName||meta.shortName||ticker};
-  }catch(e){return null;}
+async function fetchPriceInEur(ticker, instrCurrency) {
+  let data = await fetchPriceYahoo(ticker);
+  if(!data && ANTHROPIC_KEY) data = await fetchPriceViaAnthropicAPI(ticker);
+  if(!data) return null;
+  let priceEur = data.price;
+  if((instrCurrency || data.currency) === 'USD') {
+    const rate = await fetchEurUsd();
+    priceEur = data.price / rate;
+    data.changeEur = (data.change || 0) / rate;
+  } else {
+    data.changeEur = data.change || 0;
+  }
+  data.priceEur = priceEur;
+  data.changePctEur = data.changePct || 0;
+  return data;
 }
 
-async function fetchPriceInEur(ticker,instrCurrency){
-  const data=await fetchPrice(ticker);
-  if(!data)return null;
-  let priceEur=data.price;
-  if((instrCurrency||data.currency)==='USD'){
-    const rate=await fetchEurUsd();
-    priceEur=data.price/rate;
-    data.changeEur=data.change/rate;
-    data.changePctEur=data.changePct;
-  } else {
-    data.changeEur=data.change;
-    data.changePctEur=data.changePct;
-  }
-  data.priceEur=priceEur;
-  return data;
+// Search via Anthropic API (no CORS issues)
+async function searchViaAnthropicAPI(query) {
+  if(!ANTHROPIC_KEY) return null;
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 600,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: 'Search for the stock/ETF/crypto "' + query + '". Give me the top 4 results with current prices. Reply ONLY with a JSON array like: [{"symbol":"AAPL","name":"Apple Inc","price":150.00,"change_pct":1.23,"type":"stock","exchange":"NASDAQ"}]. No other text.'
+        }]
+      })
+    });
+    if(!resp.ok) return null;
+    const data = await resp.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+    const match = text.match(/\[[\s\S]*\]/);
+    if(match) return JSON.parse(match[0]);
+  } catch(e) {}
+  return null;
 }
 
 // Saxo ticker → Yahoo ticker mapping
@@ -588,46 +688,73 @@ function onSearchInput(){
 async function doSearch(q){
   const el=document.getElementById('search-results');
   el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Zoeken...</div>';
-  try{
-    const yahooUrl='https://query1.finance.yahoo.com/v1/finance/search?q='+encodeURIComponent(q)+'&lang=en&region=US&quotesCount=8&newsCount=0';
-    const proxyUrl='https://api.allorigins.win/get?url='+encodeURIComponent(yahooUrl);
-    const r=await fetch(proxyUrl);
-    const wrapper=await r.json();
-    const d=JSON.parse(wrapper.contents);
-    const quotes=(d?.quotes||[]).filter(item=>item.quoteType&&['ETF','EQUITY','CRYPTOCURRENCY','INDEX'].includes(item.quoteType));
-    if(!quotes.length){
-      el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Geen resultaten voor "'+q+'"<br>Probeer exacte ticker: AAPL, IWDA.AS, BTC-EUR</div>';
-      // Try direct ticker lookup as fallback
-      const data=await fetchPriceInEur(q.toUpperCase());
-      if(data){showDirectResult(q.toUpperCase(),data);}
+
+  // First try: direct Yahoo price lookup for known tickers
+  const directData = await fetchPriceYahoo(q.toUpperCase());
+  if(directData) { showDirectResult(q.toUpperCase(), directData); }
+
+  // Second try: Anthropic API search (best results, no CORS)
+  if(ANTHROPIC_KEY) {
+    el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Zoeken via AI...</div>';
+    const results = await searchViaAnthropicAPI(q);
+    if(results && results.length > 0) {
+      el.innerHTML = results.map(item => {
+        const safeSym=(item.symbol||'').replace(/['"<>]/g,'');
+        const chgPct=item.change_pct||0;
+        const typeIcon=item.type==='crypto'?'₿':item.type==='etf'?'📈':'🏢';
+        return '<div class="search-result-item" data-sym="'+safeSym+'" onclick="clickSearchResult(this)">'+
+          '<div class="sr-symbol">'+typeIcon+' '+item.symbol+'</div>'+
+          '<div class="sr-info"><div class="sr-name">'+(item.name||item.symbol)+'</div>'+
+          '<div class="sr-exchange">'+(item.exchange||'')+' &middot; '+(item.type||'')+'</div></div>'+
+          '<div class="sr-price">'+
+          '<div class="sr-price-val">'+fe(item.price||0)+'</div>'+
+          '<span class="'+(chgPct>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(chgPct>=0?'+':'')+chgPct.toFixed(2)+'%</span>'+
+          '</div></div>';
+      }).join('');
       return;
     }
-    el.innerHTML=quotes.slice(0,6).map(item=>{
-      const typeIcon=item.quoteType==='CRYPTOCURRENCY'?'\u20BF':item.quoteType==='ETF'?'\uD83D\uDCC8':'\uD83C\uDFE2';
-      const safeSym=(item.symbol||'').replace(/['"<>]/g,'');
-      return '<div class="search-result-item" onclick="showSearchDetail(\'' + safeSym + '\')">'+
-        '<div class="sr-symbol">'+typeIcon+' '+item.symbol+'</div>'+
-        '<div class="sr-info"><div class="sr-name">'+(item.shortname||item.longname||item.symbol)+'</div>'+
-        '<div class="sr-exchange">'+(item.exchDisp||item.exchange||'')+' &middot; '+(item.quoteType||'')+'</div></div>'+
-        '<div class="sr-price" id="srp-'+safeSym+'"><span style="color:var(--text3);font-size:.75rem">...</span></div>'+
-      '</div>';
-    }).join('');
-    quotes.slice(0,6).forEach(async item=>{
-      const safeSym=(item.symbol||'').replace(/['"<>]/g,'');
-      const data=await fetchPriceInEur(item.symbol);
-      const priceEl=document.getElementById('srp-'+safeSym);
-      if(priceEl&&data){
-        const cp=data.changePct||0;
-        priceEl.innerHTML='<div class="sr-price-val">'+fe(data.priceEur||data.price)+'</div>'+
-          '<span class="'+(cp>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</span>';
-      }
-    });
-  }catch(e){
-    console.error('Search error:',e);
-    // Fallback: direct ticker price lookup
-    const data=await fetchPriceInEur(q.toUpperCase());
-    if(data){showDirectResult(q.toUpperCase(),data);}
-    else el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Zoeken mislukt. Probeer exact ticker: AAPL, IWDA.AS, BTC-EUR</div>';
+  }
+
+  // Third try: Yahoo search via proxy
+  try{
+    const proxies = [
+      'https://api.allorigins.win/get?url=',
+      'https://corsproxy.io/?'
+    ];
+    for(const proxy of proxies) {
+      try {
+        const yahooUrl='https://query1.finance.yahoo.com/v1/finance/search?q='+encodeURIComponent(q)+'&quotesCount=6&newsCount=0';
+        const r=await fetch(proxy+encodeURIComponent(yahooUrl));
+        if(!r.ok) continue;
+        const wrapper=await r.json();
+        const d=JSON.parse(proxy.includes('allorigins')?wrapper.contents:wrapper);
+        const quotes=(d?.quotes||[]).filter(item=>item.quoteType&&['ETF','EQUITY','CRYPTOCURRENCY'].includes(item.quoteType));
+        if(!quotes.length) continue;
+        el.innerHTML=quotes.slice(0,5).map(item=>{
+          const safeSym=(item.symbol||'').replace(/['"<>]/g,'');
+          const typeIcon=item.quoteType==='CRYPTOCURRENCY'?'₿':item.quoteType==='ETF'?'📈':'🏢';
+          return '<div class="search-result-item" data-sym="'+safeSym+'" onclick="clickSearchResult(this)">'+
+            '<div class="sr-symbol">'+typeIcon+' '+item.symbol+'</div>'+
+            '<div class="sr-info"><div class="sr-name">'+(item.shortname||item.longname||item.symbol)+'</div>'+
+            '<div class="sr-exchange">'+(item.exchDisp||item.exchange||'')+' &middot; '+(item.quoteType||'')+'</div></div>'+
+            '<div class="sr-price" id="srp-'+safeSym+'"><span style="color:var(--text3);font-size:.75rem">...</span></div>'+
+          '</div>';
+        }).join('');
+        quotes.slice(0,5).forEach(async item=>{
+          const safeSym=(item.symbol||'').replace(/['"<>]/g,'');
+          const data=await fetchPriceInEur(item.symbol);
+          const pe=document.getElementById('srp-'+safeSym);
+          if(pe&&data){const cp=data.changePct||0;pe.innerHTML='<div class="sr-price-val">'+fe(data.priceEur||data.price)+'</div><span class="'+(cp>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</span>';}
+        });
+        return;
+      } catch(e2){}
+    }
+  }catch(e){}
+
+  if(!directData) {
+    el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">'+
+      (ANTHROPIC_KEY?'Geen resultaten gevonden.':'Voor zoeken: voeg een Anthropic API key toe in Instellingen, of gebruik exacte ticker (AAPL, IWDA.AS, BTC-EUR)')+
+    '</div>';
   }
 }
 
@@ -805,106 +932,152 @@ function showLoading(msg){document.getElementById('loading-text').textContent=ms
 function hideLoading(){document.getElementById('loading-overlay').classList.remove('visible');}
 
 // ── SAXO PARSER ──
-// The PDF extracts with spaces removed between some words (concatenated)
-// Actual line format: "27-jun-2025 01-jul-2025 6319429765 ETF XtrackersS&P500SwapUCITSETF USD Koop OPENING 1 123,410 0,8545 - -109,10 -3,65 -3,91"
-// Positions format: "FLXD:xetr 7213234891 EUR 27-jun-2025 1 1,0000 31,6550 37,0350 17,00% 5,38 37,04"
+// Handles two Saxo PDF types:
+// 1. Transactie- en saldorapport (has Koop/Verkoop transactions)
+// 2. Portefeuillerupport (has positions with qty, hist.price, current price)
 function parseSaxoPDF(text){
   let newTx=0,skipped=0,updatedHoldings=0;
   const existingIds=new Set(transactions.map(t=>t.id));
   const MM={jan:'01',feb:'02',mrt:'03',apr:'04',mei:'05',jun:'06',jul:'07',aug:'08',sep:'09',okt:'10',nov:'11',dec:'12'};
-  function saxoDate(s){const p=s.split('-');return p.length===3?p[2]+'-'+(MM[p[1].toLowerCase()]||'01')+'-'+p[0].padStart(2,'0'):s;}
+  function saxoDate(s){const p=(s||'').split('-');return p.length===3?p[2]+'-'+(MM[p[1].toLowerCase()]||'01')+'-'+p[0].padStart(2,'0'):s||'2025-01-01';}
 
-  // Known instrument data: ticker -> [fullName, yahooTicker, type]
-  const INST={
-    'FLXD':['Franklin European Quality Dividend ETF','FLXD.DE','etf'],
-    'XSPU':['Xtrackers S&P 500 Swap UCITS ETF','XSPU.L','etf'],
-    'CD5':['Amundi Core EURO STOXX 50 ETF','CD5.PA','etf'],
-    'WAT':['Amundi MSCI Water UCITS ETF','WAT.PA','etf'],
-    'SWRD':['SPDR MSCI World (Acc) ETF','SWRD.AS','etf'],
-    'WTCH':['SPDR MSCI World Tech ETF','WTCH.AS','etf'],
-    'EMIM':['iShares Core MSCI EM IMI ETF','EMIM.AS','etf'],
-    'IWDA':['iShares Core MSCI World ETF','IWDA.AS','etf'],
-    'UST':['Amundi Core Nasdaq-100 Swap ETF','UST.PA','etf'],
-  };
+  // Known instruments: key fragments -> [name, yahooTicker, type]
+  const INST=[
+    ['AmundiCoreEUROSTOXX50','Amundi Core EURO STOXX 50 ETF','CD5.PA','etf','CD5'],
+    ['AmundiCoreNasdaq-100','Amundi Core Nasdaq-100 Swap ETF','UST.PA','etf','UST'],
+    ['AmundiMSCIWater','Amundi MSCI Water UCITS ETF','WAT.PA','etf','WAT'],
+    ['FranklinEuropeanQuality','Franklin European Quality Dividend ETF','FLXD.DE','etf','FLXD'],
+    ['iSharesCoreMSCIEMIMI','iShares Core MSCI EM IMI ETF','EMIM.AS','etf','EMIM'],
+    ['iSharesCoreMSCIWorld','iShares Core MSCI World ETF','IWDA.AS','etf','IWDA'],
+    ['StateStreetSPDRMSCIWorld(Acc)','SPDR MSCI World (Acc) ETF','SWRD.AS','etf','SWRD'],
+    ['StateStreetSPDRMSCIWorldTech','SPDR MSCI World Tech ETF','WTCH.AS','etf','WTCH'],
+    ['XtrackersS&P500','Xtrackers S&P 500 Swap UCITS ETF','XSPU.L','etf','XSPU'],
+  ];
 
-  const lines=text.split('\n');
-
-  // ── PARSE TRANSACTIONS ──
-  // Pattern: date [valdate] txId ETF <name> EUR/USD Koop/Verkoop OPENING/CLOSING qty price exchangerate
-  // The instrument name may be concatenated with no spaces
-  for(const line of lines){
-    // Match: date, optional valdate, txid (7+ digits), ETF, ..., Koop/Verkoop, OPENING/CLOSING, qty, price
-    const m=line.match(/(\d{2}-\w{3}-\d{4})(?:\s+\S+)?\s+(\d{7,12})\s+ETF\s+(.*?)\s+(EUR|USD)\s+(Koop|Verkoop)\s+(?:OPENING|CLOSING)\s+([\d]+)\s+([\d,]+)(?:\s+[\d,]+)?/);
-    if(!m) continue;
-    const [,dateStr,,txId,rawInstr,currency,typeStr,qtyStr,priceStr]=m;
-    const id='saxo_'+txId;
-    if(existingIds.has(id)){skipped++;continue;}
-    const date=saxoDate(dateStr);
-    const qty=parseInt(qtyStr,10);
-    const price=parseFloat(priceStr.replace(',','.'));
-    const action=typeStr==='Koop'?'buy':'sell';
-    // Find matching instrument by checking if raw name contains ticker or name fragment
-    let ticker='',yahooTicker='',itype='etf',name=rawInstr.trim();
-    for(const [sym,[iname,yt,it]] of Object.entries(INST)){
-      const cleanRaw=rawInstr.replace(/\s+/g,'').toLowerCase();
-      const cleanName=iname.replace(/\s+/g,'').toLowerCase().substring(0,12);
-      if(cleanRaw.includes(sym.toLowerCase())||cleanRaw.includes(cleanName)){
-        ticker=sym;yahooTicker=yt;itype=it;name=iname;break;
+  function findInst(rawName){
+    const clean=rawName.replace(/\s+/g,'');
+    for(const [key,name,yahoo,type,ticker] of INST){
+      const cleanKey=key.replace(/\s+/g,'');
+      if(clean.includes(cleanKey)||clean.toLowerCase().includes(cleanKey.toLowerCase().substring(0,12))){
+        return{name,yahooTicker:yahoo,type,ticker};
       }
     }
-    // If no match found from known list, extract ticker from raw
-    if(!ticker){
-      const symMatch=rawInstr.match(/([A-Z]{2,6})(?::|\s)/);
-      if(symMatch)ticker=symMatch[1];
-    }
-    const tx={id,name,ticker,yahooTicker,type:itype,broker:'Saxo Bank',qty,price,total:qty*price,date,action};
-    transactions.push(tx);existingIds.add(id);newTx++;
-    upsertHolding({id:'h_saxo_'+(ticker||txId),name,ticker,yahooTicker,type:itype,broker:'Saxo Bank',qty:action==='buy'?qty:-qty,price,date});
-    updatedHoldings++;
+    return null;
   }
 
-  // ── PARSE POSITIONS (current state from position pages) ──
-  // Pattern: TICKER:exchange positionId EUR/USD dd-mmm-yyyy qty exchangeRate openPrice currentPrice %change WV currentValue
-  const posRe=/([A-Z]{2,6}):x\w+\s+(\d{10})\s+(EUR|USD)\s+(\d{2}-\w{3}-\d{4})\s+(\d+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)(?:\s+[\d.,%-]+){3}/g;
-  let pm;
-  while((pm=posRe.exec(text))!==null){
-    const [,sym,,currency,dateStr,qtyStr,,openStr,curStr]=pm;
-    const instData=INST[sym];
-    if(!instData)continue;
-    const [iname,yt,it]=instData;
-    const qty=parseInt(qtyStr,10);
-    const openPrice=parseFloat(openStr.replace(',','.'));
-    const curPrice=parseFloat(curStr.replace(',','.'));
-    const date=saxoDate(dateStr);
-    const existing=holdings.find(h=>h.ticker===sym&&h.broker==='Saxo Bank');
-    if(existing){
-      existing.qty=qty;existing.current=curPrice;
-      if(!existing.yahooTicker)existing.yahooTicker=yt;
-      updatedHoldings++;
-    } else {
-      holdings.push({id:'h_saxo_'+sym,name:iname,ticker:sym,yahooTicker:yt,type:it,broker:'Saxo Bank',qty,price:openPrice,current:curPrice,date,notes:''});
-      updatedHoldings++;
-    }
-  }
+  const isPortfolioReport=text.includes('Portefeuillerupport')||text.includes('Posities, EUR')||text.includes('Historische');
+  const isTransactionReport=text.includes('Transactie- en saldorapport')||text.includes('Koop')||text.includes('Verkoop');
 
-  // If positions were found but no transactions matched (regex issue), still report holdings update
-  const posCount=(text.match(/([A-Z]{2,6}):x\w+\s+\d{10}/g)||[]).length;
-  if(posCount>0&&updatedHoldings===0){
-    // Parse positions more leniently
-    for(const [sym,[iname,yt,it]] of Object.entries(INST)){
-      const re=new RegExp(sym+':x\\w+\\s+(\\d{10})\\s+(EUR|USD)\\s+(\\d{2}-\\w{3}-\\d{4})\\s+(\\d+)\\s+[\\d,]+\\s+([\\d,]+)\\s+([\\d,]+)');
-      const m=re.exec(text);
+  // ── TYPE 1: PORTFOLIO REPORT ──
+  // Parse position lines: "EUR Aandelen {qty} {exchRate} {histPrice} {curPrice} {%chg}% {unrealPL} {curValue} {curValue%}"
+  // The instrument name appears on previous lines (concatenated without spaces)
+  if(isPortfolioReport){
+    const lines=text.split('\n');
+    let currentInstrName='';
+    const today=new Date().toISOString().split('T')[0];
+
+    for(let i=0;i<lines.length;i++){
+      const line=lines[i].trim();
+
+      // Accumulate instrument name text (lines before the data line)
+      if(line.match(/^[A-Z][a-zA-Z]/)){
+        currentInstrName=line;
+      } else if(line.length>0 && !line.match(/^(EUR|USD|Aandelen|Pagina|Saxo|Wout|Valuta|Rekening|Instrument|Product|Op de|Cash|Totaal|Alle|98900)/i)){
+        if(currentInstrName && !line.match(/^\d/)) currentInstrName+=line;
+      }
+
+      // Data line: EUR/USD Aandelen {qty} {rate} {histPrice} {curPrice} {%} ...
+      const m=line.match(/^(EUR|USD)\s+Aandelen\s+(\d+)\s+([\d,]+)\s+([\d,.]+)\s+([\d,.]+)\s+([-\d,.]+)%/);
       if(m){
-        const [,posId,cur,dateStr,qtyStr,openStr,curStr]=m;
-        const qty=parseInt(qtyStr,10),openPrice=parseFloat(openStr.replace(',','.')),curPrice=parseFloat(curStr.replace(',','.'));
-        const existing=holdings.find(h=>h.ticker===sym&&h.broker==='Saxo Bank');
-        if(existing){existing.qty=qty;existing.current=curPrice;existing.yahooTicker=yt;updatedHoldings++;}
-        else{holdings.push({id:'h_saxo_'+sym,name:iname,ticker:sym,yahooTicker:yt,type:it,broker:'Saxo Bank',qty,price:openPrice,current:curPrice,date:saxoDate(dateStr),notes:''});updatedHoldings++;}
+        const[,currency,qtyStr,rateStr,histStr,curStr]=m;
+        const qty=parseInt(qtyStr,10);
+        const exchRate=parseFloat(rateStr.replace(',','.'));
+        const histPrice=parseFloat(histStr.replace(',','.'));
+        const curPrice=parseFloat(curStr.replace(',','.'));
+
+        // Find instrument from accumulated name or look back in text
+        // Search backwards from current position for ISIN or name
+        let instData=findInst(currentInstrName);
+        if(!instData){
+          // Try looking at previous lines
+          for(let back=1;back<=8;back++){
+            if(i-back>=0){
+              instData=findInst(lines[i-back]);
+              if(instData)break;
+            }
+          }
+        }
+
+        if(instData){
+          const{name,yahooTicker,type,ticker}=instData;
+          const hId='h_saxo_'+ticker;
+          // Calculate EUR price (for USD instruments divide by exchange rate)
+          const curPriceEur=currency==='USD'?curPrice*exchRate:curPrice;
+          const histPriceEur=currency==='USD'?histPrice*exchRate:histPrice;
+
+          const existing=holdings.find(h=>h.ticker===ticker&&h.broker==='Saxo Bank');
+          if(existing){
+            existing.qty=qty;
+            existing.current=curPriceEur;
+            if(!existing.yahooTicker)existing.yahooTicker=yahooTicker;
+            updatedHoldings++;
+          } else {
+            holdings.push({id:hId,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price:histPriceEur,current:curPriceEur,date:today,notes:'',instrumentCurrency:currency});
+            updatedHoldings++;
+          }
+          // Also add as a synthetic transaction if none exists
+          const txId='saxo_port_'+ticker;
+          if(!existingIds.has(txId)){
+            transactions.push({id:txId,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price:histPriceEur,total:qty*histPriceEur,date:today,action:'buy'});
+            existingIds.add(txId);newTx++;
+          } else {skipped++;}
+        }
+        currentInstrName='';
       }
     }
   }
 
-  return{newTx,skipped,updatedHoldings,broker:'Saxo Bank'};
+  // ── TYPE 2: TRANSACTION REPORT ──
+  if(isTransactionReport){
+    const lines=text.split('\n');
+    for(const line of lines){
+      const m=line.match(/(\d{2}-\w{3}-\d{4})(?:\s+\S+)?\s+(\d{7,12})\s+ETF\s+(.*?)\s+(EUR|USD)\s+(Koop|Verkoop)\s+(?:OPENING|CLOSING)\s+(\d+)\s+([\d,]+)(?:\s+[\d,]+)?/);
+      if(!m)continue;
+      const[,dateStr,,txId,rawInstr,currency,typeStr,qtyStr,priceStr]=m;
+      const id='saxo_'+txId;
+      if(existingIds.has(id)){skipped++;continue;}
+      const date=saxoDate(dateStr);
+      const qty=parseInt(qtyStr,10);
+      const price=parseFloat(priceStr.replace(',','.'));
+      const action=typeStr==='Koop'?'buy':'sell';
+      let instData=findInst(rawInstr);
+      if(!instData){
+        const symM=rawInstr.match(/([A-Z]{2,6})(?::|UCITS|ETF)/);
+        instData={name:rawInstr.trim(),yahooTicker:'',type:'etf',ticker:symM?symM[1]:''};
+      }
+      const{name,yahooTicker,type,ticker}=instData;
+      const tx={id,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price,total:qty*price,date,action};
+      transactions.push(tx);existingIds.add(id);newTx++;
+      upsertHolding({id:'h_saxo_'+(ticker||txId),name,ticker,yahooTicker,type,broker:'Saxo Bank',qty:action==='buy'?qty:-qty,price,date});
+      updatedHoldings++;
+    }
+
+    // Also parse positions from transaction report
+    const posRe=/([A-Z]{2,6}):x\w+\s+(\d{10})\s+(EUR|USD)\s+(\d{2}-\w{3}-\d{4})\s+(\d+)\s+[\d,]+\s+([\d,]+)\s+([\d,]+)/g;
+    let pm;
+    while((pm=posRe.exec(text))!==null){
+      const[,sym,,currency,dateStr,qtyStr,openStr,curStr]=pm;
+      const instData2=INST.find(([,,,, t])=>t===sym);
+      if(!instData2)continue;
+      const[,iname,yt,it,iticker]=instData2;
+      const qty=parseInt(qtyStr,10),op=parseFloat(openStr.replace(',','.')),cp=parseFloat(curStr.replace(',','.'));
+      const existing=holdings.find(h=>h.ticker===sym&&h.broker==='Saxo Bank');
+      if(existing){existing.qty=qty;existing.current=cp;existing.yahooTicker=yt;updatedHoldings++;}
+      else{holdings.push({id:'h_saxo_'+sym,name:iname,ticker:sym,yahooTicker:yt,type:it,broker:'Saxo Bank',qty,price:op,current:cp,date:saxoDate(dateStr),notes:''});updatedHoldings++;}
+    }
+  }
+
+  return{newTx,skipped,updatedHoldings,broker:'Saxo Bank',reportType:isPortfolioReport?'Portefeuillerapport':'Transactierapport'};
 }
 
 // ── REVOLUT PARSER ──
@@ -982,14 +1155,15 @@ function upsertHolding(data){
 
 function showImportResult(result){
   const el=document.getElementById('import-result');
-  const ok=result.newTx>0||result.updatedHoldings>0;
-  el.innerHTML=`<div class="import-result">
-    <div class="import-result-title">${ok?'✅':'⚠️'} Import ${ok?'voltooid':'klaar'} — ${result.broker}</div>
-    <div class="import-row"><span class="lbl">Nieuwe transacties</span><span class="val ${result.newTx>0?'new':'skip'}">+${result.newTx}</span></div>
-    <div class="import-row"><span class="lbl">Overgeslagen (duplicaat)</span><span class="val skip">${result.skipped}</span></div>
-    <div class="import-row"><span class="lbl">Holdings bijgewerkt</span><span class="val ${result.updatedHoldings>0?'new':'skip'}">${result.updatedHoldings}</span></div>
-    ${!ok?'<div style="font-size:.78rem;color:var(--text3);margin-top:8px">Geen nieuwe transacties gevonden. Controleer of je het juiste type PDF hebt gekozen.</div>':''}
-  </div>`;
+  const ok=result.updatedHoldings>0||result.newTx>0;
+  const typeLabel=result.reportType?(' ('+result.reportType+')'):'';
+  el.innerHTML='<div class="import-result">'+
+    '<div class="import-result-title">'+(ok?'✅':'⚠️')+' Import '+(ok?'voltooid':'klaar')+' — '+result.broker+typeLabel+'</div>'+
+    '<div class="import-row"><span class="lbl">Holdings toegevoegd/bijgewerkt</span><span class="val '+(result.updatedHoldings>0?'new':'skip')+'">'+result.updatedHoldings+'</span></div>'+
+    '<div class="import-row"><span class="lbl">Nieuwe transacties</span><span class="val '+(result.newTx>0?'new':'skip')+'">+'+result.newTx+'</span></div>'+
+    '<div class="import-row"><span class="lbl">Overgeslagen (duplicaat)</span><span class="val skip">'+result.skipped+'</span></div>'+
+    (!ok?'<div style="font-size:.78rem;color:var(--text3);margin-top:8px">Geen data gevonden. Zorg dat je het Transactie- en saldorapport of Portefeuillerapport gebruikt.</div>':'')+
+  '</div>';
 }
 
 function renderAll(){renderOverview();renderHoldings();renderTransactions();}
@@ -1023,11 +1197,32 @@ async function handleJsonImport(e){const file=e.target.files[0];if(!file)return;
 async function clearData(){if(!confirm('Alle data wissen?'))return;holdings=[];transactions=[];await persist();renderAll();showToast('Alle data gewist');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
+// ── API KEY ──
+function showApiKeySetup(){
+  document.getElementById('api-key-input').value=ANTHROPIC_KEY;
+  document.getElementById('apikey-modal').classList.add('open');
+}
+function closeApiModal(e){if(e.target===document.getElementById('apikey-modal'))document.getElementById('apikey-modal').classList.remove('open');}
+function saveApiKey(){
+  const key=document.getElementById('api-key-input').value.trim();
+  ANTHROPIC_KEY=key;
+  localStorage.setItem('v_api_key',key);
+  updateApiKeyBadge();
+  document.getElementById('apikey-modal').classList.remove('open');
+  showToast(key?'API key opgeslagen ✓':'API key verwijderd');
+}
+function clearApiKey(){ANTHROPIC_KEY='';localStorage.removeItem('v_api_key');updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');showToast('API key verwijderd');}
+function updateApiKeyBadge(){
+  const badge=document.getElementById('api-key-badge'),sub=document.getElementById('api-key-sub');
+  if(badge){badge.textContent=ANTHROPIC_KEY?'INGESTELD':'NIET INGESTELD';badge.className='si-badge'+(ANTHROPIC_KEY?'':' off');}
+  if(sub)sub.textContent=ANTHROPIC_KEY?'Zoeken & koersen actief':'Voor zoeken & automatische koersen';
+}
+
 // ── INIT ──
 (function init(){
   document.getElementById('header-date').textContent=new Date().toLocaleDateString('nl-BE',{weekday:'short',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
   document.getElementById('add-date').value=new Date().toISOString().split('T')[0];
-  loadPrefs();loadEmailJS();
+  loadPrefs();loadEmailJS();ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
   const hasPIN=!!localStorage.getItem('v_hash'),ejsSkipped=localStorage.getItem('v_ejs_skipped');
   if(!ejsService&&!ejsSkipped){document.getElementById('setup-screen').classList.add('visible');document.getElementById('pin-screen').style.display='none';return;}
   if(!hasPIN)hint('Stel je 6-cijferige PIN in');
