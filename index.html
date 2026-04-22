@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vault">
+<title>Vault – Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+  :root {
+    --bg:#f5f4f0;--bg2:#ede9e3;--card:#ffffff;--border:rgba(0,0,0,0.08);
+    --text:#1a1714;--text2:#6b6460;--text3:#a09894;
+    --accent:#c17f3a;--accent2:#e8a855;
+    --green:#2d7a4f;--green-bg:#e8f5ee;--red:#c0392b;--red-bg:#fdecea;
+    --shadow:0 2px 16px rgba(0,0,0,0.07);--radius:18px;--radius-sm:10px;
+  }
+  @media(prefers-color-scheme:dark){:root{
+    --bg:#0f0e0d;--bg2:#1a1814;--card:#1e1c18;--border:rgba(255,255,255,0.07);
+    --text:#f0ece6;--text2:#9a9088;--text3:#5c5550;
+    --accent:#d4913f;--accent2:#f0b86a;
+    --green:#4caf7d;--green-bg:#0d2b1a;--red:#e05c4b;--red-bg:#2b0f0d;
+    --shadow:0 2px 16px rgba(0,0,0,0.4);
+  }}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+  /* ── LOCK SCREEN ── */
+  #pin-screen{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .35s ease,transform .35s ease}
+  #pin-screen.hidden{opacity:0;transform:scale(.96);pointer-events:none}
+  .pin-logo{font-family:'DM Serif Display',serif;font-size:2.6rem;color:var(--accent);margin-bottom:4px;letter-spacing:-.5px}
+  .pin-sub{font-size:.8rem;color:var(--text3);margin-bottom:40px;letter-spacing:.08em}
+  .pin-dots{display:flex;gap:12px;margin-bottom:40px}
+  .pin-dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--text3);transition:all .2s ease}
+  .pin-dot.filled{background:var(--accent);border-color:var(--accent);transform:scale(1.15)}
+  .pin-dot.error{background:var(--red);border-color:var(--red);animation:shake .3s ease}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:252px}
+  .pin-btn{background:var(--card);border:1px solid var(--border);border-radius:50%;width:70px;height:70px;font-family:'DM Mono',monospace;font-size:1.35rem;font-weight:400;color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:var(--shadow);transition:all .12s ease;user-select:none}
+  .pin-btn:active{transform:scale(.91);background:var(--bg2)}
+  .pin-btn .letters{font-size:.42rem;letter-spacing:.12em;color:var(--text3);margin-top:2px;font-family:'DM Sans',sans-serif}
+  .pin-btn.del{font-size:1rem;color:var(--text2)}
+  .pin-btn.empty{background:transparent;border:none;box-shadow:none;pointer-events:none}
+  .pin-hint{margin-top:22px;font-size:.76rem;color:var(--text3);min-height:1.4em;text-align:center;padding:0 28px}
+  .faceid-btn{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;opacity:.85;transition:opacity .2s}
+  .faceid-btn:active{opacity:.45}
+  .faceid-btn.hidden{display:none}
+  .faceid-icon{width:52px;height:52px;border-radius:14px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:1.6rem}
+  .faceid-label{font-size:.65rem;color:var(--text3);letter-spacing:.07em;font-weight:600}
+  .security-badge{position:absolute;bottom:26px;font-size:.67rem;color:var(--text3);opacity:.6;display:flex;align-items:center;gap:4px}
+
+  /* ── APP ── */
+  #app{display:none;flex-direction:column;min-height:100dvh;padding-bottom:80px}
+  #app.visible{display:flex}
+  .app-header{padding:54px 20px 14px;display:flex;align-items:center;justify-content:space-between}
+  .app-logo{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--accent)}
+  .header-date{font-size:.76rem;color:var(--text3);letter-spacing:.04em}
+  .header-btn{width:36px;height:36px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;box-shadow:var(--shadow);transition:transform .15s ease}
+  .header-btn:active{transform:scale(.9)}
+  .tab-bar{display:flex;gap:6px;padding:0 20px 14px;overflow-x:auto;scrollbar-width:none}
+  .tab-bar::-webkit-scrollbar{display:none}
+  .tab-btn{padding:7px 16px;border-radius:20px;border:1px solid var(--border);background:var(--card);font-size:.8rem;font-weight:500;color:var(--text2);cursor:pointer;white-space:nowrap;transition:all .18s ease}
+  .tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 3px 12px rgba(193,127,58,.35)}
+  .page{display:none;flex-direction:column;gap:16px;padding:0 16px;animation:fadeUp .3s ease}
+  .page.active{display:flex}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  /* OVERVIEW */
+  .total-card{background:linear-gradient(145deg,var(--accent),var(--accent2));border-radius:var(--radius);padding:24px 22px;color:#fff;position:relative;overflow:hidden}
+  .total-card::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.1)}
+  .total-card::after{content:'';position:absolute;bottom:-60px;left:20px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.06)}
+  .total-label{font-size:.76rem;letter-spacing:.08em;opacity:.85;margin-bottom:4px}
+  .total-value{font-family:'DM Serif Display',serif;font-size:2.6rem;letter-spacing:-1px;line-height:1.1;margin-bottom:14px}
+  .total-value.blur-value{filter:blur(8px);user-select:none}
+  .total-row{display:flex;gap:10px;flex-wrap:wrap}
+  .total-stat{background:rgba(255,255,255,.18);border-radius:10px;padding:8px 11px}
+  .total-stat .s-label{font-size:.66rem;opacity:.8;margin-bottom:2px;letter-spacing:.05em}
+  .total-stat .s-val{font-family:'DM Mono',monospace;font-size:.9rem;font-weight:500}
+  .eye-btn{position:absolute;top:18px;right:18px;background:rgba(255,255,255,.2);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;color:#fff}
+  .section-title{font-size:.7rem;font-weight:600;letter-spacing:.1em;color:var(--text3);text-transform:uppercase;padding:0 2px}
+  .chart-card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border:1px solid var(--border)}
+  .chart-wrap{display:flex;align-items:center;gap:18px}
+  .donut-wrap{position:relative;flex-shrink:0}
+  .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donut-center .dc-label{font-size:.58rem;color:var(--text3);letter-spacing:.06em}
+  .donut-center .dc-val{font-family:'DM Mono',monospace;font-size:.86rem;color:var(--text)}
+  .legend{display:flex;flex-direction:column;gap:8px;flex:1}
+  .legend-item{display:flex;align-items:center;gap:8px}
+  .legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .legend-name{font-size:.8rem;color:var(--text2);flex:1}
+  .legend-pct{font-family:'DM Mono',monospace;font-size:.8rem;color:var(--text);font-weight:500}
+  .holdings-list{display:flex;flex-direction:column;gap:10px}
+  .holding-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);padding:13px 15px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .15s ease}
+  .holding-card:active{transform:scale(.98)}
+  .holding-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+  .holding-info{flex:1;min-width:0}
+  .holding-name{font-size:.9rem;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .holding-meta{font-size:.73rem;color:var(--text3)}
+  .holding-right{text-align:right;flex-shrink:0}
+  .holding-value{font-family:'DM Mono',monospace;font-size:.9rem;font-weight:500;margin-bottom:2px}
+  .holding-change{font-size:.73rem;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:5px}
+  .up{color:var(--green);background:var(--green-bg)}.down{color:var(--red);background:var(--red-bg)}.neutral{color:var(--text3);background:var(--bg2)}
+  .broker-tag{font-size:.56rem;letter-spacing:.08em;font-weight:600;padding:2px 5px;border-radius:4px;text-transform:uppercase}
+  .broker-saxo{background:#003B6F22;color:#003B6F}.broker-revolut{background:#19191922;color:var(--text2)}
+  @media(prefers-color-scheme:dark){.broker-saxo{background:#003B6F55;color:#6baee8}.broker-revolut{background:#ffffff15;color:var(--text2)}}
+
+  /* FORM */
+  .form-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);padding:20px}
+  .form-title{font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:16px}
+  .form-group{margin-bottom:13px}
+  .form-label{font-size:.7rem;font-weight:600;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;margin-bottom:5px;display:block}
+  .form-input,.form-select{width:100%;padding:11px 13px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s;-webkit-appearance:none}
+  .form-input:focus,.form-select:focus{border-color:var(--accent)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .btn-primary{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.93rem;font-weight:600;cursor:pointer;transition:all .18s ease;box-shadow:0 4px 14px rgba(193,127,58,.35);margin-top:5px}
+  .btn-primary:active{transform:scale(.97)}
+
+  /* HISTORY */
+  .tx-item{background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);padding:11px 13px;display:flex;align-items:center;gap:11px}
+  .tx-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
+  .tx-icon.buy{background:var(--green-bg)}.tx-icon.sell{background:var(--red-bg)}
+  .tx-info{flex:1}.tx-name{font-size:.86rem;font-weight:600}.tx-date{font-size:.7rem;color:var(--text3);margin-top:1px}
+  .tx-amount{font-family:'DM Mono',monospace;font-size:.88rem;font-weight:500;text-align:right}
+  .tx-amount.buy{color:var(--green)}.tx-amount.sell{color:var(--red)}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s ease}
+  .modal-overlay.open{opacity:1;pointer-events:all}
+  .modal-sheet{background:var(--bg);border-radius:24px 24px 0 0;width:100%;padding:20px 20px 40px;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:82dvh;overflow-y:auto}
+  .modal-overlay.open .modal-sheet{transform:translateY(0)}
+  .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px}
+  .modal-title{font-family:'DM Serif Display',serif;font-size:1.45rem;margin-bottom:4px}
+  .modal-ticker{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--text3);margin-bottom:18px}
+  .modal-stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
+  .modal-stat{background:var(--card);border-radius:var(--radius-sm);padding:11px 13px;border:1px solid var(--border)}
+  .modal-stat .ms-label{font-size:.66rem;color:var(--text3);letter-spacing:.06em;margin-bottom:3px}
+  .modal-stat .ms-val{font-family:'DM Mono',monospace;font-size:.98rem;font-weight:500}
+  .btn-danger{width:100%;padding:12px;background:transparent;color:var(--red);border:1px solid var(--red);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;margin-top:10px}
+
+  /* SETTINGS */
+  .settings-section{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+  .settings-item{background:var(--card);border:1px solid var(--border);padding:13px 15px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:background .15s ease}
+  .settings-item:first-child{border-radius:var(--radius-sm) var(--radius-sm) 0 0}
+  .settings-item:last-child{border-radius:0 0 var(--radius-sm) var(--radius-sm)}
+  .settings-item:only-child{border-radius:var(--radius-sm)}
+  .settings-item:active{background:var(--bg2)}
+  .si-icon{font-size:1.05rem;width:28px;text-align:center}.si-info{flex:1}
+  .si-label{font-size:.88rem;font-weight:500}.si-sub{font-size:.73rem;color:var(--text3);margin-top:1px}
+  .si-arrow{color:var(--text3);font-size:.9rem}
+  .si-badge{font-size:.68rem;padding:2px 8px;border-radius:10px;background:var(--green-bg);color:var(--green);font-weight:600}
+  .si-badge.off{background:var(--bg2);color:var(--text3)}
+
+  /* SETUP SCREEN */
+  #setup-screen{position:fixed;inset:0;z-index:2000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px;gap:16px}
+  #setup-screen.visible{display:flex}
+  .setup-title{font-family:'DM Serif Display',serif;font-size:1.8rem;color:var(--accent);text-align:center}
+  .setup-sub{font-size:.85rem;color:var(--text2);text-align:center;line-height:1.5;margin-bottom:8px}
+  .setup-input{width:100%;max-width:320px;padding:13px 16px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s}
+  .setup-input:focus{border-color:var(--accent)}
+  .setup-btn{width:100%;max-width:320px;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(193,127,58,.35)}
+  .setup-note{font-size:.73rem;color:var(--text3);text-align:center;max-width:300px;line-height:1.5}
+
+  ::-webkit-scrollbar{width:0}
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:20px;font-size:.84rem;font-weight:500;opacity:0;transition:all .3s ease;z-index:9999;white-space:nowrap;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- ══ EMAILJS SETUP SCREEN (eerste keer) ══ -->
+<div id="setup-screen">
+  <div class="setup-title">Vault instellen</div>
+  <div class="setup-sub">Voer je EmailJS gegevens in zodat je een melding krijgt bij elke login.<br>Dit is eenmalig.</div>
+  <input type="text" class="setup-input" id="setup-service" placeholder="EmailJS Service ID (bijv. service_abc123)">
+  <input type="text" class="setup-input" id="setup-template" placeholder="EmailJS Template ID (bijv. template_xyz789)">
+  <input type="text" class="setup-input" id="setup-pubkey" placeholder="EmailJS Public Key">
+  <button class="setup-btn" onclick="saveEmailJS()">Opslaan & doorgaan</button>
+  <div class="setup-note">Nog geen EmailJS account? Zie de instructies onderaan deze pagina om het gratis in te stellen.</div>
+  <button onclick="skipEmailJS()" style="background:none;border:none;color:var(--text3);font-size:.8rem;cursor:pointer;margin-top:-8px">Sla over (geen meldingen)</button>
+</div>
+
+<!-- ══ LOCK SCREEN ══ -->
+<div id="pin-screen">
+  <div class="pin-logo">Vault</div>
+  <div class="pin-sub">PORTFOLIO TRACKER</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+    <div class="pin-dot" id="d4"></div><div class="pin-dot" id="d5"></div>
+  </div>
+  <div class="pin-grid">
+    <button class="pin-btn" onclick="pinPress('1')">1</button>
+    <button class="pin-btn" onclick="pinPress('2')">2<span class="letters">ABC</span></button>
+    <button class="pin-btn" onclick="pinPress('3')">3<span class="letters">DEF</span></button>
+    <button class="pin-btn" onclick="pinPress('4')">4<span class="letters">GHI</span></button>
+    <button class="pin-btn" onclick="pinPress('5')">5<span class="letters">JKL</span></button>
+    <button class="pin-btn" onclick="pinPress('6')">6<span class="letters">MNO</span></button>
+    <button class="pin-btn" onclick="pinPress('7')">7<span class="letters">PQRS</span></button>
+    <button class="pin-btn" onclick="pinPress('8')">8<span class="letters">TUV</span></button>
+    <button class="pin-btn" onclick="pinPress('9')">9<span class="letters">WXYZ</span></button>
+    <button class="pin-btn empty"></button>
+    <button class="pin-btn" onclick="pinPress('0')">0</button>
+    <button class="pin-btn del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-hint" id="pin-hint">Voer je 6-cijferige PIN in</div>
+  <div class="faceid-btn hidden" id="faceid-btn" onclick="triggerBiometric()">
+    <div class="faceid-icon">🧬</div>
+    <div class="faceid-label">FACE ID / TOUCH ID</div>
+  </div>
+  <div class="security-badge">🔐 AES-256 versleuteld</div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="app">
+  <div class="app-header">
+    <div>
+      <div class="app-logo">Vault</div>
+      <div class="header-date" id="header-date"></div>
+    </div>
+    <button class="header-btn" onclick="lockApp()">🔒</button>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">Overzicht</button>
+    <button class="tab-btn" onclick="switchTab('holdings',this)">Holdings</button>
+    <button class="tab-btn" onclick="switchTab('add',this)">+ Toevoegen</button>
+    <button class="tab-btn" onclick="switchTab('history',this)">Geschiedenis</button>
+    <button class="tab-btn" onclick="switchTab('settings',this)">Instellingen</button>
+  </div>
+
+  <!-- OVERZICHT -->
+  <div class="page active" id="page-overview">
+    <div class="total-card">
+      <button class="eye-btn" id="eye-btn" onclick="toggleBlur()">👁</button>
+      <div class="total-label">TOTALE PORTFOLIO</div>
+      <div class="total-value" id="total-value">€0,00</div>
+      <div class="total-row">
+        <div class="total-stat"><div class="s-label">VANDAAG</div><div class="s-val" id="daily-change">–</div></div>
+        <div class="total-stat"><div class="s-label">TOTAAL W/V</div><div class="s-val" id="total-pl">+€0,00</div></div>
+        <div class="total-stat"><div class="s-label">RENDEMENT</div><div class="s-val" id="total-pct">0,00%</div></div>
+      </div>
+    </div>
+    <div class="section-title">VERDELING</div>
+    <div class="chart-card">
+      <div class="chart-wrap">
+        <div class="donut-wrap">
+          <svg width="110" height="110" viewBox="0 0 110 110" id="donut-svg">
+            <circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>
+          </svg>
+          <div class="donut-center"><div class="dc-label">ACTIVA</div><div class="dc-val" id="donut-count">0</div></div>
+        </div>
+        <div class="legend" id="donut-legend"><div style="font-size:.8rem;color:var(--text3)">Nog geen holdings</div></div>
+      </div>
+    </div>
+    <div class="section-title">TOP HOLDINGS</div>
+    <div class="holdings-list" id="top-holdings-list">
+      <div class="empty-state"><div class="es-icon">📊</div><div style="font-size:1rem;font-weight:600;color:var(--text2);margin-bottom:6px">Nog geen holdings</div><div style="font-size:.82rem;line-height:1.5">Ga naar "+ Toevoegen" om je eerste investering toe te voegen</div></div>
+    </div>
+  </div>
+
+  <!-- HOLDINGS -->
+  <div class="page" id="page-holdings">
+    <div class="section-title">ALLE HOLDINGS</div>
+    <div class="holdings-list" id="all-holdings-list">
+      <div class="empty-state"><div class="es-icon" style="font-size:3rem;margin-bottom:12px;opacity:.6">💼</div><div style="font-size:1rem;font-weight:600;color:var(--text2)">Nog geen holdings</div></div>
+    </div>
+  </div>
+
+  <!-- TOEVOEGEN -->
+  <div class="page" id="page-add">
+    <div class="form-card">
+      <div class="form-title">Investering toevoegen</div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="add-type" onchange="onTypeChange()">
+          <option value="etf">ETF</option>
+          <option value="stock">Aandeel</option>
+          <option value="crypto">Bitcoin / Crypto</option>
+          <option value="cash">Cash / Spaarrekening</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Naam</label>
+        <input type="text" class="form-input" id="add-name" placeholder="bijv. VWCE, Apple, Bitcoin…">
+      </div>
+      <div class="form-group" id="ticker-group">
+        <label class="form-label">Ticker / Symbool</label>
+        <input type="text" class="form-input" id="add-ticker" placeholder="bijv. VWCE.AS, AAPL, BTC">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Broker</label>
+        <select class="form-select" id="add-broker">
+          <option value="Saxo Bank">Saxo Bank</option>
+          <option value="Revolut">Revolut</option>
+          <option value="Andere">Andere</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Aantal</label>
+          <input type="number" class="form-input" id="add-qty" placeholder="0" step="any" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="price-label">Aankoopprijs (€)</label>
+          <input type="number" class="form-input" id="add-price" placeholder="0,00" step="any" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Huidige prijs (€)</label>
+        <input type="number" class="form-input" id="add-current" placeholder="0,00" step="any" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Aankoopdatum</label>
+        <input type="date" class="form-input" id="add-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notitie (optioneel)</label>
+        <input type="text" class="form-input" id="add-notes" placeholder="bijv. Maandelijkse DCA">
+      </div>
+      <button class="btn-primary" onclick="addHolding()">Toevoegen aan portfolio</button>
+    </div>
+  </div>
+
+  <!-- GESCHIEDENIS -->
+  <div class="page" id="page-history">
+    <div class="section-title">TRANSACTIEGESCHIEDENIS</div>
+    <div id="history-list">
+      <div class="empty-state"><div class="es-icon" style="font-size:3rem;margin-bottom:12px;opacity:.6">🕐</div><div style="font-size:1rem;font-weight:600;color:var(--text2)">Nog geen transacties</div></div>
+    </div>
+  </div>
+
+  <!-- INSTELLINGEN -->
+  <div class="page" id="page-settings">
+    <div class="section-title">BEVEILIGING</div>
+    <div class="settings-section">
+      <div class="settings-item" onclick="changePIN()">
+        <div class="si-icon">🔐</div>
+        <div class="si-info"><div class="si-label">PIN wijzigen</div><div class="si-sub">Verander je 6-cijferige PIN</div></div>
+        <div class="si-arrow">›</div>
+      </div>
+      <div class="settings-item" onclick="toggleBiometric()">
+        <div class="si-icon">🧬</div>
+        <div class="si-info"><div class="si-label">Face ID / Touch ID</div><div class="si-sub" id="bio-sub">Tik om in te schakelen</div></div>
+        <div class="si-badge off" id="bio-badge">UIT</div>
+      </div>
+      <div class="settings-item">
+        <div class="si-icon">🛡</div>
+        <div class="si-info"><div class="si-label">AES-256 versleuteling</div><div class="si-sub">Alle data versleuteld met jouw PIN</div></div>
+        <div class="si-badge">AAN</div>
+      </div>
+      <div class="settings-item" onclick="showEmailSetup()">
+        <div class="si-icon">📧</div>
+        <div class="si-info"><div class="si-label">Login meldingen</div><div class="si-sub" id="email-sub">E-mail bij elke login</div></div>
+        <div class="si-badge" id="email-badge">AAN</div>
+      </div>
+    </div>
+    <div class="section-title">DATA</div>
+    <div class="settings-section">
+      <div class="settings-item" onclick="exportData()">
+        <div class="si-icon">📤</div>
+        <div class="si-info"><div class="si-label">Exporteer backup</div><div class="si-sub">Download versleuteld JSON bestand</div></div>
+        <div class="si-arrow">›</div>
+      </div>
+      <div class="settings-item" onclick="importData()">
+        <div class="si-icon">📥</div>
+        <div class="si-info"><div class="si-label">Importeer backup</div><div class="si-sub">Herstel vanuit backup</div></div>
+        <div class="si-arrow">›</div>
+      </div>
+      <div class="settings-item" onclick="clearData()">
+        <div class="si-icon">🗑</div>
+        <div class="si-info"><div class="si-label">Alles wissen</div><div class="si-sub" style="color:var(--red)">Verwijder alle holdings & geschiedenis</div></div>
+        <div class="si-arrow">›</div>
+      </div>
+    </div>
+    <div class="section-title">OVER</div>
+    <div class="settings-section">
+      <div class="settings-item">
+        <div class="si-icon">💼</div>
+        <div class="si-info"><div class="si-label">Vault v3.0</div><div class="si-sub">Persoonlijke portfolio tracker</div></div>
+      </div>
+      <div class="settings-item">
+        <div class="si-icon">🏦</div>
+        <div class="si-info"><div class="si-label">Brokers</div><div class="si-sub">Saxo Bank · Revolut</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-name">–</div>
+    <div class="modal-ticker" id="modal-ticker">–</div>
+    <div class="modal-stats" id="modal-stats"></div>
+    <div id="modal-update-form"></div>
+    <button class="btn-danger" id="modal-delete-btn">Holding verwijderen</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script>
+// ══════════════════════════════════════════
+// AES-256-GCM ENCRYPTIE
+// ══════════════════════════════════════════
+const ENC=new TextEncoder(),DEC=new TextDecoder();
+async function deriveKey(pin,salt){
+  const km=await crypto.subtle.importKey('raw',ENC.encode(pin),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function aesEncrypt(data,pin){
+  const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+  const key=await deriveKey(pin,salt);
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,ENC.encode(JSON.stringify(data)));
+  const out=new Uint8Array(28+ct.byteLength);
+  out.set(salt,0);out.set(iv,16);out.set(new Uint8Array(ct),28);
+  return btoa(String.fromCharCode(...out));
+}
+async function aesDecrypt(b64,pin){
+  const buf=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+  const key=await deriveKey(pin,buf.slice(0,16));
+  const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:buf.slice(16,28)},key,buf.slice(28));
+  return JSON.parse(DEC.decode(plain));
+}
+async function pinHash(pin){
+  const d=await crypto.subtle.digest('SHA-256',ENC.encode('vault3:'+pin));
+  return btoa(String.fromCharCode(...new Uint8Array(d)));
+}
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let holdings=[],transactions=[],currentPin='',pinInput='';
+let isSettingPin=false,pinConfirm='',blurValues=false;
+let bioEnabled=false,bioCredId=null;
+let ejsService='',ejsTemplate='',ejsKey='';
+const NOTIFY_EMAIL='wout.depotter@hotmail.com';
+
+const COLORS=['#c17f3a','#4caf7d','#5b8dd9','#e05c8a','#9b6dd4','#e8a855','#3dbdbd','#e87d3a'];
+const ICONS={etf:'📈',stock:'🏢',crypto:'₿',cash:'💶'};
+const LABELS={etf:'ETF',stock:'Aandeel',crypto:'Crypto',cash:'Cash'};
+
+// ══════════════════════════════════════════
+// EMAILJS
+// ══════════════════════════════════════════
+function loadEmailJS(){
+  ejsService  = localStorage.getItem('v_ejs_s')||'';
+  ejsTemplate = localStorage.getItem('v_ejs_t')||'';
+  ejsKey      = localStorage.getItem('v_ejs_k')||'';
+  updateEmailBadge();
+  if(ejsKey) emailjs.init(ejsKey);
+}
+
+function saveEmailJS(){
+  const s=document.getElementById('setup-service').value.trim();
+  const t=document.getElementById('setup-template').value.trim();
+  const k=document.getElementById('setup-pubkey').value.trim();
+  if(!s||!t||!k){showToast('Vul alle velden in');return;}
+  localStorage.setItem('v_ejs_s',s);
+  localStorage.setItem('v_ejs_t',t);
+  localStorage.setItem('v_ejs_k',k);
+  ejsService=s;ejsTemplate=t;ejsKey=k;
+  emailjs.init(k);
+  document.getElementById('setup-screen').classList.remove('visible');
+  updateEmailBadge();
+  showToast('EmailJS ingesteld ✓');
+}
+
+function skipEmailJS(){
+  localStorage.setItem('v_ejs_skipped','1');
+  document.getElementById('setup-screen').classList.remove('visible');
+  updateEmailBadge();
+}
+
+function updateEmailBadge(){
+  const badge=document.getElementById('email-badge');
+  const sub=document.getElementById('email-sub');
+  if(!badge)return;
+  const active=!!(ejsService&&ejsTemplate&&ejsKey);
+  badge.textContent=active?'AAN':'UIT';
+  badge.className='si-badge'+(active?'':' off');
+  if(sub) sub.textContent=active?'E-mail bij elke login naar '+NOTIFY_EMAIL:'Niet ingesteld';
+}
+
+function showEmailSetup(){
+  document.getElementById('setup-service').value=ejsService;
+  document.getElementById('setup-template').value=ejsTemplate;
+  document.getElementById('setup-pubkey').value=ejsKey;
+  document.getElementById('setup-screen').classList.add('visible');
+}
+
+async function sendLoginNotification(){
+  if(!ejsService||!ejsTemplate||!ejsKey) return;
+  try {
+    const now=new Date();
+    const tijdstip=now.toLocaleString('nl-BE',{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    await emailjs.send(ejsService, ejsTemplate, {
+      to_email: NOTIFY_EMAIL,
+      to_name: 'Wout',
+      login_time: tijdstip,
+      device: navigator.userAgent.includes('iPhone')?'iPhone':navigator.userAgent.includes('iPad')?'iPad':'Onbekend apparaat',
+      app_name: 'Vault Portfolio'
+    });
+  } catch(e){ console.log('Email fout:',e); }
+}
+
+// ══════════════════════════════════════════
+// OPSLAG
+// ══════════════════════════════════════════
+async function persist(){
+  if(!currentPin)return;
+  const enc=await aesEncrypt({holdings,transactions},currentPin);
+  localStorage.setItem('v_enc',enc);
+  localStorage.setItem('v_hash',await pinHash(currentPin));
+  localStorage.setItem('v_bio',bioEnabled?'1':'0');
+  if(bioCredId)localStorage.setItem('v_cred',bioCredId);
+  else localStorage.removeItem('v_cred');
+}
+
+async function loadData(pin){
+  const enc=localStorage.getItem('v_enc');
+  if(!enc)return true;
+  try{const d=await aesDecrypt(enc,pin);holdings=d.holdings||[];transactions=d.transactions||[];return true;}
+  catch{return false;}
+}
+
+function loadPrefs(){
+  bioEnabled=localStorage.getItem('v_bio')==='1';
+  bioCredId=localStorage.getItem('v_cred')||null;
+}
+
+// ══════════════════════════════════════════
+// BIOMETRIE
+// ══════════════════════════════════════════
+const bioOk=()=>!!window.PublicKeyCredential&&typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable==='function';
+
+async function enrollBio(){
+  if(!bioOk()){showToast('Biometrie niet ondersteund');return false;}
+  const ok=await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  if(!ok){showToast('Geen Face ID / Touch ID gevonden');return false;}
+  try{
+    const chal=crypto.getRandomValues(new Uint8Array(32));
+    const uid=crypto.getRandomValues(new Uint8Array(16));
+    const cred=await navigator.credentials.create({publicKey:{
+      challenge:chal,
+      rp:{name:'Vault',id:location.hostname||'localhost'},
+      user:{id:uid,name:'vault',displayName:'Vault'},
+      pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],
+      authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},
+      timeout:60000,attestation:'none'
+    }});
+    bioCredId=btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+    bioEnabled=true;
+    await persist();updateBioUI();showToast('Face ID / Touch ID ingeschakeld ✓');
+    return true;
+  }catch(e){if(e.name!=='NotAllowedError')showToast('Instellen mislukt');return false;}
+}
+
+async function triggerBiometric(){
+  if(!bioEnabled||!bioCredId)return;
+  try{
+    const chal=crypto.getRandomValues(new Uint8Array(32));
+    const cid=Uint8Array.from(atob(bioCredId),c=>c.charCodeAt(0));
+    await navigator.credentials.get({publicKey:{
+      challenge:chal,rpId:location.hostname||'localhost',
+      allowCredentials:[{id:cid,type:'public-key'}],
+      userVerification:'required',timeout:60000
+    }});
+    const sp=sessionStorage.getItem('v_sp');
+    if(sp)await unlockWith(sp);
+    else showToast('Voer eerst éénmaal je PIN in');
+  }catch(e){if(e.name!=='NotAllowedError')showToast('Biometrie mislukt – gebruik PIN');}
+}
+
+async function toggleBiometric(){
+  if(!currentPin){showToast('Ontgrendel eerst de app');return;}
+  if(bioEnabled){bioEnabled=false;bioCredId=null;await persist();updateBioUI();showToast('Face ID uitgeschakeld');}
+  else await enrollBio();
+}
+
+function updateBioUI(){
+  const badge=document.getElementById('bio-badge'),sub=document.getElementById('bio-sub');
+  const faceBtn=document.getElementById('faceid-btn'),hasPIN=!!localStorage.getItem('v_hash');
+  if(badge){badge.textContent=bioEnabled?'AAN':'UIT';badge.className='si-badge'+(bioEnabled?'':' off');}
+  if(sub)sub.textContent=bioEnabled?'Tik om uit te schakelen':'Tik om Face ID / Touch ID in te schakelen';
+  if(faceBtn)faceBtn.classList.toggle('hidden',!(bioEnabled&&hasPIN));
+}
+
+// ══════════════════════════════════════════
+// PIN LOGICA (6 cijfers)
+// ══════════════════════════════════════════
+function pinPress(d){if(pinInput.length>=6)return;pinInput+=d;dots();if(pinInput.length===6)setTimeout(checkPin,130);}
+function pinDel(){pinInput=pinInput.slice(0,-1);dots();}
+function dots(){for(let i=0;i<6;i++){const el=document.getElementById('d'+i);el.classList.toggle('filled',i<pinInput.length);el.classList.remove('error');}}
+function pinErr(msg){
+  pinInput='';
+  for(let i=0;i<6;i++){const el=document.getElementById('d'+i);el.classList.remove('filled');el.classList.add('error');}
+  hint(msg);
+  setTimeout(()=>{for(let i=0;i<6;i++)document.getElementById('d'+i).classList.remove('error');hint(isSettingPin?'Voer je nieuwe PIN in':'Voer je 6-cijferige PIN in');},900);
+}
+function hint(t){document.getElementById('pin-hint').textContent=t;}
+
+async function checkPin(){
+  const entered=pinInput;pinInput='';dots();
+  const hasPIN=!!localStorage.getItem('v_hash');
+  if(!hasPIN){
+    if(!isSettingPin){isSettingPin=true;pinConfirm=entered;hint('Bevestig je PIN');return;}
+    if(entered===pinConfirm){
+      isSettingPin=false;pinConfirm='';currentPin=entered;
+      sessionStorage.setItem('v_sp',currentPin);
+      await persist();unlock();
+    }else{isSettingPin=false;pinConfirm='';pinErr('PINs komen niet overeen');hint('Stel je 6-cijferige PIN in');}
+    return;
+  }
+  if(isSettingPin){
+    if(!pinConfirm){pinConfirm=entered;hint('Bevestig je nieuwe PIN');return;}
+    if(entered===pinConfirm){
+      currentPin=pinConfirm;pinConfirm='';isSettingPin=false;
+      sessionStorage.setItem('v_sp',currentPin);
+      await persist();
+      document.getElementById('pin-screen').classList.add('hidden');
+      updateBioUI();showToast('PIN gewijzigd ✓');
+    }else{pinConfirm='';isSettingPin=false;pinErr('PINs komen niet overeen');}
+    return;
+  }
+  await unlockWith(entered);
+}
+
+async function unlockWith(pin){
+  const stored=localStorage.getItem('v_hash');
+  const h=await pinHash(pin);
+  if(h!==stored){pinErr('Onjuiste PIN');return;}
+  const ok=await loadData(pin);
+  if(!ok){pinErr('Ontsleuteling mislukt');return;}
+  currentPin=pin;
+  sessionStorage.setItem('v_sp',pin);
+  unlock();
+  sendLoginNotification(); // stuur e-mail melding
+}
+
+function unlock(){
+  document.getElementById('pin-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  updateBioUI();updateEmailBadge();renderAll();
+}
+
+function lockApp(){
+  holdings=[];transactions=[];currentPin='';pinInput='';dots();
+  hint('Voer je 6-cijferige PIN in');
+  document.getElementById('pin-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+  updateBioUI();
+}
+
+function changePIN(){
+  isSettingPin=true;pinConfirm='';pinInput='';dots();
+  hint('Voer je nieuwe PIN in');
+  document.getElementById('pin-screen').classList.remove('hidden');
+}
+
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+function switchTab(page,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  btn.classList.add('active');
+  if(page==='overview')renderOverview();
+  if(page==='holdings')renderHoldings();
+  if(page==='history')renderHistory();
+}
+
+// ══════════════════════════════════════════
+// BEREKENINGEN
+// ══════════════════════════════════════════
+function calc(h){const inv=h.qty*h.price,cur=h.qty*h.current,pl=cur-inv;return{inv,cur,pl,pct:inv>0?(pl/inv)*100:0};}
+function portfolio(){let ti=0,tc=0;holdings.forEach(h=>{const c=calc(h);ti+=c.inv;tc+=c.cur;});const pl=tc-ti;return{ti,tc,pl,pct:ti>0?(pl/ti)*100:0};}
+const f=(n,d=2)=>new Intl.NumberFormat('nl-BE',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
+const fe=n=>'€'+f(n);
+const fp=n=>(n>=0?'+':'')+f(n)+'%';
+const fpl=n=>(n>=0?'+€':'-€')+f(Math.abs(n));
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
+function renderOverview(){
+  const{tc,pl,pct}=portfolio();
+  const tv=document.getElementById('total-value');
+  tv.textContent=fe(tc);tv.classList.toggle('blur-value',blurValues);
+  document.getElementById('total-pl').textContent=fpl(pl);
+  document.getElementById('total-pct').textContent=fp(pct);
+  renderDonut();
+  const el=document.getElementById('top-holdings-list');
+  el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*b.current-a.qty*a.current).slice(0,4).map(cardHTML).join('')
+    :`<div class="empty-state"><div style="font-size:3rem;margin-bottom:12px;opacity:.6">📊</div><div style="font-size:1rem;font-weight:600;color:var(--text2);margin-bottom:6px">Nog geen holdings</div><div style="font-size:.82rem;line-height:1.5;color:var(--text3)">Ga naar "+ Toevoegen"</div></div>`;
+}
+
+function renderDonut(){
+  const svg=document.getElementById('donut-svg'),leg=document.getElementById('donut-legend');
+  document.getElementById('donut-count').textContent=holdings.length;
+  if(!holdings.length){svg.innerHTML=`<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>`;leg.innerHTML=`<div style="font-size:.8rem;color:var(--text3)">Nog geen holdings</div>`;return;}
+  const total=holdings.reduce((s,h)=>s+h.qty*h.current,0),C=2*Math.PI*40;
+  const g={};holdings.forEach(h=>{const k=LABELS[h.type];g[k]=(g[k]||0)+h.qty*h.current;});
+  let cir='',lh='',off=0,ci=0;
+  Object.entries(g).sort((a,b)=>b[1]-a[1]).forEach(([lbl,val])=>{
+    const p=total>0?val/total:0,col=COLORS[ci%COLORS.length];
+    cir+=`<circle cx="55" cy="55" r="40" fill="none" stroke="${col}" stroke-width="18" stroke-dasharray="${(p*C).toFixed(2)} ${(C-p*C).toFixed(2)}" stroke-dashoffset="${(-off*C).toFixed(2)}" transform="rotate(-90 55 55)"/>`;
+    lh+=`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div><div class="legend-name">${lbl}</div><div class="legend-pct">${(p*100).toFixed(1)}%</div></div>`;
+    off+=p;ci++;
+  });
+  svg.innerHTML=`<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>`+cir;
+  leg.innerHTML=lh;
+}
+
+function cardHTML(h){
+  const{cur,pl,pct}=calc(h),bc=h.broker==='Saxo Bank'?'broker-saxo':h.broker==='Revolut'?'broker-revolut':'';
+  const cc=pl>0?'up':pl<0?'down':'neutral',col=COLORS[holdings.indexOf(h)%COLORS.length];
+  return `<div class="holding-card" onclick="openDetail('${h.id}')">
+    <div class="holding-icon" style="background:${col}22">${ICONS[h.type]||'📦'}</div>
+    <div class="holding-info">
+      <div class="holding-name">${h.name}</div>
+      <div class="holding-meta">${h.ticker?`<span style="font-family:'DM Mono',monospace">${h.ticker}</span> · `:''}${f(h.qty)} stuks <span class="broker-tag ${bc}" style="margin-left:4px">${h.broker}</span></div>
+    </div>
+    <div class="holding-right"><div class="holding-value">${fe(cur)}</div><div class="holding-change ${cc}">${fp(pct)}</div></div>
+  </div>`;
+}
+
+function renderHoldings(){
+  const el=document.getElementById('all-holdings-list');
+  el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*b.current-a.qty*a.current).map(cardHTML).join('')
+    :`<div class="empty-state"><div style="font-size:3rem;margin-bottom:12px;opacity:.6">💼</div><div style="font-size:1rem;font-weight:600;color:var(--text2)">Nog geen holdings</div></div>`;
+}
+
+function renderHistory(){
+  const el=document.getElementById('history-list');
+  el.innerHTML=transactions.length?[...transactions].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(tx=>`
+    <div class="tx-item">
+      <div class="tx-icon ${tx.action}">${tx.action==='buy'?'⬆️':'⬇️'}</div>
+      <div class="tx-info"><div class="tx-name">${tx.action==='buy'?'Gekocht':'Verkocht'}: ${tx.name}</div><div class="tx-date">${tx.date} · ${f(tx.qty)} @ ${fe(tx.price)}</div></div>
+      <div class="tx-amount ${tx.action}">${tx.action==='buy'?'-':'+'}${fe(tx.total)}</div>
+    </div>`).join('')
+    :`<div class="empty-state"><div style="font-size:3rem;margin-bottom:12px;opacity:.6">🕐</div><div style="font-size:1rem;font-weight:600;color:var(--text2)">Nog geen transacties</div></div>`;
+}
+
+function renderAll(){renderOverview();renderHoldings();renderHistory();}
+
+// ══════════════════════════════════════════
+// HOLDING TOEVOEGEN
+// ══════════════════════════════════════════
+function onTypeChange(){
+  const t=document.getElementById('add-type').value;
+  document.getElementById('ticker-group').style.display=t==='cash'?'none':'block';
+  document.getElementById('price-label').textContent=t==='cash'?'Bedrag gespaard (€)':'Aankoopprijs (€)';
+}
+
+async function addHolding(){
+  const name=document.getElementById('add-name').value.trim();
+  if(!name){showToast('Voer een naam in');return;}
+  const id=Date.now().toString();
+  const qty=parseFloat(document.getElementById('add-qty').value)||0;
+  const price=parseFloat(document.getElementById('add-price').value)||0;
+  const cur=parseFloat(document.getElementById('add-current').value)||price;
+  const h={id,name,
+    ticker:document.getElementById('add-ticker').value.trim().toUpperCase(),
+    type:document.getElementById('add-type').value,
+    broker:document.getElementById('add-broker').value,
+    qty,price,current:cur,
+    date:document.getElementById('add-date').value,
+    notes:document.getElementById('add-notes').value.trim()
+  };
+  holdings.push(h);
+  transactions.push({id:'tx_'+id,holdingId:id,name:h.name,ticker:h.ticker,type:h.type,broker:h.broker,qty,price,total:qty*price,date:h.date,action:'buy'});
+  await persist();renderAll();
+  ['add-name','add-ticker','add-qty','add-price','add-current','add-notes'].forEach(i=>document.getElementById(i).value='');
+  showToast(name+' toegevoegd ✓');
+  document.querySelectorAll('.tab-btn')[1].click();
+}
+
+// ══════════════════════════════════════════
+// DETAIL MODAL
+// ══════════════════════════════════════════
+function openDetail(id){
+  const h=holdings.find(x=>x.id===id);if(!h)return;
+  const{inv,cur,pl,pct}=calc(h);
+  document.getElementById('modal-name').textContent=h.name;
+  document.getElementById('modal-ticker').textContent=[h.ticker,LABELS[h.type],h.broker].filter(Boolean).join(' · ');
+  document.getElementById('modal-stats').innerHTML=`
+    <div class="modal-stat"><div class="ms-label">HUIDIGE WAARDE</div><div class="ms-val">${fe(cur)}</div></div>
+    <div class="modal-stat"><div class="ms-label">GEÏNVESTEERD</div><div class="ms-val">${fe(inv)}</div></div>
+    <div class="modal-stat"><div class="ms-label">W/V</div><div class="ms-val" style="color:${pl>=0?'var(--green)':'var(--red)'}">${fpl(pl)}</div></div>
+    <div class="modal-stat"><div class="ms-label">RENDEMENT</div><div class="ms-val" style="color:${pct>=0?'var(--green)':'var(--red)'}">${fp(pct)}</div></div>
+    <div class="modal-stat"><div class="ms-label">AANTAL</div><div class="ms-val">${f(h.qty)}</div></div>
+    <div class="modal-stat"><div class="ms-label">GEM. AANKOOP</div><div class="ms-val">${fe(h.price)}</div></div>`;
+  document.getElementById('modal-update-form').innerHTML=`
+    <div class="form-group" style="margin-top:14px">
+      <label class="form-label">Huidige prijs bijwerken (€)</label>
+      <input type="number" class="form-input" id="update-price" value="${h.current}" step="any" min="0">
+    </div>
+    <button class="btn-primary" onclick="updatePrice('${id}')">Prijs bijwerken</button>`;
+  document.getElementById('modal-delete-btn').onclick=()=>deleteHolding(id);
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function closeModal(e){if(e.target===document.getElementById('detail-modal'))document.getElementById('detail-modal').classList.remove('open');}
+
+async function updatePrice(id){
+  const h=holdings.find(x=>x.id===id);if(!h)return;
+  const p=parseFloat(document.getElementById('update-price').value);
+  if(isNaN(p)||p<0){showToast('Ongeldige prijs');return;}
+  h.current=p;await persist();renderAll();
+  document.getElementById('detail-modal').classList.remove('open');
+  showToast('Prijs bijgewerkt ✓');
+}
+
+async function deleteHolding(id){
+  if(!confirm('Holding verwijderen?'))return;
+  holdings=holdings.filter(h=>h.id!==id);
+  await persist();renderAll();
+  document.getElementById('detail-modal').classList.remove('open');
+  showToast('Holding verwijderd');
+}
+
+function toggleBlur(){blurValues=!blurValues;document.getElementById('eye-btn').textContent=blurValues?'🙈':'👁';renderOverview();}
+
+// ══════════════════════════════════════════
+// DATA BEHEER
+// ══════════════════════════════════════════
+async function exportData(){
+  const enc=await aesEncrypt({holdings,transactions},currentPin);
+  const blob=new Blob([JSON.stringify({vault_enc:enc,v:3})],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='vault-backup-'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();URL.revokeObjectURL(url);
+  showToast('Versleutelde backup geëxporteerd ✓');
+}
+
+function importData(){document.getElementById('import-input').click();}
+
+async function handleImport(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    try{
+      const w=JSON.parse(ev.target.result);
+      let d=w.vault_enc?await aesDecrypt(w.vault_enc,currentPin):w;
+      if(d.holdings)holdings=d.holdings;
+      if(d.transactions)transactions=d.transactions;
+      await persist();renderAll();showToast('Geïmporteerd ✓');
+    }catch{showToast('Import mislukt – verkeerde PIN of corrupt bestand');}
+  };
+  reader.readAsText(file);e.target.value='';
+}
+
+async function clearData(){
+  if(!confirm('Alle data wissen? Dit kan niet ongedaan worden gemaakt.'))return;
+  holdings=[];transactions=[];
+  await persist();renderAll();showToast('Alle data gewist');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+// ══════════════════════════════════════════
+// INITIALISATIE
+// ══════════════════════════════════════════
+(function init(){
+  document.getElementById('header-date').textContent=
+    new Date().toLocaleDateString('nl-BE',{weekday:'short',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
+  document.getElementById('add-date').value=new Date().toISOString().split('T')[0];
+  loadPrefs();loadEmailJS();
+  const hasPIN=!!localStorage.getItem('v_hash');
+  const ejsSkipped=localStorage.getItem('v_ejs_skipped');
+  // Toon setup scherm als EmailJS nog niet ingesteld is
+  if(!ejsService&&!ejsSkipped){
+    document.getElementById('setup-screen').classList.add('visible');
+    document.getElementById('pin-screen').style.display='none';
+  } else {
+    if(!hasPIN)hint('Stel je 6-cijferige PIN in');
+    updateBioUI();
+    const sp=sessionStorage.getItem('v_sp');
+    if(sp&&hasPIN)unlockWith(sp);
+  }
+})();
+</script>
+
+<!-- ══ EMAILJS INSTRUCTIES (onderaan de pagina, alleen zichtbaar vóór login) ══ -->
+<div id="emailjs-guide" style="display:none"></div>
+</body>
+</html>
