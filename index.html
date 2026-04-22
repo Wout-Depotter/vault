@@ -565,51 +565,54 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="chart-stats-row" id="chart-stats-row"></div>
 </div>
 
-<!-- DETAIL MODAL - Full screen Delta-style -->
-<div class="chart-modal-overlay" id="detail-modal">
-  <!-- Header -->
-  <div style="padding:54px 18px 10px;display:flex;align-items:center;gap:12px">
+<!-- DETAIL MODAL - Full screen, fully scrollable -->
+<div class="chart-modal-overlay" id="detail-modal" style="overflow:hidden">
+  <!-- Sticky header - always visible -->
+  <div style="position:sticky;top:0;z-index:10;background:var(--bg);padding:54px 18px 10px;display:flex;align-items:center;gap:12px;flex-shrink:0">
     <div class="chart-back" onclick="closeDetailModal()">←</div>
-    <div style="flex:1">
-      <div style="font-family:'DM Serif Display',serif;font-size:1.2rem" id="modal-name"></div>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:'DM Serif Display',serif;font-size:1.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="modal-name"></div>
       <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text3)" id="modal-ticker"></div>
     </div>
     <button class="header-btn" onclick="refreshOneFromModal()" id="modal-refresh-btn" title="Live koers">↻</button>
     <button class="header-btn" onclick="closeDetailModal()" title="Sluiten" style="font-size:1.1rem;font-weight:300">&times;</button>
   </div>
-  <!-- Price hero -->
-  <div style="padding:0 18px 10px">
-    <div style="font-family:'DM Serif Display',serif;font-size:2.4rem;letter-spacing:-1px" id="modal-price-big">–</div>
-    <div style="font-size:.88rem;margin-top:3px;display:flex;gap:8px" id="modal-price-change"></div>
-  </div>
-  <!-- Chart -->
-  <div style="position:relative;height:160px;margin-bottom:6px">
-    <canvas id="modal-canvas" style="width:100%;height:160px;display:block"></canvas>
-    <div id="modal-crosshair" style="position:absolute;top:0;bottom:0;width:1px;background:var(--text3);opacity:0;pointer-events:none"></div>
-    <div id="modal-tooltip" style="position:absolute;top:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-family:'DM Mono',monospace;font-size:.72rem;pointer-events:none;box-shadow:var(--shadow);opacity:0;white-space:nowrap"></div>
-    <div id="modal-chart-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--text3)">Laden...</div>
-  </div>
-  <!-- Range bar -->
-  <div style="display:flex;gap:5px;padding:0 14px 10px;overflow-x:auto;scrollbar-width:none">
-    <button class="range-btn active" onclick="setModalRange('1W',this)">1W</button>
-    <button class="range-btn" onclick="setModalRange('1M',this)">1M</button>
-    <button class="range-btn" onclick="setModalRange('3M',this)">3M</button>
-    <button class="range-btn" onclick="setModalRange('6M',this)">6M</button>
-    <button class="range-btn" onclick="setModalRange('1Y',this)">1J</button>
-    <button class="range-btn" onclick="setModalRange('ALL',this)">MAX</button>
-  </div>
-  <!-- Stats grid -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 12px" id="modal-stats"></div>
-  <!-- Tabs: General / Transacties -->
-  <div style="display:flex;border-bottom:1px solid var(--border);margin:0 14px 12px">
-    <button class="modal-tab active" id="mtab-general" onclick="setModalTab('general')">Algemeen</button>
-    <button class="modal-tab" id="mtab-tx" onclick="setModalTab('tx')">Transacties</button>
-  </div>
-  <!-- Tab content -->
-  <div style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:0 14px;min-height:0" id="modal-tab-content"></div>
-  <!-- Bottom bar -->
-  <div style="padding:12px 14px 34px;border-top:1px solid var(--border)">
-    <button class="btn-danger" id="modal-delete-btn">Holding verwijderen</button>
+  <!-- Scrollable body - everything scrolls together -->
+  <div style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0" id="modal-scroll-body">
+    <!-- Price hero -->
+    <div style="padding:0 18px 10px">
+      <div style="font-family:'DM Serif Display',serif;font-size:2.4rem;letter-spacing:-1px" id="modal-price-big">–</div>
+      <div style="font-size:.88rem;margin-top:3px;display:flex;gap:8px" id="modal-price-change"></div>
+    </div>
+    <!-- Chart -->
+    <div style="position:relative;height:160px;margin-bottom:6px">
+      <canvas id="modal-canvas" style="width:100%;height:160px;display:block"></canvas>
+      <div id="modal-crosshair" style="position:absolute;top:0;bottom:0;width:1px;background:var(--text3);opacity:0;pointer-events:none"></div>
+      <div id="modal-tooltip" style="position:absolute;top:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-family:'DM Mono',monospace;font-size:.72rem;pointer-events:none;box-shadow:var(--shadow);opacity:0;white-space:nowrap"></div>
+      <div id="modal-chart-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--text3)">Laden...</div>
+    </div>
+    <!-- Range bar -->
+    <div style="display:flex;gap:5px;padding:0 14px 10px;overflow-x:auto;scrollbar-width:none">
+      <button class="range-btn active" onclick="setModalRange('1W',this)">1W</button>
+      <button class="range-btn" onclick="setModalRange('1M',this)">1M</button>
+      <button class="range-btn" onclick="setModalRange('3M',this)">3M</button>
+      <button class="range-btn" onclick="setModalRange('6M',this)">6M</button>
+      <button class="range-btn" onclick="setModalRange('1Y',this)">1J</button>
+      <button class="range-btn" onclick="setModalRange('ALL',this)">MAX</button>
+    </div>
+    <!-- Stats grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 16px" id="modal-stats"></div>
+    <!-- Sticky tabs -->
+    <div style="position:sticky;top:0;z-index:9;background:var(--bg);display:flex;border-bottom:1px solid var(--border);margin:0 0 0 0;padding:0 14px">
+      <button class="modal-tab active" id="mtab-general" onclick="setModalTab('general')">Algemeen</button>
+      <button class="modal-tab" id="mtab-tx" onclick="setModalTab('tx')">Transacties</button>
+    </div>
+    <!-- Tab content - inline, not separate scroll area -->
+    <div style="padding:14px 14px 24px" id="modal-tab-content"></div>
+    <!-- Delete button at bottom -->
+    <div style="padding:0 14px 40px">
+      <button class="btn-danger" id="modal-delete-btn">Holding verwijderen</button>
+    </div>
   </div>
 </div>
 <!-- CLOUDFLARE WORKER MODAL -->
