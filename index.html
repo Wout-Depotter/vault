@@ -1415,7 +1415,22 @@ const fp=n=>(n>=0?'+':'')+f(n)+'%';
 const fpl=n=>(n>=0?'+€':'-€')+f(Math.abs(n));
 
 // ── CALC ──
-function calc(h){const inv=h.qty*(h.price||0),cur=h.qty*(h.current||h.price||0),pl=cur-inv,pct=inv>0?(pl/inv)*100:0;return{inv,cur,pl,pct};}
+function calc(h){
+  // Investment = sum of all buy transaction totals (includes costs/taxes)
+  // minus sum of sell transaction totals (proceeds reduce cost basis)
+  const htxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker);
+  let inv=0;
+  htxs.forEach(t=>{
+    if(t.action==='buy') inv+=(t.total||t.qty*t.price||0);
+    else inv-=(t.total||t.qty*t.price||0); // sells reduce cost basis
+  });
+  // Fallback to h.price * h.qty if no transactions found
+  if(inv<=0) inv=h.qty*(h.price||0);
+  const cur=h.qty*(h.current||h.price||0);
+  const pl=cur-inv;
+  const pct=inv>0?(pl/inv)*100:0;
+  return{inv,cur,pl,pct};
+}
 function portfolio(){let ti=0,tc=0,td=0;holdings.forEach(h=>{const c=calc(h);ti+=c.inv;tc+=c.cur;td+=(h.dailyChange||0)*h.qty;});return{ti,tc,pl:tc-ti,pct:ti>0?((tc-ti)/ti)*100:0,td};}
 
 // ── STORAGE ──
