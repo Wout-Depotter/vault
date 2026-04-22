@@ -444,6 +444,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
     <div id="import-result" style="margin-top:14px"></div>
   </div>
+  <div class="page" id="page-tickers">
+    <div class="section-title">TICKER BEHEER</div>
+    <div class="form-card" style="padding:12px;margin-bottom:14px">
+      <div style="font-size:.8rem;color:var(--text2);line-height:1.6">
+        Stel per holding de Yahoo Finance ticker in voor live koersen.<br>
+        Test de ticker eerst voor je opslaat.
+      </div>
+    </div>
+    <div id="tickers-list"></div>
+  </div>
   <div class="page" id="page-add">
     <div class="form-card">
       <div class="form-title">Investering toevoegen</div>
@@ -813,7 +823,7 @@ let ALPHA_VANTAGE_KEY=localStorage.getItem('v_av_key')||'';
 const STOOQ_MAP={
   'IWDA.AS':'iwda.as','EMIM.AS':'emim.as','SWRD.AS':'swrd.as','WTCH.AS':'wtch.as',
   'EUNL.DE':'eunl.de','CD5.PA':'cd5.pa','WAT.PA':'wat.pa','UST.PA':'ust.pa',
-  'FLXD.DE':'flxd.de','XSPU.L':'xspu.l','VUAA.IE':'vuaa.ie','FWIA.DE':'fwia.de',
+  'FLXD.DE':'flxd.de','XSPU.L':'xspu.l','VUAA.MI':'vuaa.mi','FWIA.DE':'fwia.de',
   'QUTM.MU':'qutm.mu','NVDA':'nvda.us','GSAT':'gsat.us','AAPL':'aapl.us',
   'MSFT':'msft.us','TSLA':'tsla.us','GOOGL':'googl.us','AMZN':'amzn.us',
 };
@@ -915,7 +925,12 @@ async function fetchCloudflare(ticker){
     // Handle Yahoo Finance chart format
     const meta=d?.chart?.result?.[0]?.meta;
     if(meta?.regularMarketPrice){
-      const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price;
+      const price=meta.regularMarketPrice;
+      // Use actual previous close from closes array for accuracy
+      const closes=d?.chart?.result?.[0]?.indicators?.quote?.[0]?.close||[];
+      const validCloses=closes.filter(x=>x!=null&&!isNaN(x));
+      // prev = second-to-last close (yesterday's close)
+      const prev=validCloses.length>=2?validCloses[validCloses.length-2]:(meta.chartPreviousClose||price);
       return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:meta.currency||'EUR',name:meta.longName||ticker};
     }
     // Handle direct price format {price: 123.45}
@@ -1411,7 +1426,7 @@ async function renderSearchResult(el,results){el.innerHTML=results.map(item=>{co
 
 // ── LIVE PRICES ──
 let ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
-const TICKER_MAP={'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA','SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS','UST':'UST.PA','EUNL':'EUNL.DE','VUAA':'VUAA.IE','FWIA':'FWIA.DE','QUTM':'QUTM.MU','BTC':'BTC-EUR','ETH':'ETH-EUR'};
+const TICKER_MAP={'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA','SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS','UST':'UST.PA','EUNL':'EUNL.DE','VUAA':'VUAA.MI','FWIA':'FWIA.DE','QUTM':'QUTM.MU','BTC':'BTC-EUR','ETH':'ETH-EUR'};
 function getYahooTicker(h){if(h.yahooTicker)return h.yahooTicker;const t=(h.ticker||'').split(':')[0];return TICKER_MAP[t]||h.ticker||'';}
 async function fetchCoinGecko(ticker){
   const id=GECKO_MAP[ticker];if(!id)return null;
@@ -2310,6 +2325,87 @@ function startAutoRefresh(){
 
 function stopAutoRefresh(){
   if(autoRefreshTimer){clearInterval(autoRefreshTimer);autoRefreshTimer=null;}
+}
+
+
+// ══════════════════════════════════════════
+// ── TICKER BEHEER ──
+// ══════════════════════════════════════════
+
+function renderTickersPage(){
+  const el=document.getElementById('tickers-list');if(!el)return;
+  if(!holdings.length){
+    el.innerHTML='<div class="empty-state">Geen holdings</div>';return;
+  }
+  el.innerHTML=holdings.map(h=>{
+    const yt=h.yahooTicker||h.ticker||'';
+    const col=COLORS[holdings.indexOf(h)%COLORS.length];
+    return `<div class="form-card" style="padding:14px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:32px;height:32px;border-radius:8px;background:${col}22;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">${ICONS[h.type]||'📦'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.name}</div>
+          <div style="font-size:.72rem;color:var(--text3)">${h.broker}</div>
+        </div>
+        <div id="ticker-status-${h.id}" style="font-size:.75rem;color:var(--text3)"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="form-input" id="ticker-input-${h.id}" value="${yt}"
+          placeholder="bv. IWDA.AS"
+          style="flex:1;font-family:'DM Mono',monospace;font-size:.82rem"
+          onchange="tickerChanged('${h.id}')">
+        <button class="btn-secondary" onclick="testTicker('${h.id}')"
+          style="flex-shrink:0;padding:0 12px;height:40px;font-size:.8rem">
+          Test
+        </button>
+        <button class="btn-primary" onclick="saveTicker('${h.id}')"
+          style="flex-shrink:0;padding:0 12px;height:40px;font-size:.8rem">
+          ✓
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function tickerChanged(id){
+  const status=document.getElementById('ticker-status-'+id);
+  if(status){status.textContent='';status.style.color='var(--text3)';}
+}
+
+async function testTicker(id){
+  const h=holdings.find(x=>x.id===id);if(!h)return;
+  const input=document.getElementById('ticker-input-'+id);
+  const status=document.getElementById('ticker-status-'+id);
+  const ticker=(input?.value||'').trim().toUpperCase();
+  if(!ticker||!status)return;
+  status.textContent='⏳';status.style.color='var(--text3)';
+  const data=await fetchPriceInEur(ticker);
+  if(data&&data.priceEur>0){
+    status.textContent='✅ '+fe(data.priceEur);
+    status.style.color='var(--green)';
+    // Auto-save on successful test
+    h.yahooTicker=ticker;
+    h.current=data.priceEur;
+    h.lastRefresh=Date.now();
+    await persist();
+    renderAll();
+    showToast(h.name+': '+ticker+' opgeslagen ✓');
+  } else {
+    status.textContent='❌ Niet gevonden';
+    status.style.color='var(--red)';
+  }
+}
+
+async function saveTicker(id){
+  const h=holdings.find(x=>x.id===id);if(!h)return;
+  const input=document.getElementById('ticker-input-'+id);
+  const status=document.getElementById('ticker-status-'+id);
+  const ticker=(input?.value||'').trim().toUpperCase();
+  if(!ticker)return;
+  h.yahooTicker=ticker;
+  await persist();
+  if(status){status.textContent='✓ Opgeslagen';status.style.color='var(--green)';}
+  showToast(h.name+': ticker opgeslagen');
 }
 
 
