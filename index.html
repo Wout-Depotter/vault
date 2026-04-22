@@ -715,15 +715,15 @@ function parseSaxoPDF(text){
 
   // Instrument lookup by fragments found in concatenated text
   const INST=[
-    {keys:['XtrackersS&P500','XtrackersS&P 500','XSPU'],       name:'Xtrackers S&P 500 Swap ETF',       yahoo:'XSPU.L',  type:'etf',ticker:'XSPU'},
-    {keys:['FranklinEuropean','FranklinEuropeanQuality','FLXD'], name:'Franklin European Quality Dividend ETF', yahoo:'FLXD.DE', type:'etf',ticker:'FLXD'},
-    {keys:['AmundiCoreEURO','AmundiCoreEUROSTOXX','CD5'],        name:'Amundi Core EURO STOXX 50 ETF',    yahoo:'CD5.PA',  type:'etf',ticker:'CD5'},
-    {keys:['AmundiMSCIWater','AmundiMSCI Water','WAT'],           name:'Amundi MSCI Water UCITS ETF',      yahoo:'WAT.PA',  type:'etf',ticker:'WAT'},
-    {keys:['StateStreetSPDRMSCIWorldTech','MSCIWorldTech','WTCH'],name:'SPDR MSCI World Tech ETF',         yahoo:'WTCH.AS', type:'etf',ticker:'WTCH'},
-    {keys:['StateStreetSPDRMSCIWorld','MSCIWorld(Acc)','SWRD'],   name:'SPDR MSCI World (Acc) ETF',        yahoo:'SWRD.AS', type:'etf',ticker:'SWRD'},
-    {keys:['iSharesCoreMSCIEMIMI','EMIMI','EMIM'],                name:'iShares Core MSCI EM IMI ETF',     yahoo:'EMIM.AS', type:'etf',ticker:'EMIM'},
-    {keys:['iSharesCoreMSCIWorld','IWDA'],                        name:'iShares Core MSCI World ETF',      yahoo:'IWDA.AS', type:'etf',ticker:'IWDA'},
-    {keys:['AmundiCoreNasdaq-100','AmundiCoreNasdaq100','Nasdaq-100Swap','UST'], name:'Amundi Core Nasdaq-100 Swap ETF', yahoo:'UST.PA', type:'etf',ticker:'UST'},
+    {keys:['XtrackersS&P500','XtrackersS&P 500','XSPU','SwapUCITSETF'],    name:'Xtrackers S&P 500 Swap ETF',            yahoo:'XSPU.L',  type:'etf',ticker:'XSPU'},
+    {keys:['FranklinEuropean','QualityDividend','FLXD'],                    name:'Franklin European Quality Dividend ETF', yahoo:'FLXD.DE', type:'etf',ticker:'FLXD'},
+    {keys:['AmundiCoreEURO','AmundiCoreEUROSTOXX','STOXX50','CD5'],         name:'Amundi Core EURO STOXX 50 ETF',          yahoo:'CD5.PA',  type:'etf',ticker:'CD5'},
+    {keys:['AmundiMSCIWater','AmundiMSCIWater','WAT'],                      name:'Amundi MSCI Water UCITS ETF',            yahoo:'WAT.PA',  type:'etf',ticker:'WAT'},
+    {keys:['MSCIWorldTech','WorldTech','WTCH','MSCIWorldT'],                 name:'SPDR MSCI World Tech ETF',               yahoo:'WTCH.AS', type:'etf',ticker:'WTCH'},
+    {keys:['StateStreetSPDR','MSCIWorld(Acc)','SWRD'],                      name:'SPDR MSCI World (Acc) ETF',              yahoo:'SWRD.AS', type:'etf',ticker:'SWRD'},
+    {keys:['EMIMIUCITSETF','EMIMIUCITS','EMIMI','EMIM'],                    name:'iShares Core MSCI EM IMI ETF',           yahoo:'EMIM.AS', type:'etf',ticker:'EMIM'},
+    {keys:['iSharesCoreMSCI','WorldUCITSETF','IWDA'],                       name:'iShares Core MSCI World ETF',            yahoo:'IWDA.AS', type:'etf',ticker:'IWDA'},
+    {keys:['Nasdaq-100Swap','AmundiCoreNasdaq','(Acc)UCITSETF','UST'],       name:'Amundi Core Nasdaq-100 Swap ETF',        yahoo:'UST.PA',  type:'etf',ticker:'UST'},
   ];
 
   function findInst(raw){
@@ -780,45 +780,42 @@ function parseSaxoPDF(text){
   // ── TRANSACTION REPORT ──
   if(isTx){
     const lines=text.split('\n');
-    // The PDF format has instrument name on line N-1 (or N-2), data on line N
-    // Data line: "DD-mmm-YYYY [DD-mmm-YYYY] TXID ETF EUR/USD Koop/Verkoop OPENING/CLOSING QTY PRICE RATE - AMOUNT COSTS COSTS"
-    // BUT the instrument name is on the PREVIOUS line(s), not on the data line!
-    // So we collect the name buffer and match it with the next data line.
-    
-    let nameBuf='';
+    // EXACT PDF FORMAT (confirmed from real PDF):
+    // Line N-1: 'XtrackersS&P500'          <- part 1 of name (BEFORE data line)
+    // Line N:   '27-jun-2025 01-jul-2025 6319429765 ETF USD Koop OPENING 1 123,410 0,8545 ...'
+    // Line N+1: 'SwapUCITSETF'             <- part 2 of name (AFTER data line)
+    // Full name = combine lines[N-1] + lines[N+1]
+    const DATA_RE=/^(\d{2}-\w{3}-\d{4})\s+(?:\d{2}-\w{3}-\d{4}\s+)?(\d{7,12})\s+ETF\s+(EUR|USD)\s+(Koop|Verkoop)\s+(?:OPENING|CLOSING)\s+(\d+)\s+([\d,]+)\s+([\d,]+)/;
+    const SKIP_RE=/^(Transactieda|Valutadatum|Transactie-|tum\s|Saxo|Wout|Valuta|Rekening|Verslagperiode|Gegenereerd|Inleiding|Dit gedeelte|Totaal\s+-|Pagina\d|01-feb|21-apr|\d{2}-\w{3}-\d{4}.*Cashbedrag|\d{2}-\w{3}-\d{4}.*Commissie)/i;
+
     for(let i=0;i<lines.length;i++){
       const line=lines[i].trim();
-      
-      // Match transaction data line
-      // Pattern: date [date] txid ETF EUR/USD Koop/Verkoop OPENING/CLOSING qty price rate
-      const m=line.match(/^(\d{2}-\w{3}-\d{4})\s+(?:\d{2}-\w{3}-\d{4}\s+)?(\d{7,12})\s+ETF\s+(EUR|USD)\s+(Koop|Verkoop)\s+(?:OPENING|CLOSING)\s+(\d+)\s+([\d,]+)\s+([\d,]+)/);
-      if(m){
-        const[,dateStr,txId,currency,typeStr,qtyStr,priceStr]=m;
-        const id='saxo_'+txId;
-        if(existingIds.has(id)){skipped++;nameBuf='';continue;}
-        const date=sDate(dateStr);
-        const qty=parseInt(qtyStr,10);
-        const price=parseFloat(priceStr.replace(',','.'));
-        const action=typeStr==='Koop'?'buy':'sell';
-        // Find instrument from accumulated name buffer + previous lines
-        let inst=findInst(nameBuf);
-        if(!inst)for(let b=1;b<=4&&!inst;b++)inst=findInst(lines[i-b]||'');
-        if(!inst)inst={name:nameBuf.trim()||'Onbekend',yahoo:'',type:'etf',ticker:''};
-        const tx={id,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price,total:qty*price,date,action};
-        transactions.push(tx);existingIds.add(id);newTx++;
-        // Update or create holding
-        const ex=holdings.find(h=>h.ticker===inst.ticker&&h.broker==='Saxo Bank');
-        if(ex){if(action==='buy')ex.qty+=qty;else ex.qty=Math.max(0,ex.qty-qty);updatedHoldings++;}
-        else if(action==='buy'&&inst.ticker){holdings.push({id:'h_saxo_'+inst.ticker,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price,current:price,date,notes:'',instrumentCurrency:currency});updatedHoldings++;}
-        nameBuf='';
-      } else if(line&&!line.match(/^(\d{2}-\w{3}-\d{4}.*Cashbedrag|Transactieda|Valutadatum|Transactie-|Instrumentval|Openen|Gerealiseerd|Boekingsbedr|Booked|Totale|Pagina|Saxo|Wout|Valuta|Rekening|Verslagperiode|Gegenereerd|Inleiding|Dit gedeelte|Totaal\s+-|Commissie|Cashdividend|Uitlenen)/i)){
-        // Accumulate instrument name
-        if(line.length>2&&line.length<60)nameBuf=nameBuf?nameBuf+' '+line:line;
-      } else {
-        nameBuf='';
-      }
+      const m=DATA_RE.exec(line);
+      if(!m)continue;
+      const[,dateStr,txId,currency,typeStr,qtyStr,priceStr]=m;
+      const id='saxo_'+txId;
+      if(existingIds.has(id)){skipped++;continue;}
+      // Combine lines before AND after for full instrument name (PDF splits name across lines)
+      const before=(lines[i-1]||'').trim();
+      const before2=(lines[i-2]||'').trim();
+      const after=(lines[i+1]||'').trim();
+      const after2=(lines[i+2]||'').trim();
+      // Also include fragment from data line itself (e.g. "ETF QualityDividend EUR Koop")
+      const inlineMatch=line.match(/ETF\s+([\w\s().-]+?)\s+(EUR|USD)\s+Koop/);
+      const inlinePart=inlineMatch?inlineMatch[1].trim():'';
+      const fullCtx=(before2+' '+before+' '+after+' '+after2+' '+inlinePart).replace(/\s+/g,' ').trim();
+      let inst=findInst(before)||findInst(after)||findInst(inlinePart)||findInst(before2)||findInst(after2)||findInst(fullCtx);
+      if(!inst)inst={name:(nameCtx||'Onbekend ETF').trim(),yahoo:'',type:'etf',ticker:''};
+      const date=sDate(dateStr);
+      const qty=parseInt(qtyStr,10);
+      const price=parseFloat(priceStr.replace(',','.'));
+      const action=typeStr==='Koop'?'buy':'sell';
+      const tx={id,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price,total:qty*price,date,action};
+      transactions.push(tx);existingIds.add(id);newTx++;
+      const ex=holdings.find(h=>h.ticker===inst.ticker&&h.broker==='Saxo Bank');
+      if(ex){if(action==='buy')ex.qty+=qty;else ex.qty=Math.max(0,ex.qty-qty);updatedHoldings++;}
+      else if(action==='buy'&&inst.ticker){holdings.push({id:'h_saxo_'+inst.ticker,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price,current:price,date,notes:'',instrumentCurrency:currency});updatedHoldings++;}
     }
-
     // Also parse position lines from tx report header pages
     const posRe=/([A-Z]{2,6}):x\w+\s+(\d{10})\s+(EUR|USD)\s+(\d{2}-\w{3}-\d{4})\s+(\d+)\s+[\d,]+\s+([\d,]+)\s+([\d,]+)/g;
     let pm;
@@ -847,10 +844,20 @@ function parseRevolutPDF(text){
   const isCrypto=text.includes('Crypto Account Statement')||text.includes('Staking rewards');
   if(isCrypto){
     const re=/(BTC|ETH|SOL|XRP|ADA)\s+(Buy|Sell|Buy - Revolut X)\s+([\d.]+)\s+[\$€]([\d,]+\.?\d*)\s+[\$€]([\d,]+\.?\d*)\s+[\$€][\d,]+\.?\d*\s+(\w+\s+\d+,\s*\d{4})/gi;
-    let m;while((m=re.exec(text))!==null){const[,sym,type,qty,price,total,ds]=m;const id='rev_crypto_'+sym+'_'+ds.replace(/[\s,]+/g,'_')+'_'+qty;if(existingIds.has(id)){skipped++;continue;}const date=rDate(ds);const action=type.startsWith('Buy')?'buy':'sell';const name=RN[sym]||sym;const p=parseFloat(price.replace(',',''));const tot=parseFloat(total.replace(',',''));const tx={id,name,ticker:sym,yahooTicker:RY[sym]||sym+'-EUR',type:'crypto',broker:'Revolut',qty:parseFloat(qty),price:p,total:tot,date,action};transactions.push(tx);existingIds.add(id);newTx++;const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Revolut');if(ex){if(action==='buy')ex.qty+=parseFloat(qty);else ex.qty=Math.max(0,ex.qty-parseFloat(qty));ex.current=p;updatedHoldings++;}else if(action==='buy'){holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym+'-EUR',type:'crypto',broker:'Revolut',qty:parseFloat(qty),price:p,current:p,date,notes:''});updatedHoldings++;}}
+    let m;while((m=re.exec(text))!==null){const[,sym,type,qty,price,total,ds]=m;const id='rev_crypto_'+sym+'_'+ds.replace(/[\s,]+/g,'_')+'_'+qty;if(existingIds.has(id)){skipped++;continue;}const date=rDate(ds);const action=type.startsWith('Buy')?'buy':'sell';const name=RN[sym]||sym;const p=parseFloat(price.replace(',',''));const tot=parseFloat(total.replace(',',''));const qtyN=parseFloat(qty);
+      const tx={id,name,ticker:sym,yahooTicker:RY[sym]||sym+'-EUR',type:'crypto',broker:'Revolut',qty:qtyN,price:p,total:tot,date,action,note:'Revolut spread inbegrepen'};
+      transactions.push(tx);existingIds.add(id);newTx++;
+      const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Revolut');
+      if(ex){if(action==='buy')ex.qty+=qtyN;else ex.qty=Math.max(0,ex.qty-qtyN);ex.current=p;updatedHoldings++;}
+      else if(action==='buy'){holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym+'-EUR',type:'crypto',broker:'Revolut',qty:qtyN,price:p,current:p,date,notes:''});updatedHoldings++;}}
   }else{
     const re=/(\d{1,2}\s+\w{3}\s+\d{4}\s+[\d:]+\s+GMT)\s+([A-Z]{2,6})\s+Trade\s+-\s+Market\s+([\d.]+)\s+[€$]([\d.]+)\s+(Buy|Sell)\s+[€$]([\d.]+)/gi;
-    let m;while((m=re.exec(text))!==null){const[,ds,sym,qty,price,type,total]=m;const id='rev_'+sym+'_'+ds.replace(/\s+/g,'_');if(existingIds.has(id)){skipped++;continue;}const date=rDate(ds);const action=type==='Buy'?'buy':'sell';const name=RN[sym]||sym;const asType=['NVDA','GSAT','AAPL','MSFT','TSLA'].includes(sym)?'stock':'etf';const tx={id,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:parseFloat(qty),price:parseFloat(price),total:parseFloat(total),date,action};transactions.push(tx);existingIds.add(id);newTx++;const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Revolut');if(ex){if(action==='buy')ex.qty+=parseFloat(qty);else ex.qty=Math.max(0,ex.qty-parseFloat(qty));ex.current=parseFloat(price);updatedHoldings++;}else if(action==='buy'){holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:parseFloat(qty),price:parseFloat(price),current:parseFloat(price),date,notes:''});updatedHoldings++;}}
+    let m;while((m=re.exec(text))!==null){const[,ds,sym,qty,price,type,total]=m;const id='rev_'+sym+'_'+ds.replace(/\s+/g,'_');if(existingIds.has(id)){skipped++;continue;}const date=rDate(ds);const action=type==='Buy'?'buy':'sell';const name=RN[sym]||sym;const asType=['NVDA','GSAT','AAPL','MSFT','TSLA'].includes(sym)?'stock':'etf';const qtyF=parseFloat(qty),priceF=parseFloat(price),totalF=parseFloat(total);
+      const tx={id,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:qtyF,price:priceF,total:totalF,date,action,note:'Kosten inbegrepen in prijs/spread'};
+      transactions.push(tx);existingIds.add(id);newTx++;
+      const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Revolut');
+      if(ex){if(action==='buy')ex.qty+=qtyF;else ex.qty=Math.max(0,ex.qty-qtyF);ex.current=priceF;updatedHoldings++;}
+      else if(action==='buy'){holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:qtyF,price:priceF,current:priceF,date,notes:''});updatedHoldings++;}else if(action==='buy'){holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:parseFloat(qty),price:parseFloat(price),current:parseFloat(price),date,notes:''});updatedHoldings++;}}
   }
   return{newTx,skipped,updatedHoldings,broker:'Revolut'};
 }
