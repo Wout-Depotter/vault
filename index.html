@@ -13,7 +13,6 @@
 <title>Savings</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -42,13 +41,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .faceid-icon{width:52px;height:52px;border-radius:14px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:1.6rem}
 .faceid-label{font-size:.65rem;color:var(--text3);letter-spacing:.07em;font-weight:600}
 .security-badge{position:absolute;bottom:26px;font-size:.67rem;color:var(--text3);opacity:.6;display:flex;align-items:center;gap:4px}
-#setup-screen{position:fixed;inset:0;z-index:2000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px;gap:14px}
-#setup-screen.visible{display:flex}
-.setup-title{font-family:'DM Serif Display',serif;font-size:1.8rem;color:var(--accent);text-align:center}
-.setup-sub{font-size:.84rem;color:var(--text2);text-align:center;line-height:1.5;margin-bottom:4px}
-.setup-input{width:100%;max-width:320px;padding:12px 15px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.92rem;outline:none;transition:border-color .2s}
+
+
+
+
+
 .setup-input:focus{border-color:var(--accent)}
-.setup-btn{width:100%;max-width:320px;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(193,127,58,.35)}
+
 #app{display:none;flex-direction:column;min-height:100dvh;padding-bottom:80px}
 #app.visible{display:flex}
 .app-header{padding:54px 20px 10px;display:flex;align-items:center;justify-content:space-between}
@@ -195,9 +194,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .qs-val{font-family:'DM Mono',monospace;font-size:.86rem;font-weight:600}
 .modal-tab{flex:1;padding:10px;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:.86rem;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
 .modal-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tx-edit-modal{position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .2s}
+.tx-edit-modal.open{opacity:1;pointer-events:all}
+.tx-edit-sheet{background:var(--card);border-radius:20px 20px 0 0;padding:20px 18px 40px;width:100%;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.tx-edit-modal.open .tx-edit-sheet{transform:translateY(0)}
+.tx-edit-title{font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:16px}
 #page-overview{padding:0;gap:0}
 /* CHART MODAL */
-.chart-modal-overlay{position:fixed;inset:0;z-index:600;background:var(--bg);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1)}
+.chart-modal-overlay{position:fixed;inset:0;z-index:600;background:var(--bg);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);overflow:hidden}
 .chart-modal-overlay.open{transform:translateY(0)}
 .chart-header{padding:54px 18px 10px;display:flex;align-items:center;gap:12px}
 .chart-back{width:36px;height:36px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;box-shadow:var(--shadow)}
@@ -235,16 +239,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </style>
 </head>
 <body>
-<div id="setup-screen">
-  <div class="setup-title">Savings instellen</div>
-  <div class="setup-sub">Voer je EmailJS gegevens in voor meldingen bij nieuwe toestellen.<br>Dit is eenmalig.</div>
-  <input type="text" class="setup-input" id="setup-service" placeholder="EmailJS Service ID">
-  <input type="text" class="setup-input" id="setup-template" placeholder="EmailJS Template ID">
-  <input type="text" class="setup-input" id="setup-pubkey" placeholder="EmailJS Public Key">
-  <button class="setup-btn" onclick="saveEmailJS()">Opslaan &amp; doorgaan</button>
-  <div style="font-size:.72rem;color:var(--text3);text-align:center;max-width:300px;line-height:1.5">Nog geen EmailJS? Gratis account op emailjs.com</div>
-  <button onclick="skipEmailJS()" style="background:none;border:none;color:var(--text3);font-size:.78rem;cursor:pointer;margin-top:-4px">Sla over</button>
-</div>
+
 <div id="pin-screen">
   <div class="pin-logo">Savings</div>
   <div class="pin-sub">PORTFOLIO TRACKER</div>
@@ -562,7 +557,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <button class="modal-tab" id="mtab-tx" onclick="setModalTab('tx')">Transacties</button>
   </div>
   <!-- Tab content -->
-  <div style="overflow-y:auto;flex:1;padding:0 14px" id="modal-tab-content"></div>
+  <div style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:0 14px;min-height:0" id="modal-tab-content"></div>
   <!-- Bottom bar -->
   <div style="padding:12px 14px 34px;border-top:1px solid var(--border)">
     <button class="btn-danger" id="modal-delete-btn">Holding verwijderen</button>
@@ -655,7 +650,6 @@ async function pinHash(pin){const d=await crypto.subtle.digest('SHA-256',ENC.enc
 // STATE
 let holdings=[],transactions=[],deletedHoldings=[],currentPin='',pinInput='';
 let isSettingPin=false,pinConfirm='',blurValues=false,bioEnabled=false,bioCredId=null;
-let ejsService='',ejsTemplate='',ejsKey='',ANTHROPIC_KEY='';
 const NOTIFY_EMAIL='wout.depotter@hotmail.com';
 const COLORS=['#c17f3a','#4caf7d','#5b8dd9','#e05c8a','#9b6dd4','#e8a855','#3dbdbd','#e87d3a'];
 const ICONS={etf:'📈',stock:'🏢',crypto:'₿',cash:'💶'};
@@ -665,43 +659,7 @@ const LABELS={etf:'ETF',stock:'Aandeel',crypto:'Crypto',cash:'Cash'};
 async function getDeviceId(){const str=navigator.userAgent+navigator.language+(Intl.DateTimeFormat().resolvedOptions().timeZone||'')+screen.width+'x'+screen.height;const buf=await crypto.subtle.digest('SHA-256',ENC.encode(str));return btoa(String.fromCharCode(...new Uint8Array(buf))).substring(0,16);}
 
 // EMAILJS
-function loadEmailJS(){ejsService=localStorage.getItem('v_ejs_s')||'';ejsTemplate=localStorage.getItem('v_ejs_t')||'';ejsKey=localStorage.getItem('v_ejs_k')||'';updateEmailBadge();if(ejsKey)emailjs.init(ejsKey);}
-function saveEmailJS(){const s=document.getElementById('setup-service').value.trim(),t=document.getElementById('setup-template').value.trim(),k=document.getElementById('setup-pubkey').value.trim();if(!s||!t||!k){showToast('Vul alle velden in');return;}localStorage.setItem('v_ejs_s',s);localStorage.setItem('v_ejs_t',t);localStorage.setItem('v_ejs_k',k);ejsService=s;ejsTemplate=t;ejsKey=k;emailjs.init(k);document.getElementById('setup-screen').classList.remove('visible');document.getElementById('pin-screen').style.display='';updateEmailBadge();const hasPIN=!!localStorage.getItem('v_hash');if(!hasPIN)hint('Stel je 6-cijferige PIN in');showToast('EmailJS ingesteld');}
-function skipEmailJS(){localStorage.setItem('v_ejs_skipped','1');document.getElementById('setup-screen').classList.remove('visible');document.getElementById('pin-screen').style.display='';const hasPIN=!!localStorage.getItem('v_hash');if(!hasPIN)hint('Stel je 6-cijferige PIN in');}
-function updateEmailBadge(){const b=document.getElementById('email-badge'),s=document.getElementById('email-sub');if(!b)return;const a=!!(ejsService&&ejsTemplate&&ejsKey);b.textContent=a?'AAN':'UIT';b.className='si-badge'+(a?'':' off');if(s)s.textContent=a?'Mail bij nieuw toestel naar '+NOTIFY_EMAIL:'Niet ingesteld';}
-function showEmailSetup(){document.getElementById('setup-service').value=ejsService;document.getElementById('setup-template').value=ejsTemplate;document.getElementById('setup-pubkey').value=ejsKey;document.getElementById('setup-screen').classList.add('visible');}
-async function sendLoginNotificationIfNewDevice(){if(!ejsService||!ejsTemplate||!ejsKey)return;try{const deviceId=await getDeviceId();const known=JSON.parse(localStorage.getItem('v_known_devices')||'[]');if(known.includes(deviceId))return;const t=new Date().toLocaleString('nl-BE',{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});await emailjs.send(ejsService,ejsTemplate,{to_email:NOTIFY_EMAIL,to_name:'Wout',login_time:t,device:navigator.userAgent.includes('iPhone')?'iPhone':navigator.userAgent.includes('iPad')?'iPad':'Onbekend',app_name:'Savings Portfolio',message:'Nieuw toestel gedetecteerd!'});known.push(deviceId);localStorage.setItem('v_known_devices',JSON.stringify(known));}catch(e){}}
 
-// CLOUDFLARE WORKER
-function showWorkerSetup(){document.getElementById('worker-url-input').value=CF_WORKER_URL;document.getElementById('worker-modal').classList.add('open');}
-function closeWorkerModal(e){if(e.target===document.getElementById('worker-modal'))document.getElementById('worker-modal').classList.remove('open');}
-function saveWorkerUrl(){const u=document.getElementById('worker-url-input').value.trim();CF_WORKER_URL=u;localStorage.setItem('v_cf_worker',u);updateWorkerBadge();document.getElementById('worker-modal').classList.remove('open');showToast(u?'Worker URL opgeslagen ✓':'Worker URL verwijderd');}
-function clearWorkerUrl(){CF_WORKER_URL='';localStorage.removeItem('v_cf_worker');updateWorkerBadge();document.getElementById('worker-modal').classList.remove('open');}
-function updateWorkerBadge(){const b=document.getElementById('worker-badge'),s=document.getElementById('worker-sub');if(b){b.textContent=CF_WORKER_URL?'ACTIEF':'NIET INGESTELD';b.className='si-badge'+(CF_WORKER_URL?'':' off');}if(s)s.textContent=CF_WORKER_URL?'Live koersen via: '+CF_WORKER_URL.replace('https://','').split('/')[0]:'Gratis proxy voor betrouwbare koersen';}
-
-// API KEY
-function showApiKeySetup(){document.getElementById('api-key-input').value=ANTHROPIC_KEY;document.getElementById('apikey-modal').classList.add('open');}
-function closeApiModal(e){if(e.target===document.getElementById('apikey-modal'))document.getElementById('apikey-modal').classList.remove('open');}
-function saveApiKey(){const k=document.getElementById('api-key-input').value.trim();ANTHROPIC_KEY=k;localStorage.setItem('v_api_key',k);updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');showToast(k?'API key opgeslagen':'API key verwijderd');}
-function clearApiKey(){ANTHROPIC_KEY='';localStorage.removeItem('v_api_key');updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');}
-// UPDATE FUNCTIONS
-function showUpdateBanner(){document.getElementById('update-banner').classList.add('show');}
-function hardRefresh(){
-  if(!confirm('Cache wissen en app herladen? Je data blijft bewaard.'))return;
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.getRegistrations().then(regs=>{
-      Promise.all(regs.map(r=>r.unregister())).then(()=>{
-        caches.keys().then(keys=>{
-          Promise.all(keys.map(k=>caches.delete(k))).then(()=>{
-            window.location.href=window.location.href.split('?')[0]+'?nocache='+Date.now();
-          });
-        });
-      });
-    });
-  } else {
-    window.location.href=window.location.href.split('?')[0]+'?nocache='+Date.now();
-  }
-}
 function applyUpdate(){
   window._swUpdating=true;
   document.getElementById('update-banner').classList.remove('show');
@@ -729,6 +687,35 @@ function manualCheckUpdate(){
 }
 
 function updateApiKeyBadge(){const b=document.getElementById('api-key-badge'),s=document.getElementById('api-key-sub');if(b){b.textContent=ANTHROPIC_KEY?'INGESTELD':'NIET INGESTELD';b.className='si-badge'+(ANTHROPIC_KEY?'':' off');}if(s)s.textContent=ANTHROPIC_KEY?'Zoeken actief':'Voor zoeken & automatische koersen';}
+
+
+function updateWorkerBadge(){
+  const b=document.getElementById('worker-badge');
+  const s=document.getElementById('worker-sub');
+  if(b){b.textContent=CF_WORKER_URL?'ACTIEF':'NIET INGESTELD';b.className='si-badge'+(CF_WORKER_URL?'':' off');}
+  if(s)s.textContent=CF_WORKER_URL?'Via: '+CF_WORKER_URL.replace('https://','').split('/')[0]:'Gratis proxy voor koersen';
+}
+function showWorkerSetup(){
+  const el=document.getElementById('worker-url-input');
+  if(el)el.value=CF_WORKER_URL;
+  document.getElementById('worker-modal').classList.add('open');
+}
+function closeWorkerModal(e){
+  if(!e||e.target===document.getElementById('worker-modal'))
+    document.getElementById('worker-modal').classList.remove('open');
+}
+function saveWorkerUrl(){
+  const u=(document.getElementById('worker-url-input')?.value||'').trim();
+  CF_WORKER_URL=u;localStorage.setItem('v_cf_worker',u);
+  updateWorkerBadge();
+  document.getElementById('worker-modal').classList.remove('open');
+  showToast(u?'Worker URL opgeslagen':'Worker URL verwijderd');
+}
+function clearWorkerUrl(){
+  CF_WORKER_URL='';localStorage.removeItem('v_cf_worker');
+  updateWorkerBadge();
+  document.getElementById('worker-modal').classList.remove('open');
+}
 
 // LIVE PRICES
 // Strategy 1: Stooq.com (free, CORS*, works for all European ETFs)
@@ -947,7 +934,7 @@ async function checkPin(){
   await unlockWith(entered);
 }
 async function unlockWith(pin){const stored=localStorage.getItem('v_hash'),h=await pinHash(pin);if(h!==stored){pinErr('Onjuiste PIN');return;}const ok=await loadData(pin);if(!ok){pinErr('Ontsleuteling mislukt');return;}currentPin=pin;sessionStorage.setItem('v_sp',pin);if(bioEnabled&&bioCredId)localStorage.setItem('v_bio_pin',btoa(pin));unlock();sendLoginNotificationIfNewDevice();}
-function unlock(){document.getElementById('pin-screen').classList.add('hidden');document.getElementById('app').classList.add('visible');updateBioUI();updateEmailBadge();updateApiKeyBadge();updateWorkerBadge();renderAll();}
+function unlock(){document.getElementById('pin-screen').classList.add('hidden');document.getElementById('app').classList.add('visible');updateBioUI();updateApiKeyBadge();updateWorkerBadge();renderAll();}
 function lockApp(){holdings=[];transactions=[];deletedHoldings=[];currentPin='';pinInput='';dots();hint('Voer je 6-cijferige PIN in');document.getElementById('pin-screen').classList.remove('hidden');document.getElementById('app').classList.remove('visible');updateBioUI();setTimeout(autoTriggerBiometric,600);}
 function changePIN(){isSettingPin=true;pinConfirm='';pinInput='';dots();hint('Voer je nieuwe PIN in');document.getElementById('pin-screen').classList.remove('hidden');}
 
@@ -1012,6 +999,52 @@ async function deleteTx(id){
   transactions=transactions.filter(t=>t.id!==id);
   await persist();renderTransactions();showToast('Transactie verwijderd');
 }
+function openTxEdit(txId){
+  const t=transactions.find(x=>x.id===txId);if(!t)return;
+  document.getElementById('edit-tx-id').value=txId;
+  document.getElementById('edit-tx-date').value=t.date||'';
+  document.getElementById('edit-tx-action').value=t.action||'buy';
+  document.getElementById('edit-tx-qty').value=t.qty||'';
+  document.getElementById('edit-tx-price').value=t.price||'';
+  document.getElementById('edit-tx-total').value=t.total||'';
+  document.getElementById('edit-tx-costs').value=t.costs||'';
+  document.getElementById('edit-tx-note').value=t.note||'';
+  document.getElementById('tx-edit-modal').classList.add('open');
+}
+function closeTxEdit(e){
+  if(e&&e.target!==document.getElementById('tx-edit-modal'))return;
+  document.getElementById('tx-edit-modal').classList.remove('open');
+}
+async function saveTxEdit(){
+  const txId=document.getElementById('edit-tx-id').value;
+  const t=transactions.find(x=>x.id===txId);if(!t)return;
+  t.date=document.getElementById('edit-tx-date').value;
+  t.action=document.getElementById('edit-tx-action').value;
+  t.qty=parseFloat(document.getElementById('edit-tx-qty').value)||t.qty;
+  t.price=parseFloat(document.getElementById('edit-tx-price').value)||t.price;
+  t.total=parseFloat(document.getElementById('edit-tx-total').value)||t.total;
+  const costs=parseFloat(document.getElementById('edit-tx-costs').value);
+  if(!isNaN(costs)&&costs>=0)t.costs=costs;
+  const note=document.getElementById('edit-tx-note').value.trim();
+  if(note)t.note=note;
+  // Recalculate holding avg price if needed
+  const h=holdings.find(x=>x.name===t.name&&x.broker===t.broker);
+  if(h){
+    const buys=transactions.filter(x=>x.name===h.name&&x.broker===h.broker&&x.action==='buy');
+    if(buys.length){
+      const totalQty=buys.reduce((s,x)=>s+x.qty,0);
+      const totalCost=buys.reduce((s,x)=>s+(x.total||x.qty*x.price),0);
+      h.price=totalQty>0?totalCost/totalQty:h.price;
+      h.qty=totalQty;
+    }
+  }
+  await persist();renderAll();
+  document.getElementById('tx-edit-modal').classList.remove('open');
+  // Refresh modal tx list
+  if(currentDetailHolding)setModalTab('tx');
+  showToast('Transactie bijgewerkt');
+}
+
 async function deleteTxFromModal(txId,holdingId){
   if(!confirm('Transactie verwijderen?'))return;
   transactions=transactions.filter(t=>t.id!==txId);
@@ -1119,6 +1152,7 @@ function setModalTab(tab){
         '<div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':'Verkocht')+'</div>'+
         '<div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+(t.costs&&t.costs>0?' · kosten '+fe(t.costs):'')+'</div></div>'+
         '<div class="tx-amount '+ac+'" style="flex-shrink:0">'+sign+fe(Math.abs(t.total||0))+'</div>'+
+        '<button data-txid="'+t.id+'" onclick="openTxEdit(this.dataset.txid)" style="background:none;border:none;color:var(--text3);font-size:.9rem;cursor:pointer;padding:4px 5px" title="Bewerken">✏️</button>'+
         '<button data-txid="'+t.id+'" data-hid="'+h.id+'" onclick="deleteTxFromModal(this.dataset.txid,this.dataset.hid)" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 6px">&times;</button></div>';
     }).join(''):'<div style="font-size:.82rem;color:var(--text3);padding:8px 0">Geen transacties</div>';
   }
@@ -1532,7 +1566,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 // ── CHART MODULE ──
 let currentChartHolding=null,currentChartRange='1W';
 
-const RANGE_CONFIG={'1W':{days:7},'1M':{days:31},'3M':{days:91},'6M':{days:183},'1Y':{days:365},'ALL':{days:1825}};
+const RANGE_CONFIG={'1W':{days:7},'1M':{days:31},'3M':{days:91},'6M':{days:183},'1Y':{days:365},'ALL':{days:7300}};
 
 // ── UNIFIED SPARKLINE DRAWER ──
 function drawSparkline(canvas, crosshairId, tooltipId, priceBigId, prices, h, buyLabel){
@@ -1719,8 +1753,10 @@ async function fetchHistoricalStooq(ticker,range){
   const days=RANGE_CONFIG[range]?.days||30;
   from.setDate(from.getDate()-days);
   const fmt=d=>d.getFullYear().toString()+(d.getMonth()+1).toString().padStart(2,'0')+d.getDate().toString().padStart(2,'0');
+  // Use weekly interval for 6M+, monthly for 1Y+, daily for shorter
+  const interval=days>365?'m':days>90?'w':'d';
   try{
-    const url='https://stooq.com/q/d/l/?s='+stooqTicker+'&d1='+fmt(from)+'&d2='+fmt(now)+'&i=d';
+    const url='https://stooq.com/q/d/l/?s='+stooqTicker+'&d1='+fmt(from)+'&d2='+fmt(now)+'&i='+interval;
     const r=await fetch(url,{mode:'cors',signal:AbortSignal.timeout(8000)});
     if(!r.ok)return null;
     const csv=await r.text();
@@ -1776,17 +1812,57 @@ async function renderSearchResult(el,results){el.innerHTML=results.map(item=>{co
 (function init(){
   document.getElementById('header-date').textContent=new Date().toLocaleDateString('nl-BE',{weekday:'short',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
   const addDate=document.getElementById('add-date');if(addDate)addDate.value=new Date().toISOString().split('T')[0];
-  loadPrefs();loadEmailJS();
+  loadPrefs();
   ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
   CF_WORKER_URL=localStorage.getItem('v_cf_worker')||'';
-  const hasPIN=!!localStorage.getItem('v_hash'),ejsSkipped=localStorage.getItem('v_ejs_skipped');
-  if(!ejsService&&!ejsSkipped){document.getElementById('setup-screen').classList.add('visible');document.getElementById('pin-screen').style.display='none';return;}
+  const hasPIN=!!localStorage.getItem('v_hash');
   if(!hasPIN)hint('Stel je 6-cijferige PIN in');
-  updateBioUI();updateApiKeyBadge();updateWorkerBadge();updateEmailBadge();
+  updateBioUI();updateApiKeyBadge();updateWorkerBadge();
   const sp=sessionStorage.getItem('v_sp');
   if(sp&&hasPIN)unlockWith(sp);
   else if(bioEnabled&&bioCredId&&hasPIN)setTimeout(autoTriggerBiometric,600);
 })();
 </script>
+
+<!-- TX EDIT MODAL -->
+<div class="tx-edit-modal" id="tx-edit-modal" onclick="closeTxEdit(event)">
+  <div class="tx-edit-sheet">
+    <div class="tx-edit-title">Transactie bewerken</div>
+    <input type="hidden" id="edit-tx-id">
+    <div class="form-group">
+      <label class="form-label">Datum</label>
+      <input type="date" class="form-input" id="edit-tx-date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Actie</label>
+      <select class="form-input" id="edit-tx-action">
+        <option value="buy">Gekocht</option>
+        <option value="sell">Verkocht</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Aantal</label>
+      <input type="number" class="form-input" id="edit-tx-qty" step="any" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prijs per stuk (€)</label>
+      <input type="number" class="form-input" id="edit-tx-price" step="any" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Totaal betaald (€)</label>
+      <input type="number" class="form-input" id="edit-tx-total" step="any" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Transactiekosten (€)</label>
+      <input type="number" class="form-input" id="edit-tx-costs" step="any" min="0" placeholder="0.00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notitie</label>
+      <input type="text" class="form-input" id="edit-tx-note" placeholder="Optioneel">
+    </div>
+    <button class="btn-primary" onclick="saveTxEdit()" style="margin-bottom:10px">Opslaan</button>
+    <button class="btn-secondary" onclick="closeTxEdit()">Annuleren</button>
+  </div>
+</div>
 </body>
 </html>
