@@ -483,8 +483,11 @@ const EUR_USD_RATE={rate:1.08,ts:0}; // fallback
 async function fetchEurUsd(){
   if(Date.now()-EUR_USD_RATE.ts<300000)return EUR_USD_RATE.rate;
   try{
-    const r=await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/EURUSD=X?interval=1d&range=1d`);
-    const d=await r.json();
+    const yahooUrl='https://query1.finance.yahoo.com/v8/finance/chart/EURUSD%3DX?interval=1d&range=1d';
+    const proxyUrl='https://api.allorigins.win/get?url='+encodeURIComponent(yahooUrl);
+    const r=await fetch(proxyUrl);
+    const wrapper=await r.json();
+    const d=JSON.parse(wrapper.contents);
     const price=d?.chart?.result?.[0]?.meta?.regularMarketPrice;
     if(price){EUR_USD_RATE.rate=price;EUR_USD_RATE.ts=Date.now();}
   }catch(e){}
@@ -494,9 +497,12 @@ async function fetchEurUsd(){
 async function fetchPrice(ticker){
   if(!ticker)return null;
   try{
-    const r=await fetch(`${YAHOO_PROXY}${encodeURIComponent(ticker)}?interval=1d&range=2d`);
+    const yahooUrl=YAHOO_PROXY+encodeURIComponent(ticker)+'?interval=1d&range=2d';
+    const proxyUrl='https://api.allorigins.win/get?url='+encodeURIComponent(yahooUrl);
+    const r=await fetch(proxyUrl);
     if(!r.ok)return null;
-    const d=await r.json();
+    const wrapper=await r.json();
+    const d=JSON.parse(wrapper.contents);
     const result=d?.chart?.result?.[0];
     if(!result)return null;
     const meta=result.meta;
@@ -583,30 +589,58 @@ async function doSearch(q){
   const el=document.getElementById('search-results');
   el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Zoeken...</div>';
   try{
-    const r=await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&lang=en&region=US&quotesCount=8&newsCount=0`);
-    const d=await r.json();
-    const quotes=(d?.quotes||[]).filter(q=>q.quoteType&&['ETF','EQUITY','CRYPTOCURRENCY','INDEX'].includes(q.quoteType));
-    if(!quotes.length){el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Geen resultaten gevonden</div>';return;}
-    // Fetch prices for top results
-    const pricePromises=quotes.slice(0,6).map(async q=>{
-      const data=await fetchPriceInEur(q.symbol);
-      return{...q,priceData:data};
-    });
-    const results=await Promise.all(pricePromises);
-    el.innerHTML=results.map(q=>{
-      const p=q.priceData;
-      const priceStr=p?fe(p.priceEur||p.price):'–';
-      const chgPct=(p&&p.changePct)||0;
-      const chgStr=p?'<span class="'+(chgPct>=0?'up':'down')+'" style="font-size:.7rem;font-family:DM Mono,monospace">'+(chgPct>=0?'+':'')+chgPct.toFixed(2)+'%</span>':'';
-      const typeIcon=q.quoteType==='CRYPTOCURRENCY'?'₿':q.quoteType==='ETF'?'📈':'🏢';
-      const safeSym=q.symbol.replace(/'/g,'');
+    const yahooUrl='https://query1.finance.yahoo.com/v1/finance/search?q='+encodeURIComponent(q)+'&lang=en&region=US&quotesCount=8&newsCount=0';
+    const proxyUrl='https://api.allorigins.win/get?url='+encodeURIComponent(yahooUrl);
+    const r=await fetch(proxyUrl);
+    const wrapper=await r.json();
+    const d=JSON.parse(wrapper.contents);
+    const quotes=(d?.quotes||[]).filter(item=>item.quoteType&&['ETF','EQUITY','CRYPTOCURRENCY','INDEX'].includes(item.quoteType));
+    if(!quotes.length){
+      el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Geen resultaten voor "'+q+'"<br>Probeer exacte ticker: AAPL, IWDA.AS, BTC-EUR</div>';
+      // Try direct ticker lookup as fallback
+      const data=await fetchPriceInEur(q.toUpperCase());
+      if(data){showDirectResult(q.toUpperCase(),data);}
+      return;
+    }
+    el.innerHTML=quotes.slice(0,6).map(item=>{
+      const typeIcon=item.quoteType==='CRYPTOCURRENCY'?'\u20BF':item.quoteType==='ETF'?'\uD83D\uDCC8':'\uD83C\uDFE2';
+      const safeSym=(item.symbol||'').replace(/['"<>]/g,'');
       return '<div class="search-result-item" onclick="showSearchDetail(\'' + safeSym + '\')">'+
-        '<div class="sr-symbol">'+typeIcon+' '+q.symbol+'</div>'+
-        '<div class="sr-info"><div class="sr-name">'+(q.shortname||q.longname||q.symbol)+'</div><div class="sr-exchange">'+(q.exchDisp||q.exchange||'')+' &middot; '+(q.quoteType||'')+'</div></div>'+
-        '<div class="sr-price"><div class="sr-price-val">'+priceStr+'</div>'+chgStr+'</div>'+
+        '<div class="sr-symbol">'+typeIcon+' '+item.symbol+'</div>'+
+        '<div class="sr-info"><div class="sr-name">'+(item.shortname||item.longname||item.symbol)+'</div>'+
+        '<div class="sr-exchange">'+(item.exchDisp||item.exchange||'')+' &middot; '+(item.quoteType||'')+'</div></div>'+
+        '<div class="sr-price" id="srp-'+safeSym+'"><span style="color:var(--text3);font-size:.75rem">...</span></div>'+
       '</div>';
     }).join('');
-  }catch(e){el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Fout bij zoeken. Controleer verbinding.</div>';}
+    quotes.slice(0,6).forEach(async item=>{
+      const safeSym=(item.symbol||'').replace(/['"<>]/g,'');
+      const data=await fetchPriceInEur(item.symbol);
+      const priceEl=document.getElementById('srp-'+safeSym);
+      if(priceEl&&data){
+        const cp=data.changePct||0;
+        priceEl.innerHTML='<div class="sr-price-val">'+fe(data.priceEur||data.price)+'</div>'+
+          '<span class="'+(cp>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</span>';
+      }
+    });
+  }catch(e){
+    console.error('Search error:',e);
+    // Fallback: direct ticker price lookup
+    const data=await fetchPriceInEur(q.toUpperCase());
+    if(data){showDirectResult(q.toUpperCase(),data);}
+    else el.innerHTML='<div style="padding:14px;font-size:.82rem;color:var(--text3)">Zoeken mislukt. Probeer exact ticker: AAPL, IWDA.AS, BTC-EUR</div>';
+  }
+}
+
+function showDirectResult(sym,data){
+  const el=document.getElementById('search-results');
+  const cp=data.changePct||0;
+  const safeSym=sym.replace(/['"<>]/g,'');
+  el.innerHTML='<div class="search-result-item" onclick="showSearchDetail(\'' + safeSym + '\')">'+
+    '<div class="sr-symbol">\uD83D\uDCC8 '+sym+'</div>'+
+    '<div class="sr-info"><div class="sr-name">'+(data.name||sym)+'</div><div class="sr-exchange">Live koers gevonden</div></div>'+
+    '<div class="sr-price"><div class="sr-price-val">'+fe(data.priceEur||data.price)+'</div>'+
+    '<span class="'+(cp>=0?'up':'down')+'" style="font-size:.68rem;padding:1px 5px">'+(cp>=0?'+':'')+cp.toFixed(2)+'%</span></div>'+
+  '</div>';
 }
 
 async function showSearchDetail(symbol){
@@ -771,13 +805,16 @@ function showLoading(msg){document.getElementById('loading-text').textContent=ms
 function hideLoading(){document.getElementById('loading-overlay').classList.remove('visible');}
 
 // ── SAXO PARSER ──
+// The PDF extracts with spaces removed between some words (concatenated)
+// Actual line format: "27-jun-2025 01-jul-2025 6319429765 ETF XtrackersS&P500SwapUCITSETF USD Koop OPENING 1 123,410 0,8545 - -109,10 -3,65 -3,91"
+// Positions format: "FLXD:xetr 7213234891 EUR 27-jun-2025 1 1,0000 31,6550 37,0350 17,00% 5,38 37,04"
 function parseSaxoPDF(text){
   let newTx=0,skipped=0,updatedHoldings=0;
   const existingIds=new Set(transactions.map(t=>t.id));
-  const MONTH_MAP={jan:'01',feb:'02',mrt:'03',apr:'04',mei:'05',jun:'06',jul:'07',aug:'08',sep:'09',okt:'10',nov:'11',dec:'12'};
-  function saxoDate(s){const p=s.split('-');return p.length===3?`${p[2]}-${MONTH_MAP[p[1].toLowerCase()]||'01'}-${p[0].padStart(2,'0')}`:s;}
+  const MM={jan:'01',feb:'02',mrt:'03',apr:'04',mei:'05',jun:'06',jul:'07',aug:'08',sep:'09',okt:'10',nov:'11',dec:'12'};
+  function saxoDate(s){const p=s.split('-');return p.length===3?p[2]+'-'+(MM[p[1].toLowerCase()]||'01')+'-'+p[0].padStart(2,'0'):s;}
 
-  // Instrument map from Saxo symbols to names & yahoo tickers
+  // Known instrument data: ticker -> [fullName, yahooTicker, type]
   const INST={
     'FLXD':['Franklin European Quality Dividend ETF','FLXD.DE','etf'],
     'XSPU':['Xtrackers S&P 500 Swap UCITS ETF','XSPU.L','etf'],
@@ -790,42 +827,80 @@ function parseSaxoPDF(text){
     'UST':['Amundi Core Nasdaq-100 Swap ETF','UST.PA','etf'],
   };
 
-  // Parse buy/sell transactions
-  // Pattern in text: date valutadate txid ETF instrumentname currency Koop/Verkoop OPENING/CLOSING qty price exchangerate
   const lines=text.split('\n');
+
+  // ── PARSE TRANSACTIONS ──
+  // Pattern: date [valdate] txId ETF <name> EUR/USD Koop/Verkoop OPENING/CLOSING qty price exchangerate
+  // The instrument name may be concatenated with no spaces
   for(const line of lines){
-    // Look for lines with Koop or Verkoop and a date
-    const m=line.match(/(\d{2}-\w{3}-\d{4})\s+[\d\-]+\s+(\d{7,12})\s+ETF\s+(.+?)\s+(EUR|USD)\s+(Koop|Verkoop)\s+(OPENING|CLOSING)\s+([\d,]+)\s+([\d,.]+)/);
-    if(m){
-      const [,dateStr,,txId,rawName,,typeStr,,qtyStr,priceStr]=m;
-      const id='saxo_'+txId;
-      if(existingIds.has(id)){skipped++;continue;}
-      const date=saxoDate(dateStr);
-      const qty=parseFloat(qtyStr.replace(',','.'));
-      const price=parseFloat(priceStr.replace(',','.'));
-      const action=typeStr==='Koop'?'buy':'sell';
-      // Try to find ticker in the name
-      let ticker='',yahooTicker='',type='etf',name=rawName.trim();
-      for(const [sym,[n,yt,tp]] of Object.entries(INST)){if(name.toLowerCase().includes(n.toLowerCase().substring(0,8))||name.includes(sym)){ticker=sym;yahooTicker=yt;type=tp;name=n;break;}}
-      const tx={id,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price,total:qty*price,date,action};
-      transactions.push(tx);existingIds.add(id);newTx++;
-      upsertHolding({id:'h_saxo_'+ticker,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty:action==='buy'?qty:-qty,price,date});updatedHoldings++;
+    // Match: date, optional valdate, txid (7+ digits), ETF, ..., Koop/Verkoop, OPENING/CLOSING, qty, price
+    const m=line.match(/(\d{2}-\w{3}-\d{4})(?:\s+\S+)?\s+(\d{7,12})\s+ETF\s+(.*?)\s+(EUR|USD)\s+(Koop|Verkoop)\s+(?:OPENING|CLOSING)\s+([\d]+)\s+([\d,]+)(?:\s+[\d,]+)?/);
+    if(!m) continue;
+    const [,dateStr,,txId,rawInstr,currency,typeStr,qtyStr,priceStr]=m;
+    const id='saxo_'+txId;
+    if(existingIds.has(id)){skipped++;continue;}
+    const date=saxoDate(dateStr);
+    const qty=parseInt(qtyStr,10);
+    const price=parseFloat(priceStr.replace(',','.'));
+    const action=typeStr==='Koop'?'buy':'sell';
+    // Find matching instrument by checking if raw name contains ticker or name fragment
+    let ticker='',yahooTicker='',itype='etf',name=rawInstr.trim();
+    for(const [sym,[iname,yt,it]] of Object.entries(INST)){
+      const cleanRaw=rawInstr.replace(/\s+/g,'').toLowerCase();
+      const cleanName=iname.replace(/\s+/g,'').toLowerCase().substring(0,12);
+      if(cleanRaw.includes(sym.toLowerCase())||cleanRaw.includes(cleanName)){
+        ticker=sym;yahooTicker=yt;itype=it;name=iname;break;
+      }
+    }
+    // If no match found from known list, extract ticker from raw
+    if(!ticker){
+      const symMatch=rawInstr.match(/([A-Z]{2,6})(?::|\s)/);
+      if(symMatch)ticker=symMatch[1];
+    }
+    const tx={id,name,ticker,yahooTicker,type:itype,broker:'Saxo Bank',qty,price,total:qty*price,date,action};
+    transactions.push(tx);existingIds.add(id);newTx++;
+    upsertHolding({id:'h_saxo_'+(ticker||txId),name,ticker,yahooTicker,type:itype,broker:'Saxo Bank',qty:action==='buy'?qty:-qty,price,date});
+    updatedHoldings++;
+  }
+
+  // ── PARSE POSITIONS (current state from position pages) ──
+  // Pattern: TICKER:exchange positionId EUR/USD dd-mmm-yyyy qty exchangeRate openPrice currentPrice %change WV currentValue
+  const posRe=/([A-Z]{2,6}):x\w+\s+(\d{10})\s+(EUR|USD)\s+(\d{2}-\w{3}-\d{4})\s+(\d+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)(?:\s+[\d.,%-]+){3}/g;
+  let pm;
+  while((pm=posRe.exec(text))!==null){
+    const [,sym,,currency,dateStr,qtyStr,,openStr,curStr]=pm;
+    const instData=INST[sym];
+    if(!instData)continue;
+    const [iname,yt,it]=instData;
+    const qty=parseInt(qtyStr,10);
+    const openPrice=parseFloat(openStr.replace(',','.'));
+    const curPrice=parseFloat(curStr.replace(',','.'));
+    const date=saxoDate(dateStr);
+    const existing=holdings.find(h=>h.ticker===sym&&h.broker==='Saxo Bank');
+    if(existing){
+      existing.qty=qty;existing.current=curPrice;
+      if(!existing.yahooTicker)existing.yahooTicker=yt;
+      updatedHoldings++;
+    } else {
+      holdings.push({id:'h_saxo_'+sym,name:iname,ticker:sym,yahooTicker:yt,type:it,broker:'Saxo Bank',qty,price:openPrice,current:curPrice,date,notes:''});
+      updatedHoldings++;
     }
   }
 
-  // Parse positions for current state (overrides calculated holdings)
-  // Saxo position format: symbol:exchange positionId EUR date qty exchangeRate openPrice currentPrice
-  for(const [sym,[name,yahooTicker,type]] of Object.entries(INST)){
-    const symShort=sym.toLowerCase();
-    // Find position data in text
-    const posRe=new RegExp(sym+'[:\\s]\\S*\\s+(\\d{10})\\s+(EUR|USD)\\s+(\\d{2}-\\w{3}-\\d{4})\\s+(\\d+)\\s+([\\d,]+)\\s+([\\d,]+)\\s+([\\d,]+)','i');
-    const pm=posRe.exec(text);
-    if(pm){
-      const [,,posId,,dateStr,qtyStr,exStr,openStr,curStr]=pm;
-      const qty=parseFloat(qtyStr),openPrice=parseFloat(openStr.replace(',','.')),curPrice=parseFloat(curStr.replace(',','.'));
-      const existing=holdings.find(h=>h.ticker===sym&&h.broker==='Saxo Bank');
-      if(existing){existing.qty=qty;existing.price=openPrice;existing.current=curPrice;updatedHoldings++;}
-      else{holdings.push({id:'h_saxo_'+sym,name,ticker:sym,yahooTicker,type,broker:'Saxo Bank',qty,price:openPrice,current:curPrice,date:saxoDate(dateStr),notes:''});updatedHoldings++;}
+  // If positions were found but no transactions matched (regex issue), still report holdings update
+  const posCount=(text.match(/([A-Z]{2,6}):x\w+\s+\d{10}/g)||[]).length;
+  if(posCount>0&&updatedHoldings===0){
+    // Parse positions more leniently
+    for(const [sym,[iname,yt,it]] of Object.entries(INST)){
+      const re=new RegExp(sym+':x\\w+\\s+(\\d{10})\\s+(EUR|USD)\\s+(\\d{2}-\\w{3}-\\d{4})\\s+(\\d+)\\s+[\\d,]+\\s+([\\d,]+)\\s+([\\d,]+)');
+      const m=re.exec(text);
+      if(m){
+        const [,posId,cur,dateStr,qtyStr,openStr,curStr]=m;
+        const qty=parseInt(qtyStr,10),openPrice=parseFloat(openStr.replace(',','.')),curPrice=parseFloat(curStr.replace(',','.'));
+        const existing=holdings.find(h=>h.ticker===sym&&h.broker==='Saxo Bank');
+        if(existing){existing.qty=qty;existing.current=curPrice;existing.yahooTicker=yt;updatedHoldings++;}
+        else{holdings.push({id:'h_saxo_'+sym,name:iname,ticker:sym,yahooTicker:yt,type:it,broker:'Saxo Bank',qty,price:openPrice,current:curPrice,date:saxoDate(dateStr),notes:''});updatedHoldings++;}
+      }
     }
   }
 
