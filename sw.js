@@ -1,73 +1,43 @@
-// Savings App - Service Worker
-// Verhoog CACHE_VERSION elke keer dat je index.html wijzigt
-const CACHE_VERSION = 'savings-v5.4';
-const CACHE_ASSETS = [
-  './',
-  './index.html',
-];
+// Savings App - Service Worker v5.5
+const CACHE_VERSION = 'savings-v5.5';
+const CACHE_ASSETS = ['./index.html'];
 
-// Installatie: cache de app
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then(cache => {
-      return cache.addAll(CACHE_ASSETS);
-    }).then(() => {
-      // Activeer meteen zonder te wachten op oude tabs te sluiten
-      return self.skipWaiting();
-    })
+    caches.open(CACHE_VERSION)
+      .then(cache => cache.addAll(CACHE_ASSETS))
+      .then(() => self.skipWaiting())  // Activate immediately
   );
 });
 
-// Activatie: verwijder oude caches
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== CACHE_VERSION)
-            .map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE_VERSION).map(k => caches.delete(k))
+      ))
+      .then(() => self.clients.claim())  // Take control immediately
   );
 });
 
-// Fetch: Network-first strategie voor index.html, cache-first voor de rest
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  
-  // Externe APIs nooit cachen (Yahoo, Stooq, CoinGecko, etc.)
-  if (!url.origin.includes('github.io') && url.origin !== self.location.origin) {
-    return;
-  }
 
-  // index.html: altijd eerst netwerk proberen (detecteert updates)
-  if (url.pathname.endsWith('/') || url.pathname.endsWith('index.html')) {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          // Sla nieuwe versie op in cache
-          const clone = response.clone();
-          caches.open(CACHE_VERSION).then(cache => cache.put(event.request, clone));
-          return response;
-        })
-        .catch(() => {
-          // Offline fallback
-          return caches.match('./index.html');
-        })
-    );
-    return;
-  }
+  // Never cache API calls
+  if (!url.pathname.endsWith('.html') && !url.pathname.endsWith('/')) return;
 
-  // Overige assets: cache-first
+  // Always network-first for HTML - ensures fresh version
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      return cached || fetch(event.request);
-    })
+    fetch(event.request, {cache: 'no-store'})
+      .then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_VERSION).then(cache => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match('./index.html'))
   );
 });
 
-// Luister naar SKIP_WAITING bericht van de app
 self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
