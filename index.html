@@ -908,12 +908,28 @@ async function fetchYahoo(ticker){
 async function fetchCloudflare(ticker){
   if(!CF_WORKER_URL)return null;
   try{
-    const r=await fetch(CF_WORKER_URL+'?ticker='+encodeURIComponent(ticker),{signal:AbortSignal.timeout(7000)});
+    // Try as Yahoo Finance proxy first
+    const r=await fetch(CF_WORKER_URL+'?ticker='+encodeURIComponent(ticker)+'&range=5d&interval=1d',{signal:AbortSignal.timeout(8000)});
     if(!r.ok)return null;
-    const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;
-    if(!meta?.regularMarketPrice)return null;
-    const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price;
-    return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:meta.currency||'EUR',name:meta.longName||ticker};
+    const d=await r.json();
+    // Handle Yahoo Finance chart format
+    const meta=d?.chart?.result?.[0]?.meta;
+    if(meta?.regularMarketPrice){
+      const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price;
+      return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:meta.currency||'EUR',name:meta.longName||ticker};
+    }
+    // Handle direct price format {price: 123.45}
+    if(d?.price){
+      const price=parseFloat(d.price);
+      return{price,prev:price,change:0,changePct:0,currency:'EUR',name:ticker};
+    }
+    // Handle quoteResponse format
+    const quote=d?.quoteResponse?.result?.[0];
+    if(quote?.regularMarketPrice){
+      const price=quote.regularMarketPrice,prev=quote.regularMarketPreviousClose||price;
+      return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:quote.currency||'EUR',name:quote.longName||ticker};
+    }
+    return null;
   }catch{return null;}
 }
 
@@ -933,14 +949,15 @@ async function fetchPriceInEur(ticker,instrCurrency){
   const isCrypto=!!GECKO_MAP[ticker];
   let data=null;
   if(isCrypto){
-    data=await fetchCoinGecko(ticker)||await fetchYahoo(ticker);
+    // Crypto: CoinGecko first, then Cloudflare worker, then Yahoo
+    data=await fetchCoinGecko(ticker)||await fetchCloudflare(ticker)||await fetchYahoo(ticker);
   } else {
-    // Try sources in order: Twelve Data → Stooq → Alpha Vantage → Yahoo → Cloudflare
-    data=await fetchTwelveData(ticker)
+    // ETFs/stocks: Cloudflare worker first (most reliable), then Twelve Data, then Stooq, then Alpha Vantage, then Yahoo
+    data=await fetchCloudflare(ticker)
+      ||await fetchTwelveData(ticker)
       ||await fetchStooq(ticker)
       ||await fetchAlphaVantage(ticker)
-      ||await fetchYahoo(ticker)
-      ||await fetchCloudflare(ticker);
+      ||await fetchYahoo(ticker);
   }
   if(!data)return null;
   let priceEur=data.price;
@@ -2201,9 +2218,13 @@ function stopAutoRefresh(){
   const addDate=document.getElementById('add-date');if(addDate)addDate.value=new Date().toISOString().split('T')[0];
   loadPrefs();
   ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
-  CF_WORKER_URL=localStorage.getItem('v_cf_worker')||'';
-  TWELVE_DATA_KEY=localStorage.getItem('v_td_key')||'';
-  ALPHA_VANTAGE_KEY=localStorage.getItem('v_av_key')||'';
+  CF_WORKER_URL=localStorage.getItem('v_cf_worker')||'https://red-queen-9c2a.wout-depotter.workers.dev/';
+  TWELVE_DATA_KEY=localStorage.getItem('v_td_key')||'db2b71a4165f431bb50fa94291a4c129';
+  ALPHA_VANTAGE_KEY=localStorage.getItem('v_av_key')||'WX7XIN8P1THPWVFU';
+  // Save defaults to localStorage if not already set
+  if(!localStorage.getItem('v_cf_worker'))localStorage.setItem('v_cf_worker','https://red-queen-9c2a.wout-depotter.workers.dev/');
+  if(!localStorage.getItem('v_td_key'))localStorage.setItem('v_td_key','db2b71a4165f431bb50fa94291a4c129');
+  if(!localStorage.getItem('v_av_key'))localStorage.setItem('v_av_key','WX7XIN8P1THPWVFU');
   const hasPIN=!!localStorage.getItem('v_hash');
   if(!hasPIN)hint('Stel je 6-cijferige PIN in');
   updateBioUI();updateApiKeyBadge();updateWorkerBadge();updateTdBadge();updateAvBadge();
