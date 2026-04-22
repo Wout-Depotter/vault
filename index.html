@@ -566,6 +566,13 @@ async function enrollBio(){
   }catch(e){if(e.name!=='NotAllowedError')showToast('Instellen mislukt');return false;}
 }
 
+async function autoTriggerBiometric(){
+  if(!bioEnabled||!bioCredId) return;
+  const sp=sessionStorage.getItem('v_sp');
+  if(!sp) return; // No session PIN yet, can't auto-unlock
+  await triggerBiometric();
+}
+
 async function triggerBiometric(){
   if(!bioEnabled||!bioCredId)return;
   try{
@@ -577,9 +584,16 @@ async function triggerBiometric(){
       userVerification:'required',timeout:60000
     }});
     const sp=sessionStorage.getItem('v_sp');
-    if(sp)await unlockWith(sp);
-    else showToast('Voer eerst éénmaal je PIN in');
-  }catch(e){if(e.name!=='NotAllowedError')showToast('Biometrie mislukt – gebruik PIN');}
+    if(sp){
+      await unlockWith(sp);
+    } else {
+      // First time after install - need PIN once to cache it
+      hint('Face ID geslaagd ✓ Voer eenmalig je PIN in');
+    }
+  }catch(e){
+    if(e.name!=='NotAllowedError') showToast('Biometrie mislukt – gebruik PIN');
+    else hint('Voer je 6-cijferige PIN in');
+  }
 }
 
 async function toggleBiometric(){
@@ -660,6 +674,8 @@ function lockApp(){
   document.getElementById('pin-screen').classList.remove('hidden');
   document.getElementById('app').classList.remove('visible');
   updateBioUI();
+  // Auto-trigger Face ID after short delay
+  setTimeout(autoTriggerBiometric, 600);
 }
 
 function changePIN(){
@@ -894,7 +910,12 @@ function showToast(msg){
   if(!hasPIN)hint('Stel je 6-cijferige PIN in');
   updateBioUI();
   const sp=sessionStorage.getItem('v_sp');
-  if(sp&&hasPIN)unlockWith(sp);
+  if(sp&&hasPIN){
+    unlockWith(sp);
+  } else if(bioEnabled&&bioCredId&&hasPIN){
+    // Auto-trigger Face ID on app open
+    setTimeout(autoTriggerBiometric, 600);
+  }
 })();
 </script>
 
