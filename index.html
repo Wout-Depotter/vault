@@ -466,14 +466,20 @@ function saveEmailJS(){
   ejsService=s;ejsTemplate=t;ejsKey=k;
   emailjs.init(k);
   document.getElementById('setup-screen').classList.remove('visible');
+  document.getElementById('pin-screen').style.display='';
   updateEmailBadge();
   showToast('EmailJS ingesteld ✓');
+  const hasPIN=!!localStorage.getItem('v_hash');
+  if(!hasPIN) hint('Stel je 6-cijferige PIN in');
 }
 
 function skipEmailJS(){
   localStorage.setItem('v_ejs_skipped','1');
   document.getElementById('setup-screen').classList.remove('visible');
+  document.getElementById('pin-screen').style.display='';
   updateEmailBadge();
+  const hasPIN=!!localStorage.getItem('v_hash');
+  if(!hasPIN) hint('Stel je 6-cijferige PIN in');
 }
 
 function updateEmailBadge(){
@@ -883,12 +889,12 @@ function showToast(msg){
   if(!ejsService&&!ejsSkipped){
     document.getElementById('setup-screen').classList.add('visible');
     document.getElementById('pin-screen').style.display='none';
-  } else {
-    if(!hasPIN)hint('Stel je 6-cijferige PIN in');
-    updateBioUI();
-    const sp=sessionStorage.getItem('v_sp');
-    if(sp&&hasPIN)unlockWith(sp);
+    return;
   }
+  if(!hasPIN)hint('Stel je 6-cijferige PIN in');
+  updateBioUI();
+  const sp=sessionStorage.getItem('v_sp');
+  if(sp&&hasPIN)unlockWith(sp);
 })();
 </script>
 
