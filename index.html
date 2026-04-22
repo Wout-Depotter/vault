@@ -812,9 +812,9 @@ let ALPHA_VANTAGE_KEY=localStorage.getItem('v_av_key')||'';
 // ── TICKER MAPPINGS ──
 const STOOQ_MAP={
   'IWDA.AS':'iwda.as','EMIM.AS':'emim.as','SWRD.AS':'swrd.as','WTCH.AS':'wtch.as',
-  'EUNL.AS':'eunl.as','CD5.PA':'cd5.pa','WAT.PA':'wat.pa','UST.PA':'ust.pa',
-  'FLXD.DE':'flxd.de','XSPU.L':'xspu.l','VUAA.IE':'vuaa.ie','FWIA.IE':'fwia.ie',
-  'QUTM.IE':'qutm.ie','NVDA':'nvda.us','GSAT':'gsat.us','AAPL':'aapl.us',
+  'EUNL.DE':'eunl.de','CD5.PA':'cd5.pa','WAT.PA':'wat.pa','UST.PA':'ust.pa',
+  'FLXD.DE':'flxd.de','XSPU.L':'xspu.l','VUAA.IE':'vuaa.ie','FWIA.DE':'fwia.de',
+  'QUTM.MU':'qutm.mu','NVDA':'nvda.us','GSAT':'gsat.us','AAPL':'aapl.us',
   'MSFT':'msft.us','TSLA':'tsla.us','GOOGL':'googl.us','AMZN':'amzn.us',
 };
 const GECKO_MAP={
@@ -1197,7 +1197,26 @@ function setModalTab(tab){
   const h=currentDetailHolding;if(!h)return;
   const el=document.getElementById('modal-tab-content');if(!el)return;
   if(tab==='general'){
-    el.innerHTML='<div style="padding-bottom:8px"><div class="form-group" style="margin-bottom:10px"><label class="form-label">Prijs bijwerken (€)</label><input type="number" class="form-input" id="update-price" value="'+(h.current||0)+'" step="any" min="0"></div><button class="btn-primary" onclick="updateCurrentHoldingPrice()">Opslaan</button></div>';
+    el.innerHTML=
+      '<div style="padding-bottom:8px">'+
+      '<div class="form-group" style="margin-bottom:10px">'+
+        '<label class="form-label">Live ticker (Yahoo Finance)</label>'+
+        '<div style="display:flex;gap:8px">'+
+          '<input class="form-input" id="edit-yahoo-ticker" value="'+(h.yahooTicker||h.ticker||'')+'" placeholder="bv. IWDA.AS" style="flex:1;font-family:DM Mono,monospace">'+
+          '<button class="btn-secondary" onclick="testAndSaveTicker()" style="flex-shrink:0;padding:0 14px">Test</button>'+
+        '</div>'+
+        '<div id="ticker-test-result" style="font-size:.75rem;margin-top:4px;color:var(--text3)">Voer Yahoo Finance ticker in — bv. IWDA.AS, BTC-EUR, NVDA</div>'+
+      '</div>'+
+      '<div class="form-group" style="margin-bottom:10px">'+
+        '<label class="form-label">Naam</label>'+
+        '<input class="form-input" id="edit-holding-name" value="'+h.name.replace(/"/g,"&quot;")+'" placeholder="Naam holding">'+
+      '</div>'+
+      '<div class="form-group" style="margin-bottom:10px">'+
+        '<label class="form-label">Prijs manueel bijwerken (€)</label>'+
+        '<input type="number" class="form-input" id="update-price" value="'+(h.current||0)+'" step="any" min="0">'+
+      '</div>'+
+      '<button class="btn-primary" onclick="saveHoldingEdits()">Opslaan</button>'+
+      '</div>';
   } else {
     const htxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker).sort((a,b)=>new Date(b.date)-new Date(a.date));
     el.innerHTML=htxs.length?htxs.map(t=>{
@@ -1345,6 +1364,43 @@ function buildPricesFromTransactions(h){
 // ── CLOUDFLARE WORKER ──
 
 // ── MANUAL ADD ──
+async function testAndSaveTicker(){
+  const h=currentDetailHolding;if(!h)return;
+  const ticker=(document.getElementById('edit-yahoo-ticker')?.value||'').trim().toUpperCase();
+  const resultEl=document.getElementById('ticker-test-result');
+  if(!ticker){resultEl.textContent='Voer een ticker in';resultEl.style.color='var(--red)';return;}
+  resultEl.textContent='⏳ Testen...';resultEl.style.color='var(--text3)';
+  const data=await fetchPriceInEur(ticker);
+  if(data&&data.priceEur>0){
+    resultEl.textContent='✅ Gevonden: '+fe(data.priceEur)+(data.name?' — '+data.name.substring(0,30):'');
+    resultEl.style.color='var(--green)';
+    // Auto-fill the price
+    const priceInput=document.getElementById('update-price');
+    if(priceInput)priceInput.value=data.priceEur.toFixed(4);
+  } else {
+    resultEl.textContent='❌ Niet gevonden — controleer de ticker';
+    resultEl.style.color='var(--red)';
+  }
+}
+
+async function saveHoldingEdits(){
+  const h=currentDetailHolding;if(!h)return;
+  const newTicker=(document.getElementById('edit-yahoo-ticker')?.value||'').trim().toUpperCase();
+  const newName=(document.getElementById('edit-holding-name')?.value||'').trim();
+  const newPrice=parseFloat(document.getElementById('update-price')?.value||0);
+  if(newTicker)h.yahooTicker=newTicker;
+  if(newName)h.name=newName;
+  if(!isNaN(newPrice)&&newPrice>0)h.current=newPrice;
+  await persist();
+  renderAll();
+  // Update modal header
+  if(newName)document.getElementById('modal-name').textContent=newName;
+  if(newTicker)document.getElementById('modal-ticker').textContent=[h.ticker,newTicker,h.broker].filter(Boolean).join(' · ');
+  showToast('Opgeslagen ✓');
+  const resultEl=document.getElementById('ticker-test-result');
+  if(resultEl){resultEl.textContent='✅ Opgeslagen';resultEl.style.color='var(--green)';}
+}
+
 function updateCurrentHoldingPrice(){if(currentDetailHolding)updatePrice(currentDetailHolding.id);}
 // ── UPDATE PRICE (from modal) ──
 // ── DELETE ──
@@ -1355,7 +1411,7 @@ async function renderSearchResult(el,results){el.innerHTML=results.map(item=>{co
 
 // ── LIVE PRICES ──
 let ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
-const TICKER_MAP={'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA','SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS','UST':'UST.PA','EUNL':'EUNL.AS','VUAA':'VUAA.IE','FWIA':'FWIA.IE','BTC':'BTC-EUR','ETH':'ETH-EUR'};
+const TICKER_MAP={'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA','SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS','UST':'UST.PA','EUNL':'EUNL.DE','VUAA':'VUAA.IE','FWIA':'FWIA.DE','QUTM':'QUTM.MU','BTC':'BTC-EUR','ETH':'ETH-EUR'};
 function getYahooTicker(h){if(h.yahooTicker)return h.yahooTicker;const t=(h.ticker||'').split(':')[0];return TICKER_MAP[t]||h.ticker||'';}
 async function fetchCoinGecko(ticker){
   const id=GECKO_MAP[ticker];if(!id)return null;
@@ -1527,6 +1583,43 @@ async function deleteTx(id){if(!confirm('Transactie verwijderen?'))return;transa
 async function deleteTxFromModal(txId,holdingId){if(!confirm('Transactie verwijderen?'))return;transactions=transactions.filter(t=>t.id!==txId);await persist();setModalTab('tx');renderTransactions();showToast('Transactie verwijderd');}
 
 // ── UPDATE PRICE ──
+async function testAndSaveTicker(){
+  const h=currentDetailHolding;if(!h)return;
+  const ticker=(document.getElementById('edit-yahoo-ticker')?.value||'').trim().toUpperCase();
+  const resultEl=document.getElementById('ticker-test-result');
+  if(!ticker){resultEl.textContent='Voer een ticker in';resultEl.style.color='var(--red)';return;}
+  resultEl.textContent='⏳ Testen...';resultEl.style.color='var(--text3)';
+  const data=await fetchPriceInEur(ticker);
+  if(data&&data.priceEur>0){
+    resultEl.textContent='✅ Gevonden: '+fe(data.priceEur)+(data.name?' — '+data.name.substring(0,30):'');
+    resultEl.style.color='var(--green)';
+    // Auto-fill the price
+    const priceInput=document.getElementById('update-price');
+    if(priceInput)priceInput.value=data.priceEur.toFixed(4);
+  } else {
+    resultEl.textContent='❌ Niet gevonden — controleer de ticker';
+    resultEl.style.color='var(--red)';
+  }
+}
+
+async function saveHoldingEdits(){
+  const h=currentDetailHolding;if(!h)return;
+  const newTicker=(document.getElementById('edit-yahoo-ticker')?.value||'').trim().toUpperCase();
+  const newName=(document.getElementById('edit-holding-name')?.value||'').trim();
+  const newPrice=parseFloat(document.getElementById('update-price')?.value||0);
+  if(newTicker)h.yahooTicker=newTicker;
+  if(newName)h.name=newName;
+  if(!isNaN(newPrice)&&newPrice>0)h.current=newPrice;
+  await persist();
+  renderAll();
+  // Update modal header
+  if(newName)document.getElementById('modal-name').textContent=newName;
+  if(newTicker)document.getElementById('modal-ticker').textContent=[h.ticker,newTicker,h.broker].filter(Boolean).join(' · ');
+  showToast('Opgeslagen ✓');
+  const resultEl=document.getElementById('ticker-test-result');
+  if(resultEl){resultEl.textContent='✅ Opgeslagen';resultEl.style.color='var(--green)';}
+}
+
 function updateCurrentHoldingPrice(){if(currentDetailHolding)updatePrice(currentDetailHolding.id);}
 async function updatePrice(id){const h=holdings.find(x=>x.id===id);if(!h)return;const p=parseFloat(document.getElementById('update-price').value);if(isNaN(p)||p<0){showToast('Ongeldige prijs');return;}h.current=p;await persist();renderAll();showToast('Prijs bijgewerkt');const{inv,cur,pl,pct}=calc(h);document.getElementById('modal-price-big').textContent=fe(cur);document.getElementById('modal-stats').innerHTML=[{l:'HUIDIGE WAARDE',v:fe(cur)},{l:'GEÏNVESTEERD',v:fe(inv)},{l:'W/V',v:fpl(pl),c:pl>=0?'var(--green)':'var(--red)'},{l:'RENDEMENT',v:fp(pct),c:pct>=0?'var(--green)':'var(--red)'},{l:'AANTAL',v:f(h.qty,6)},{l:'LIVE KOERS',v:fe(h.current)},].map(s=>'<div class="modal-stat"><div class="ms-label">'+s.l+'</div><div class="ms-val"'+(s.c?' style="color:'+s.c+'"':'')+'>'+s.v+'</div></div>').join('');}
 
@@ -1822,7 +1915,7 @@ function parseRevolutPDF(text){
   // Crypto Revolut X format: "BTC Buy - Revolut X 0.00252178 $68,907.68 $173.77 $0.15 Apr 1, 2026, 9:39:15AM"
   const CRYPTO_X_RE=/^(BTC|ETH|SOL)\s+Buy\s+-\s+Revolut\s+X\s+([\d.]+)\s+(?:[€$])([\d,]+(?:\.\d+)?)\s+(?:[€$])([\d,]+(?:\.\d+)?)\s+(?:[€$])([\d,]+(?:\.\d+)?)\s+(\w+\s+\d+,\s+\d{4})/i;
 
-  const RY={'EUNL':'EUNL.AS','QUTM':'QUTM.IE','VUAA':'VUAA.IE','FWIA':'FWIA.IE',
+  const RY={'EUNL':'EUNL.DE','QUTM':'QUTM.IE','VUAA':'VUAA.IE','FWIA':'FWIA.DE',
             'IWDA':'IWDA.AS','EMIM':'EMIM.AS','NVDA':'NVDA','GSAT':'GSAT',
             'AAPL':'AAPL','MSFT':'MSFT','TSLA':'TSLA'};
 
