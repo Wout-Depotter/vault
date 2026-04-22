@@ -1375,8 +1375,8 @@ function renderTrash(){const el=document.getElementById('trash-list');if(!el)ret
 async function restoreHolding(i){const h=deletedHoldings[i];if(!h)return;const txIds=new Set(transactions.map(t=>t.id));deletedHoldings.splice(i,1);holdings.push(h);(h.relatedTxIds||[]).forEach(id=>{if(!txIds.has(id)){const tx=h.deletedTxs?.find(t=>t.id===id);if(tx)transactions.push(tx);}});await persist();renderAll();renderTrash();showToast(h.name+' hersteld ✓');}
 
 // ── LOCK/UNLOCK ──
-function lockApp(){holdings=[];transactions=[];deletedHoldings=[];currentPin='';sessionStorage.removeItem('v_sp');document.getElementById('pin-screen').classList.remove('hidden');renderAll();}
-function unlock(){document.getElementById('pin-screen').classList.add('hidden');renderAll();}
+function lockApp(){holdings=[];transactions=[];deletedHoldings=[];currentPin='';sessionStorage.removeItem('v_sp');document.getElementById('pin-screen').classList.remove('hidden');document.getElementById('app').classList.remove('visible');renderAll();}
+function unlock(){document.getElementById('pin-screen').classList.add('hidden');document.getElementById('app').classList.add('visible');renderAll();}
 async function unlockWith(pin){const ok=await loadData(pin);if(!ok){pinErr('Ontsleuteling mislukt');return;}currentPin=pin;sessionStorage.setItem('v_sp',currentPin);unlock();}
 function changePIN(){if(!currentPin){showToast('Ontgrendel eerst');return;}isSettingPin=true;pinConfirm='';hint('Voer je nieuwe PIN in');document.getElementById('pin-screen').classList.remove('hidden');}
 function showToast(msg){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
