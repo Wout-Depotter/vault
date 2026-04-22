@@ -633,7 +633,7 @@ function renderHoldings(){const el=document.getElementById('all-holdings-list');
 
 // TRANSACTIONS
 let txFilter='all';
-function renderTransactions(){const el=document.getElementById('tx-list'),fe2=document.getElementById('tx-filters');if(!transactions.length){el.innerHTML='<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">🕐</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen transacties</div></div>';fe2.innerHTML='';return;}const years=[...new Set(transactions.map(t=>t.date?t.date.substring(0,4):''))].filter(Boolean).sort().reverse();const months=[...new Set(transactions.map(t=>t.date?t.date.substring(0,7):''))].filter(Boolean).sort().reverse();let fh='<button class="filter-btn '+(txFilter==='all'?'active':'')+'" onclick="setTxFilter(\'all\')">Alles</button>';years.forEach(y=>fh+='<button class="filter-btn '+(txFilter===y?'active':'')+'" onclick="setTxFilter(\''+y+'\')">'+y+'</button>');months.forEach(m=>{const d=new Date(m+'-01');fh+='<button class="filter-btn '+(txFilter===m?'active':'')+'" onclick="setTxFilter(\''+m+'\')">'+d.toLocaleDateString('nl-BE',{month:'short',year:'numeric'})+'</button>';});fe2.innerHTML=fh;let filtered=transactions.filter(t=>txFilter==='all'?true:t.date&&t.date.startsWith(txFilter));filtered.sort((a,b)=>new Date(b.date)-new Date(a.date));const groups={};filtered.forEach(t=>{const m=t.date?t.date.substring(0,7):'?';if(!groups[m])groups[m]=[];groups[m].push(t);});let html='';Object.entries(groups).forEach(([month,txs])=>{const d=new Date(month+'-01');html+='<div class="tx-group-title">'+(month==='?'?'Onbekend':d.toLocaleDateString('nl-BE',{month:'long',year:'numeric'}).toUpperCase())+'</div>';txs.forEach(t=>{const ac=t.action==='buy'?'buy':t.action==='sell'?'sell':'div';const icon=t.action==='buy'?'⬆️':t.action==='sell'?'⬇️':'💰';const sign=t.action==='buy'?'-':'+';const amt=t.total?sign+fe(Math.abs(t.total)):'';html+='<div class="tx-item"><div class="tx-icon '+ac+'">'+icon+'</div><div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':t.action==='sell'?'Verkocht':'Dividend')+': '+t.name+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' &middot; '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+' &middot; '+(t.broker||'')+'</div></div><div class="tx-amount '+ac+'">'+amt+'</div></div>';});});el.innerHTML=html||'<div class="empty-state">Geen resultaten</div>';}
+function renderTransactions(){const el=document.getElementById('tx-list'),fe2=document.getElementById('tx-filters');if(!transactions.length){el.innerHTML='<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">🕐</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen transacties</div></div>';fe2.innerHTML='';return;}const years=[...new Set(transactions.map(t=>t.date?t.date.substring(0,4):''))].filter(Boolean).sort().reverse();const months=[...new Set(transactions.map(t=>t.date?t.date.substring(0,7):''))].filter(Boolean).sort().reverse();let fh='<button class="filter-btn '+(txFilter==='all'?'active':'')+'" onclick="setTxFilter(\'all\')">Alles</button>';years.forEach(y=>fh+='<button class="filter-btn '+(txFilter===y?'active':'')+'" onclick="setTxFilter(\''+y+'\')">'+y+'</button>');months.forEach(m=>{const d=new Date(m+'-01');fh+='<button class="filter-btn '+(txFilter===m?'active':'')+'" onclick="setTxFilter(\''+m+'\')">'+d.toLocaleDateString('nl-BE',{month:'short',year:'numeric'})+'</button>';});fe2.innerHTML=fh;let filtered=transactions.filter(t=>txFilter==='all'?true:t.date&&t.date.startsWith(txFilter));filtered.sort((a,b)=>new Date(b.date)-new Date(a.date));const groups={};filtered.forEach(t=>{const m=t.date?t.date.substring(0,7):'?';if(!groups[m])groups[m]=[];groups[m].push(t);});let html='';Object.entries(groups).forEach(([month,txs])=>{const d=new Date(month+'-01');html+='<div class="tx-group-title">'+(month==='?'?'Onbekend':d.toLocaleDateString('nl-BE',{month:'long',year:'numeric'}).toUpperCase())+'</div>';txs.forEach(t=>{const ac=t.action==='buy'?'buy':t.action==='sell'?'sell':'div';const icon=t.action==='buy'?'⬆️':t.action==='sell'?'⬇️':'💰';const sign=t.action==='buy'?'-':'+';const amt=t.total?sign+fe(Math.abs(t.total)):'';html+='<div class="tx-item" style="position:relative"><div class="tx-icon '+ac+'">'+icon+'</div><div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':t.action==='sell'?'Verkocht':'Dividend')+': '+t.name+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' &middot; '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+' &middot; '+(t.broker||'')+'</div></div><div class="tx-amount '+ac+'">'+amt+'</div><button data-txid='+t.id+' onclick="deleteTx(this.dataset.txid)" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 6px;flex-shrink:0" title="Verwijderen">&times;</button></div>';});});el.innerHTML=html||'<div class="empty-state">Geen resultaten</div>';}
 function setTxFilter(v){txFilter=v;renderTransactions();}
 
 // TRASH - verwijderde holdings
@@ -643,6 +643,20 @@ async function restoreHolding(i){const h=deletedHoldings[i];if(!h)return;// Remo
 const txIds=new Set(transactions.map(t=>t.id));deletedHoldings.splice(i,1);holdings.push(h);// Restore related transactions too (ones with this holdingId)
 const restored=h.relatedTxIds||[];restored.forEach(id=>{if(!txIds.has(id)){const tx=h.deletedTxs?.find(t=>t.id===id);if(tx)transactions.push(tx);}});await persist();renderAll();renderTrash();showToast(h.name+' hersteld ✓');}
 
+async function deleteTx(id){
+  if(!confirm('Transactie verwijderen?'))return;
+  transactions=transactions.filter(t=>t.id!==id);
+  await persist();renderTransactions();showToast('Transactie verwijderd');
+}
+async function deleteTxFromModal(txId,holdingId){
+  if(!confirm('Transactie verwijderen?'))return;
+  transactions=transactions.filter(t=>t.id!==txId);
+  await persist();
+  // Refresh modal tx history
+  const h=holdings.find(x=>x.id===holdingId);
+  if(h){const htxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker).sort((a,b)=>new Date(b.date)-new Date(a.date));document.getElementById('modal-tx-history').innerHTML=htxs.length?htxs.map(t=>'<div class="tx-item" style="margin-bottom:5px"><div class="tx-icon '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'⬆️':'⬇️')+'</div><div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':'Verkocht')+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+'</div></div><div class="tx-amount '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'-':'+')+fe(Math.abs(t.total||0))+'</div><button data-txid="'+t.id+'" data-hid="'+holdingId+'" onclick="deleteTxFromModal(this.dataset.txid,this.dataset.hid)" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 6px;flex-shrink:0" title="Verwijderen">&times;</button></div>').join(''):'<div style="font-size:.8rem;color:var(--text3);padding:6px 2px">Geen transacties meer</div>';}
+  renderTransactions();showToast('Transactie verwijderd');
+}
 function renderAll(){renderOverview();renderHoldings();renderTransactions();}
 
 // MANUAL ADD
@@ -659,7 +673,7 @@ function openDetail(id){
   document.getElementById('modal-update-form').innerHTML='<div class="form-group" style="margin-top:12px"><label class="form-label">Prijs bijwerken (€)</label><input type="number" class="form-input" id="update-price" value="'+h.current+'" step="any" min="0"></div><button class="btn-primary" onclick="updatePrice(\''+id+'\')">Opslaan</button><button class="btn-secondary" onclick="refreshOne(\''+id+'\')">&#128260; Live koers ophalen</button>';
   // Transaction history for this holding
   const htxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  document.getElementById('modal-tx-history').innerHTML=htxs.length?htxs.map(t=>'<div class="tx-item" style="margin-bottom:5px"><div class="tx-icon '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'⬆️':'⬇️')+'</div><div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':'Verkocht')+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+'</div></div><div class="tx-amount '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'-':'+')+fe(Math.abs(t.total||0))+'</div></div>').join(''):'<div style="font-size:.8rem;color:var(--text3);padding:6px 2px">Geen transacties gevonden</div>';
+  document.getElementById('modal-tx-history').innerHTML=htxs.length?htxs.map(t=>'<div class="tx-item" style="margin-bottom:5px"><div class="tx-icon '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'⬆️':'⬇️')+'</div><div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':'Verkocht')+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+'</div></div><div class="tx-amount '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'-':'+')+fe(Math.abs(t.total||0))+'</div><button data-txid="'+t.id+'" data-hid="'+id+'" onclick="deleteTxFromModal(this.dataset.txid,this.dataset.hid)" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 6px;flex-shrink:0" title="Verwijderen">&times;</button></div>').join(''):'<div style="font-size:.8rem;color:var(--text3);padding:6px 2px">Geen transacties gevonden</div>';
   document.getElementById('modal-delete-btn').onclick=()=>deleteHolding(id);
   document.getElementById('detail-modal').classList.add('open');
 }
@@ -689,69 +703,136 @@ function showLoading(msg){document.getElementById('loading-text').textContent=ms
 function hideLoading(){document.getElementById('loading-overlay').classList.remove('visible');}
 
 // SAXO PARSER
+// PDF text format (after pdfjs extraction):
+// Line 1 (instrument name, concatenated): "XtrackersS&P500"
+// Line 2 (continuation):                 "SwapUCITSETF"  
+// Data line:                             "27-jun-2025 01-jul-2025 6319429765 ETF USD Koop OPENING 1 123,410 0,8545 - -109,10 -3,65 -3,91"
 function parseSaxoPDF(text){
   let newTx=0,skipped=0,updatedHoldings=0;
   const existingIds=new Set(transactions.map(t=>t.id));
   const MM={jan:'01',feb:'02',mrt:'03',apr:'04',mei:'05',jun:'06',jul:'07',aug:'08',sep:'09',okt:'10',nov:'11',dec:'12'};
   function sDate(s){const p=(s||'').split('-');return p.length===3?p[2]+'-'+(MM[p[1].toLowerCase()]||'01')+'-'+p[0].padStart(2,'0'):s||new Date().toISOString().split('T')[0];}
+
+  // Instrument lookup by fragments found in concatenated text
   const INST=[
-    ['AmundiCoreEUROSTOXX50','Amundi Core EURO STOXX 50 ETF','CD5.PA','etf','CD5'],
-    ['AmundiCoreNasdaq-100','Amundi Core Nasdaq-100 Swap ETF','UST.PA','etf','UST'],
-    ['AmundiCoreNasdaq100','Amundi Core Nasdaq-100 Swap ETF','UST.PA','etf','UST'],
-    ['AmundiMSCIWater','Amundi MSCI Water UCITS ETF','WAT.PA','etf','WAT'],
-    ['FranklinEuropeanQuality','Franklin European Quality Dividend ETF','FLXD.DE','etf','FLXD'],
-    ['iSharesCoreMSCIEMIMI','iShares Core MSCI EM IMI ETF','EMIM.AS','etf','EMIM'],
-    ['iSharesCoreMSCIWorld','iShares Core MSCI World ETF','IWDA.AS','etf','IWDA'],
-    ['StateStreetSPDRMSCIWorldTech','SPDR MSCI World Tech ETF','WTCH.AS','etf','WTCH'],
-    ['StateStreetSPDRMSCIWorld','SPDR MSCI World (Acc) ETF','SWRD.AS','etf','SWRD'],
-    ['XtrackersS&P500','Xtrackers S&P 500 Swap ETF','XSPU.L','etf','XSPU'],
+    {keys:['XtrackersS&P500','XtrackersS&P 500','XSPU'],       name:'Xtrackers S&P 500 Swap ETF',       yahoo:'XSPU.L',  type:'etf',ticker:'XSPU'},
+    {keys:['FranklinEuropean','FranklinEuropeanQuality','FLXD'], name:'Franklin European Quality Dividend ETF', yahoo:'FLXD.DE', type:'etf',ticker:'FLXD'},
+    {keys:['AmundiCoreEURO','AmundiCoreEUROSTOXX','CD5'],        name:'Amundi Core EURO STOXX 50 ETF',    yahoo:'CD5.PA',  type:'etf',ticker:'CD5'},
+    {keys:['AmundiMSCIWater','AmundiMSCI Water','WAT'],           name:'Amundi MSCI Water UCITS ETF',      yahoo:'WAT.PA',  type:'etf',ticker:'WAT'},
+    {keys:['StateStreetSPDRMSCIWorldTech','MSCIWorldTech','WTCH'],name:'SPDR MSCI World Tech ETF',         yahoo:'WTCH.AS', type:'etf',ticker:'WTCH'},
+    {keys:['StateStreetSPDRMSCIWorld','MSCIWorld(Acc)','SWRD'],   name:'SPDR MSCI World (Acc) ETF',        yahoo:'SWRD.AS', type:'etf',ticker:'SWRD'},
+    {keys:['iSharesCoreMSCIEMIMI','EMIMI','EMIM'],                name:'iShares Core MSCI EM IMI ETF',     yahoo:'EMIM.AS', type:'etf',ticker:'EMIM'},
+    {keys:['iSharesCoreMSCIWorld','IWDA'],                        name:'iShares Core MSCI World ETF',      yahoo:'IWDA.AS', type:'etf',ticker:'IWDA'},
+    {keys:['AmundiCoreNasdaq-100','AmundiCoreNasdaq100','Nasdaq-100Swap','UST'], name:'Amundi Core Nasdaq-100 Swap ETF', yahoo:'UST.PA', type:'etf',ticker:'UST'},
   ];
-  function findInst(raw){const c=raw.replace(/\s+/g,'');for(const [k,n,y,t,tk] of INST){if(c.includes(k.replace(/\s+/g,''))||c.toLowerCase().includes(k.toLowerCase().substring(0,10)))return{name:n,yahooTicker:y,type:t,ticker:tk};}return null;}
-  const isPortfolio=text.includes('Portefeuillerupport')||text.includes('Portefeuillerapport')||text.includes('Historische')||text.includes('UnrealizedP/L');
+
+  function findInst(raw){
+    if(!raw)return null;
+    const c=raw.replace(/\s+/g,'');
+    for(const inst of INST){
+      for(const key of inst.keys){
+        const ck=key.replace(/\s+/g,'');
+        if(c.includes(ck)||ck.includes(c.substring(0,Math.min(c.length,8))))return inst;
+      }
+    }
+    return null;
+  }
+
+  const isPortfolio=text.includes('Portefeuillerupport')||text.includes('Portefeuillerapport')||
+                    (text.includes('Historische') && text.includes('Unrealized'));
   const isTx=text.includes('Koop')||text.includes('Verkoop')||text.includes('Transactie-');
   const today=new Date().toISOString().split('T')[0];
 
+  // ── PORTFOLIO REPORT ──
   if(isPortfolio){
-    const lines=text.split('\n');let curName='';
+    const lines=text.split('\n');
+    let nameBuf='';
     for(let i=0;i<lines.length;i++){
       const line=lines[i].trim();
-      if(line.match(/^[A-Z][a-zA-Z&]/) && !line.match(/^(EUR|USD|Aandelen|Pagina|Saxo|Wout|Valuta|Rekening|Instrument|Product|Op de|Cash|Totaal|Alle|98900|Eindtotaal|Samenvatting)/i))curName=line;
-      const m=line.match(/^(EUR|USD)\s+Aandelen\s+(\d+)\s+([\d,]+)\s+([\d,.]+)\s+([\d,.]+)\s+([-\d,.]+)%/);
+      // Data line pattern: EUR/USD Aandelen {qty} {rate} {histPrice} {curPrice} {%}%
+      const m=line.match(/^(EUR|USD)\s+Aandelen\s+(\d+)\s+([\d,]+)\s+([\d,.]+)\s+([\d,.]+)\s+[-\d,.]+%/);
       if(m){
         const[,currency,qtyStr,,histStr,curStr]=m;
-        const qty=parseInt(qtyStr,10),hist=parseFloat(histStr.replace(',','.')),cur2=parseFloat(curStr.replace(',','.'));
-        let inst=findInst(curName);
-        if(!inst)for(let b=1;b<=10&&!inst;b++)inst=findInst(lines[i-b]||'');
+        const qty=parseInt(qtyStr,10);
+        const histPrice=parseFloat(histStr.replace(',','.'));
+        const curPrice=parseFloat(curStr.replace(',','.'));
+        // Look for instrument in buffered name + surrounding lines
+        let inst=findInst(nameBuf);
+        if(!inst)for(let b=1;b<=6&&!inst;b++)inst=findInst(lines[i-b]||'');
         if(inst){
-          const{name,yahooTicker,type,ticker}=inst;
-          const ex=holdings.find(h=>h.ticker===ticker&&h.broker==='Saxo Bank');
-          if(ex){ex.qty=qty;ex.current=cur2;if(!ex.yahooTicker)ex.yahooTicker=yahooTicker;updatedHoldings++;}
-          else{holdings.push({id:'h_saxo_'+ticker,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price:hist,current:cur2,date:today,notes:'',instrumentCurrency:currency});updatedHoldings++;}
-          const txId='saxo_port_'+ticker;
-          if(!existingIds.has(txId)){transactions.push({id:txId,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price:hist,total:qty*hist,date:today,action:'buy'});existingIds.add(txId);newTx++;}
+          const ex=holdings.find(h=>h.ticker===inst.ticker&&h.broker==='Saxo Bank');
+          if(ex){ex.qty=qty;ex.current=curPrice;if(!ex.yahooTicker)ex.yahooTicker=inst.yahoo;updatedHoldings++;}
+          else{holdings.push({id:'h_saxo_'+inst.ticker,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price:histPrice,current:curPrice,date:today,notes:'',instrumentCurrency:currency});updatedHoldings++;}
+          const txId='saxo_port_'+inst.ticker;
+          if(!existingIds.has(txId)){transactions.push({id:txId,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price:histPrice,total:qty*histPrice,date:today,action:'buy'});existingIds.add(txId);newTx++;}
           else skipped++;
         }
-        curName='';
+        nameBuf='';
+      } else {
+        // Accumulate name lines - skip header/footer lines
+        if(line&&!line.match(/^(Transactieda|Valutadatum|Transactie-|Instrumentval|Openen|Gerealiseerd|Boekingsbedr|Booked|Totale|Pagina|Saxo|Wout|Valuta|Rekening|Verslagperiode|Gegenereerd|Inleiding|Dit gedeelte|Totaal|Op de|Eindtotaal|Samenvatting|Product|Cash|98900)/i)){
+          nameBuf=line;
+        }
       }
     }
   }
+
+  // ── TRANSACTION REPORT ──
   if(isTx){
     const lines=text.split('\n');
-    for(const line of lines){
-      const m=line.match(/(\d{2}-\w{3}-\d{4})(?:\s+\S+)?\s+(\d{7,12})\s+ETF\s+(.*?)\s+(EUR|USD)\s+(Koop|Verkoop)\s+(?:OPENING|CLOSING)\s+(\d+)\s+([\d,]+)/);
-      if(!m)continue;
-      const[,ds,,txId,raw,currency,typeStr,qtyStr,prStr]=m;
-      const id='saxo_'+txId;if(existingIds.has(id)){skipped++;continue;}
-      const date=sDate(ds),qty=parseInt(qtyStr,10),price=parseFloat(prStr.replace(',','.'));
-      const action=typeStr==='Koop'?'buy':'sell';
-      let inst=findInst(raw);if(!inst)inst={name:raw.trim(),yahooTicker:'',type:'etf',ticker:''};
-      const{name,yahooTicker,type,ticker}=inst;
-      transactions.push({id,name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price,total:qty*price,date,action});existingIds.add(id);newTx++;
-      const ex=holdings.find(h=>h.ticker===ticker&&h.broker==='Saxo Bank');
-      if(ex){if(action==='buy')ex.qty+=qty;else ex.qty=Math.max(0,ex.qty-qty);ex.current=price;updatedHoldings++;}
-      else if(action==='buy'){holdings.push({id:'h_saxo_'+(ticker||txId),name,ticker,yahooTicker,type,broker:'Saxo Bank',qty,price,current:price,date,notes:'',instrumentCurrency:currency});updatedHoldings++;}
+    // The PDF format has instrument name on line N-1 (or N-2), data on line N
+    // Data line: "DD-mmm-YYYY [DD-mmm-YYYY] TXID ETF EUR/USD Koop/Verkoop OPENING/CLOSING QTY PRICE RATE - AMOUNT COSTS COSTS"
+    // BUT the instrument name is on the PREVIOUS line(s), not on the data line!
+    // So we collect the name buffer and match it with the next data line.
+    
+    let nameBuf='';
+    for(let i=0;i<lines.length;i++){
+      const line=lines[i].trim();
+      
+      // Match transaction data line
+      // Pattern: date [date] txid ETF EUR/USD Koop/Verkoop OPENING/CLOSING qty price rate
+      const m=line.match(/^(\d{2}-\w{3}-\d{4})\s+(?:\d{2}-\w{3}-\d{4}\s+)?(\d{7,12})\s+ETF\s+(EUR|USD)\s+(Koop|Verkoop)\s+(?:OPENING|CLOSING)\s+(\d+)\s+([\d,]+)\s+([\d,]+)/);
+      if(m){
+        const[,dateStr,txId,currency,typeStr,qtyStr,priceStr]=m;
+        const id='saxo_'+txId;
+        if(existingIds.has(id)){skipped++;nameBuf='';continue;}
+        const date=sDate(dateStr);
+        const qty=parseInt(qtyStr,10);
+        const price=parseFloat(priceStr.replace(',','.'));
+        const action=typeStr==='Koop'?'buy':'sell';
+        // Find instrument from accumulated name buffer + previous lines
+        let inst=findInst(nameBuf);
+        if(!inst)for(let b=1;b<=4&&!inst;b++)inst=findInst(lines[i-b]||'');
+        if(!inst)inst={name:nameBuf.trim()||'Onbekend',yahoo:'',type:'etf',ticker:''};
+        const tx={id,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price,total:qty*price,date,action};
+        transactions.push(tx);existingIds.add(id);newTx++;
+        // Update or create holding
+        const ex=holdings.find(h=>h.ticker===inst.ticker&&h.broker==='Saxo Bank');
+        if(ex){if(action==='buy')ex.qty+=qty;else ex.qty=Math.max(0,ex.qty-qty);updatedHoldings++;}
+        else if(action==='buy'&&inst.ticker){holdings.push({id:'h_saxo_'+inst.ticker,name:inst.name,ticker:inst.ticker,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price,current:price,date,notes:'',instrumentCurrency:currency});updatedHoldings++;}
+        nameBuf='';
+      } else if(line&&!line.match(/^(\d{2}-\w{3}-\d{4}.*Cashbedrag|Transactieda|Valutadatum|Transactie-|Instrumentval|Openen|Gerealiseerd|Boekingsbedr|Booked|Totale|Pagina|Saxo|Wout|Valuta|Rekening|Verslagperiode|Gegenereerd|Inleiding|Dit gedeelte|Totaal\s+-|Commissie|Cashdividend|Uitlenen)/i)){
+        // Accumulate instrument name
+        if(line.length>2&&line.length<60)nameBuf=nameBuf?nameBuf+' '+line:line;
+      } else {
+        nameBuf='';
+      }
+    }
+
+    // Also parse position lines from tx report header pages
+    const posRe=/([A-Z]{2,6}):x\w+\s+(\d{10})\s+(EUR|USD)\s+(\d{2}-\w{3}-\d{4})\s+(\d+)\s+[\d,]+\s+([\d,]+)\s+([\d,]+)/g;
+    let pm;
+    while((pm=posRe.exec(text))!==null){
+      const[,sym,,currency,dateStr,qtyStr,openStr,curStr]=pm;
+      const inst=INST.find(x=>x.ticker===sym);
+      if(!inst)continue;
+      const qty=parseInt(qtyStr,10),op=parseFloat(openStr.replace(',','.')),cp=parseFloat(curStr.replace(',','.'));
+      const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Saxo Bank');
+      if(ex){ex.qty=qty;ex.current=cp;if(!ex.yahooTicker)ex.yahooTicker=inst.yahoo;updatedHoldings++;}
+      else{holdings.push({id:'h_saxo_'+sym,name:inst.name,ticker:sym,yahooTicker:inst.yahoo,type:inst.type,broker:'Saxo Bank',qty,price:op,current:cp,date:sDate(dateStr),notes:''});updatedHoldings++;}
     }
   }
+
   return{newTx,skipped,updatedHoldings,broker:'Saxo Bank',reportType:isPortfolio?'Portefeuillerapport':'Transactierapport'};
 }
 
