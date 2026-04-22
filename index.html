@@ -189,6 +189,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .si-badge{font-size:.66rem;padding:2px 8px;border-radius:10px;background:var(--green-bg);color:var(--green);font-weight:600}
 .si-badge.off{background:var(--bg2);color:var(--text3)}
 .empty-state{text-align:center;padding:32px 16px;color:var(--text3)}
+.eye-btn-flat{background:var(--card);border:1px solid var(--border);border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;color:var(--text2)}
+.quick-stat{background:var(--card);border-radius:var(--radius-sm);padding:9px 11px;border:1px solid var(--border)}
+.qs-label{font-size:.58rem;font-weight:600;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;margin-bottom:2px}
+.qs-val{font-family:'DM Mono',monospace;font-size:.86rem;font-weight:600}
+.modal-tab{flex:1;padding:10px;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:.86rem;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.modal-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+#page-overview{padding:0;gap:0}
 /* CHART MODAL */
 .chart-modal-overlay{position:fixed;inset:0;z-index:600;background:var(--bg);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1)}
 .chart-modal-overlay.open{transform:translateY(0)}
@@ -443,16 +450,49 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="chart-stats-row" id="chart-stats-row"></div>
 </div>
 
-<!-- DETAIL MODAL -->
-<div class="modal-overlay" id="detail-modal" onclick="closeModal(event)">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="modal-name"></div>
-    <div class="modal-ticker" id="modal-ticker"></div>
-    <div class="modal-stats" id="modal-stats"></div>
-    <div id="modal-update-form"></div>
-    <div class="modal-section">TRANSACTIEGESCHIEDENIS</div>
-    <div id="modal-tx-history"></div>
+<!-- DETAIL MODAL - Full screen Delta-style -->
+<div class="chart-modal-overlay" id="detail-modal">
+  <!-- Header -->
+  <div style="padding:54px 18px 10px;display:flex;align-items:center;gap:12px">
+    <div class="chart-back" onclick="closeDetailModal()">←</div>
+    <div style="flex:1">
+      <div style="font-family:'DM Serif Display',serif;font-size:1.2rem" id="modal-name"></div>
+      <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text3)" id="modal-ticker"></div>
+    </div>
+    <button class="header-btn" onclick="refreshOneFromModal()" id="modal-refresh-btn" title="Live koers">↻</button>
+  </div>
+  <!-- Price hero -->
+  <div style="padding:0 18px 10px">
+    <div style="font-family:'DM Serif Display',serif;font-size:2.4rem;letter-spacing:-1px" id="modal-price-big">–</div>
+    <div style="font-size:.88rem;margin-top:3px;display:flex;gap:8px" id="modal-price-change"></div>
+  </div>
+  <!-- Chart -->
+  <div style="position:relative;height:160px;margin-bottom:6px">
+    <canvas id="modal-canvas" style="width:100%;height:160px;display:block"></canvas>
+    <div id="modal-crosshair" style="position:absolute;top:0;bottom:0;width:1px;background:var(--text3);opacity:0;pointer-events:none"></div>
+    <div id="modal-tooltip" style="position:absolute;top:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-family:'DM Mono',monospace;font-size:.72rem;pointer-events:none;box-shadow:var(--shadow);opacity:0;white-space:nowrap"></div>
+    <div id="modal-chart-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--text3)">Laden...</div>
+  </div>
+  <!-- Range bar -->
+  <div style="display:flex;gap:5px;padding:0 14px 10px;overflow-x:auto;scrollbar-width:none">
+    <button class="range-btn active" onclick="setModalRange('1W',this)">1W</button>
+    <button class="range-btn" onclick="setModalRange('1M',this)">1M</button>
+    <button class="range-btn" onclick="setModalRange('3M',this)">3M</button>
+    <button class="range-btn" onclick="setModalRange('6M',this)">6M</button>
+    <button class="range-btn" onclick="setModalRange('1Y',this)">1J</button>
+    <button class="range-btn" onclick="setModalRange('ALL',this)">MAX</button>
+  </div>
+  <!-- Stats grid -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 12px" id="modal-stats"></div>
+  <!-- Tabs: General / Transacties -->
+  <div style="display:flex;border-bottom:1px solid var(--border);margin:0 14px 12px">
+    <button class="modal-tab active" id="mtab-general" onclick="setModalTab('general')">Algemeen</button>
+    <button class="modal-tab" id="mtab-tx" onclick="setModalTab('tx')">Transacties</button>
+  </div>
+  <!-- Tab content -->
+  <div style="overflow-y:auto;flex:1;padding:0 14px" id="modal-tab-content"></div>
+  <!-- Bottom bar -->
+  <div style="padding:12px 14px 34px;border-top:1px solid var(--border)">
     <button class="btn-danger" id="modal-delete-btn">Holding verwijderen</button>
   </div>
 </div>
@@ -824,9 +864,24 @@ const f=(n,d=2)=>new Intl.NumberFormat('nl-BE',{minimumFractionDigits:d,maximumF
 const fe=n=>'€'+f(n);const fp=n=>(n>=0?'+':'')+f(n)+'%';const fpl=n=>(n>=0?'+€':'-€')+f(Math.abs(n));
 
 // RENDER
-function renderOverview(){const{tc,pl,pct,td}=portfolio();const tv=document.getElementById('total-value');tv.textContent=fe(tc);tv.classList.toggle('blur-value',blurValues);document.getElementById('total-pl').textContent=fpl(pl);document.getElementById('total-pct').textContent=fp(pct);document.getElementById('daily-change').textContent=holdings.some(h=>h.lastRefresh)?fpl(td):'–';renderDonut();const el=document.getElementById('top-holdings-list');el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*b.current-a.qty*a.current).slice(0,5).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">📊</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:4px">Nog geen holdings</div><div style="font-size:.78rem">Importeer je PDF of voeg manueel toe</div></div>';}
+function renderOverview(){
+  const{tc,pl,pct,td}=portfolio();
+  // Hero value
+  const hv=document.getElementById('hero-value');
+  if(hv){hv.textContent=fe(tc);hv.style.filter=blurValues?'blur(8px)':'';}
+  // Quick stats
+  const qpl=document.getElementById('qs-pl');if(qpl){qpl.textContent=fpl(pl);qpl.style.color=pl>=0?'var(--green)':'var(--red)';}
+  const qpct=document.getElementById('qs-pct');if(qpct){qpct.textContent=fp(pct);qpct.style.color=pct>=0?'var(--green)':'var(--red)';}
+  const qday=document.getElementById('qs-day');
+  if(qday){const hasLive=holdings.some(h=>h.lastRefresh);qday.textContent=hasLive?fpl(td):'–';qday.style.color=td>=0?'var(--green)':'var(--red)';}
+  // Portfolio chart
+  drawPortfolioChart();
+  // Holdings list - show ALL holdings sorted by value
+  const el=document.getElementById('top-holdings-list');
+  el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*b.current-a.qty*a.current).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">📊</div><div style="font-size:.95rem;font-weight:600;color:var(--text2);margin-bottom:4px">Nog geen holdings</div><div style="font-size:.78rem">Importeer je PDF of voeg manueel toe</div></div>';
+}
 function renderDonut(){const svg=document.getElementById('donut-svg'),leg=document.getElementById('donut-legend');document.getElementById('donut-count').textContent=holdings.length;if(!holdings.length){svg.innerHTML='<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>';leg.innerHTML='<div style="font-size:.78rem;color:var(--text3)">Nog geen holdings</div>';return;}const total=holdings.reduce((s,h)=>s+h.qty*h.current,0),C=2*Math.PI*40,g={};holdings.forEach(h=>{const k=LABELS[h.type]||h.type;g[k]=(g[k]||0)+h.qty*h.current;});let cir='',lh='',off=0,ci=0;Object.entries(g).sort((a,b)=>b[1]-a[1]).forEach(([lbl,val])=>{const p=total>0?val/total:0,col=COLORS[ci%COLORS.length];cir+=`<circle cx="55" cy="55" r="40" fill="none" stroke="${col}" stroke-width="18" stroke-dasharray="${(p*C).toFixed(2)} ${(C-p*C).toFixed(2)}" stroke-dashoffset="${(-off*C).toFixed(2)}" transform="rotate(-90 55 55)"/>`;lh+=`<div class="legend-item"><div class="legend-dot" style="background:${col}"></div><div class="legend-name">${lbl}</div><div class="legend-pct">${(p*100).toFixed(1)}%</div></div>`;off+=p;ci++;});svg.innerHTML='<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="18"/>'+cir;leg.innerHTML=lh;}
-function cardHTML(h){const{cur,pl,pct}=calc(h),bc=h.broker==='Saxo Bank'?'broker-saxo':h.broker==='Revolut'?'broker-revolut':'',cc=pl>0?'up':pl<0?'down':'neutral',col=COLORS[holdings.indexOf(h)%COLORS.length];const hasLive=!!h.lastRefresh;const dpct=h.dailyChangePct||0;return '<div class="holding-card" onclick="openDetail(\''+h.id+'\')">'+'<div class="holding-icon" style="background:'+col+'22">'+(ICONS[h.type]||'📦')+'</div>'+'<div class="holding-info"><div class="holding-name">'+h.name+'</div>'+'<div class="holding-meta">'+(h.ticker?'<span style="font-family:DM Mono,monospace;font-size:.72rem">'+h.ticker.split(':')[0]+'</span>':'')+'<span class="broker-tag '+bc+'">'+h.broker+'</span>'+(hasLive?'<span class="live-dot"></span><span class="'+(dpct>=0?'up':'down')+'" style="font-size:.62rem;padding:1px 4px">'+(dpct>=0?'+':'')+dpct.toFixed(2)+'% vandaag</span>':'')+'</div></div>'+'<div class="holding-right"><div class="holding-value">'+fe(cur)+'</div><div class="holding-change '+cc+'">'+fp(pct)+'</div></div>'+'</div>';}
+function cardHTML(h){const{cur,pl,pct}=calc(h),bc=h.broker==='Saxo Bank'?'broker-saxo':h.broker==='Revolut'?'broker-revolut':'',cc=pl>0?'up':pl<0?'down':'neutral',col=COLORS[holdings.indexOf(h)%COLORS.length];const hasLive=!!h.lastRefresh;const dpct=h.dailyChangePct||0;return '<div class="holding-card" onclick="openDetail(\''+h.id+'\')">'+'<div class="holding-icon" style="background:'+col+'22">'+(ICONS[h.type]||'📦')+'</div>'+'<div class="holding-info"><div class="holding-name">'+h.name+'</div>'+'<div class="holding-meta">'+(h.ticker?'<span style="font-family:DM Mono,monospace;font-size:.72rem">'+h.ticker.split(':')[0]+'</span>':'')+'<span class="broker-tag '+bc+'">'+h.broker+'</span>'+(hasLive?'<span class="live-dot"></span><span class="'+(dpct>=0?'up':'down')+'" style="font-size:.62rem;padding:1px 4px">'+(dpct>=0?'+':'')+dpct.toFixed(2)+'% vandaag</span>':'')+'</div></div>'+'<div class="holding-right"><div class="holding-value">'+fe(cur)+'</div><div class="holding-change '+cc+'">'+fp(pct)+'</div>'+(hasLive&&h.dailyChangePct!==undefined?'<div style="font-size:.64rem;color:'+(h.dailyChangePct>=0?'var(--green)':'var(--red)')+'">'+( h.dailyChangePct>=0?'▲':'▼')+' '+(Math.abs(h.dailyChangePct||0)).toFixed(2)+'% vandaag</div>':'')+' </div>'+'</div>';}
 function renderHoldings(){const el=document.getElementById('all-holdings-list');el.innerHTML=holdings.length?[...holdings].sort((a,b)=>b.qty*b.current-a.qty*a.current).map(cardHTML).join(''):'<div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">💼</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen holdings</div></div>';}
 
 // TRANSACTIONS
@@ -857,23 +912,151 @@ async function deleteTxFromModal(txId,holdingId){
 }
 function renderAll(){renderOverview();renderHoldings();renderTransactions();}
 
+// TICKER MAP & REFRESH
+const TICKER_MAP={'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA','SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS','UST':'UST.PA','EUNL':'EUNL.AS','VUAA':'VUAA.IE','FWIA':'FWIA.IE','BTC':'BTC-EUR','ETH':'ETH-EUR'};
+
+function getYahooTicker(h){if(h.yahooTicker)return h.yahooTicker;const t=(h.ticker||'').split(':')[0];return TICKER_MAP[t]||h.ticker||'';}
+
+async function refreshAllPrices(){
+  if(!holdings.length){showToast('Geen holdings');return;}
+  const btn=document.getElementById('refresh-btn');
+  if(btn)btn.classList.add('spinning');
+  showToast('Koersen ophalen...');
+  let ok=0,fail=0;
+  for(const h of holdings){
+    const t=getYahooTicker(h);
+    if(!t||h.type==='cash')continue;
+    const d=await fetchPriceInEur(t,h.instrumentCurrency);
+    if(d&&d.priceEur>0){
+      h.current=d.priceEur;
+      h.dailyChange=d.changeEur||0;
+      h.dailyChangePct=d.changePctEur||0;
+      h.lastRefresh=Date.now();
+      ok++;
+    } else {fail++;}
+  }
+  await persist();
+  if(btn)btn.classList.remove('spinning');
+  const now=new Date().toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'});
+  const lrt=document.getElementById('last-refresh-time');
+  if(lrt)lrt.textContent='Laatste update: '+now;
+  renderAll();
+  showToast(ok+' koersen bijgewerkt'+(fail?' ('+fail+' mislukt)':''));
+}
+
 // MANUAL ADD
 function onTypeChange(){const t=document.getElementById('add-type').value;document.getElementById('ticker-group').style.display=t==='cash'?'none':'block';document.getElementById('price-label').textContent=t==='cash'?'Bedrag gespaard (€)':'Aankoopprijs (€)';}
 async function addHolding(){const name=document.getElementById('add-name').value.trim();if(!name){showToast('Voer een naam in');return;}const id=Date.now().toString(),qty=parseFloat(document.getElementById('add-qty').value)||0,price=parseFloat(document.getElementById('add-price').value)||0,cur=parseFloat(document.getElementById('add-current').value)||price,ticker=document.getElementById('add-ticker').value.trim().toUpperCase();holdings.push({id,name,ticker,yahooTicker:TICKER_MAP[ticker]||ticker,type:document.getElementById('add-type').value,broker:document.getElementById('add-broker').value,qty,price,current:cur,date:document.getElementById('add-date').value,notes:document.getElementById('add-notes').value.trim()});transactions.push({id:'tx_'+id,name,ticker,type:document.getElementById('add-type').value,broker:document.getElementById('add-broker').value,qty,price,total:qty*price,date:document.getElementById('add-date').value,action:'buy'});await persist();renderAll();['add-name','add-ticker','add-qty','add-price','add-current','add-notes'].forEach(i=>document.getElementById(i).value='');showToast(name+' toegevoegd');document.querySelectorAll('.tab-btn')[1].click();}
 
-// DETAIL MODAL with transaction history
+// ── DETAIL MODAL (Delta-style full screen) ──
+let currentDetailHolding=null, currentModalRange='1W';
+
 function openDetail(id){
   const h=holdings.find(x=>x.id===id);if(!h)return;
+  currentDetailHolding=h;currentModalRange='1W';
   const{inv,cur,pl,pct}=calc(h);
   document.getElementById('modal-name').textContent=h.name;
-  document.getElementById('modal-ticker').textContent=[h.ticker,LABELS[h.type]||h.type,h.broker,h.lastRefresh?'Live ●':''].filter(Boolean).join(' · ');
-  document.getElementById('modal-stats').innerHTML='<div class="modal-stat"><div class="ms-label">HUIDIGE WAARDE</div><div class="ms-val">'+fe(cur)+'</div></div><div class="modal-stat"><div class="ms-label">GEÏNVESTEERD</div><div class="ms-val">'+fe(inv)+'</div></div><div class="modal-stat"><div class="ms-label">W/V</div><div class="ms-val" style="color:'+(pl>=0?'var(--green)':'var(--red)')+'">'+fpl(pl)+'</div></div><div class="modal-stat"><div class="ms-label">RENDEMENT</div><div class="ms-val" style="color:'+(pct>=0?'var(--green)':'var(--red)')+'">'+fp(pct)+'</div></div><div class="modal-stat"><div class="ms-label">AANTAL</div><div class="ms-val">'+f(h.qty,6)+'</div></div><div class="modal-stat"><div class="ms-label">LIVE KOERS</div><div class="ms-val">'+fe(h.current)+'</div></div>';
-  document.getElementById('modal-update-form').innerHTML='<div class="form-group" style="margin-top:12px"><label class="form-label">Prijs bijwerken (€)</label><input type="number" class="form-input" id="update-price" value="'+h.current+'" step="any" min="0"></div><button class="btn-primary" onclick="updatePrice(\''+id+'\')">Opslaan</button><button class="btn-secondary" onclick="refreshOne(\''+id+'\')">&#128260; Live koers ophalen</button>';
-  // Transaction history for this holding
-  const htxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  document.getElementById('modal-tx-history').innerHTML=htxs.length?htxs.map(t=>'<div class="tx-item" style="margin-bottom:5px"><div class="tx-icon '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'⬆️':'⬇️')+'</div><div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':'Verkocht')+'</div><div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+'</div></div><div class="tx-amount '+(t.action==='buy'?'buy':'sell')+'">'+(t.action==='buy'?'-':'+')+fe(Math.abs(t.total||0))+'</div><button data-txid="'+t.id+'" data-hid="'+id+'" onclick="deleteTxFromModal(this.dataset.txid,this.dataset.hid)" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 6px;flex-shrink:0" title="Verwijderen">&times;</button></div>').join(''):'<div style="font-size:.8rem;color:var(--text3);padding:6px 2px">Geen transacties gevonden</div>';
+  document.getElementById('modal-ticker').textContent=[h.ticker,h.broker].filter(Boolean).join(' · ');
+  document.getElementById('modal-price-big').textContent=fe(h.current||0);
+  const chg=pl,chgPct=pct;
+  const cc=chg>=0?'var(--green)':'var(--red)';
+  document.getElementById('modal-price-change').innerHTML=
+    '<span style="color:'+cc+';font-weight:600">'+(chg>=0?'+':'')+fe(chg)+'</span>'+
+    '<span style="color:'+cc+'"> '+(chgPct>=0?'+':'')+chgPct.toFixed(2)+'%</span>';
+  // Stats grid
+  document.getElementById('modal-stats').innerHTML=[
+    {l:'HUIDIGE WAARDE',v:fe(cur)},
+    {l:'GEÏNVESTEERD',v:fe(inv)},
+    {l:'W/V',v:fpl(pl),c:pl>=0?'var(--green)':'var(--red)'},
+    {l:'RENDEMENT',v:fp(pct),c:pct>=0?'var(--green)':'var(--red)'},
+    {l:'AANTAL',v:f(h.qty,6)},
+    {l:'LIVE KOERS',v:fe(h.current||0)},
+  ].map(s=>'<div class="modal-stat"><div class="ms-label">'+s.l+'</div><div class="ms-val"'+(s.c?' style="color:'+s.c+'"':'')+'>'+s.v+'</div></div>').join('');
+  // Set tab to general
+  setModalTab('general');
+  // Reset range buttons
+  document.querySelectorAll('#detail-modal .range-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#detail-modal .range-btn').classList.add('active');
+  // Delete button
   document.getElementById('modal-delete-btn').onclick=()=>deleteHolding(id);
   document.getElementById('detail-modal').classList.add('open');
+  // Load chart
+  loadModalChart();
+}
+
+function closeDetailModal(){
+  document.getElementById('detail-modal').classList.remove('open');
+  currentDetailHolding=null;
+}
+// Keep old closeModal for backdrop click compatibility
+function closeModal(e){if(e&&e.target===document.getElementById('detail-modal'))closeDetailModal();}
+
+function setModalTab(tab){
+  document.querySelectorAll('.modal-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mtab-'+tab).classList.add('active');
+  const h=currentDetailHolding;if(!h)return;
+  const el=document.getElementById('modal-tab-content');
+  if(tab==='general'){
+    el.innerHTML='<div style="padding-bottom:8px"><div class="form-group" style="margin-bottom:10px"><label class="form-label">Prijs bijwerken (€)</label><input type="number" class="form-input" id="update-price" value="'+(h.current||0)+'" step="any" min="0"></div><button class="btn-primary" onclick="updatePrice(''+h.id+'')">Opslaan</button></div>';
+  } else {
+    const htxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    el.innerHTML=htxs.length?htxs.map(t=>{
+      const ac=t.action==='buy'?'buy':'sell';
+      const icon=t.action==='buy'?'⬆️':'⬇️';
+      const sign=t.action==='buy'?'-':'+';
+      return '<div class="tx-item" style="margin-bottom:6px"><div class="tx-icon '+ac+'">'+icon+'</div>'+
+        '<div class="tx-info"><div class="tx-name">'+(t.action==='buy'?'Gekocht':'Verkocht')+'</div>'+
+        '<div class="tx-date">'+(t.date||'')+(t.qty?' · '+f(t.qty,4)+' st':'')+(t.price?' @ '+fe(t.price):'')+(t.costs&&t.costs>0?' · kosten '+fe(t.costs):'')+'</div></div>'+
+        '<div class="tx-amount '+ac+'" style="flex-shrink:0">'+sign+fe(Math.abs(t.total||0))+'</div>'+
+        '<button data-txid="'+t.id+'" onclick="deleteTxFromModal(this.dataset.txid,''+h.id+'')" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:4px 6px">&times;</button></div>';
+    }).join(''):'<div style="font-size:.82rem;color:var(--text3);padding:8px 0">Geen transacties</div>';
+  }
+}
+
+async function setModalRange(range,btn){
+  currentModalRange=range;
+  document.querySelectorAll('#detail-modal .range-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  await loadModalChart();
+}
+
+async function refreshOneFromModal(){
+  const h=currentDetailHolding;if(!h)return;
+  const btn=document.getElementById('modal-refresh-btn');
+  btn.style.animation='spin .8s linear infinite';
+  const t=getYahooTicker(h);
+  if(t){
+    const d=await fetchPriceInEur(t,h.instrumentCurrency);
+    if(d&&d.priceEur>0){
+      h.current=d.priceEur;h.dailyChange=d.changeEur||0;h.dailyChangePct=d.changePctEur||0;h.lastRefresh=Date.now();
+      await persist();renderAll();
+      document.getElementById('modal-price-big').textContent=fe(d.priceEur);
+    }
+  }
+  btn.style.animation='';
+  await loadModalChart();
+}
+
+async function loadModalChart(){
+  const h=currentDetailHolding;if(!h)return;
+  const canvas=document.getElementById('modal-canvas');
+  const loading=document.getElementById('modal-chart-loading');
+  canvas.style.display='none';loading.style.display='flex';
+  const ticker=getYahooTicker(h);
+  let prices=ticker?await fetchHistoricalStooq(ticker,currentModalRange):null;
+  if(!prices||prices.length<2)prices=buildPricesFromTransactions(h);
+  if(!prices||prices.length<2){loading.textContent='Geen historische data';return;}
+  loading.style.display='none';canvas.style.display='block';
+  const wrap=canvas.parentElement;
+  canvas.width=wrap.clientWidth;canvas.height=160;
+  drawSparkline(canvas,'modal-crosshair','modal-tooltip','modal-price-big',prices,h,'Investering: '+fe(h.price));
+  // Update price change for selected range
+  const first=prices[0].price,last=prices[prices.length-1].price;
+  const chg=last-first,pct=first>0?(chg/first)*100:0;
+  const cc=chg>=0?'var(--green)':'var(--red)';
+  document.getElementById('modal-price-change').innerHTML=
+    '<span style="color:'+cc+';font-weight:600">'+(chg>=0?'+':'')+fe(chg)+'</span>'+
+    '<span style="color:'+cc+'"> '+(pct>=0?'+':'')+pct.toFixed(2)+'% ('+currentModalRange+')</span>';
 }
 function closeModal(e){if(e.target===document.getElementById('detail-modal'))document.getElementById('detail-modal').classList.remove('open');}
 async function updatePrice(id){const h=holdings.find(x=>x.id===id);if(!h)return;const p=parseFloat(document.getElementById('update-price').value);if(isNaN(p)||p<0){showToast('Ongeldige prijs');return;}h.current=p;await persist();renderAll();document.getElementById('detail-modal').classList.remove('open');showToast('Prijs bijgewerkt');}
@@ -1196,125 +1379,192 @@ async function clearData(){if(!confirm('Alle data wissen?'))return;holdings=[];t
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
 // ── CHART MODULE ──
-let currentChartHolding=null,currentChartRange='1W',chartPrices=[],chartCanvas=null,chartCtx=null;
+let currentChartHolding=null,currentChartRange='1W';
 
-const RANGE_CONFIG={
-  '1W':{interval:'1d',range:'5d'},
-  '1M':{interval:'1d',range:'1mo'},
-  '3M':{interval:'1d',range:'3mo'},
-  '6M':{interval:'1wk',range:'6mo'},
-  '1Y':{interval:'1wk',range:'1y'},
-  'ALL':{interval:'1mo',range:'5y'},
-};
+const RANGE_CONFIG={'1W':{days:7},'1M':{days:31},'3M':{days:91},'6M':{days:183},'1Y':{days:365},'ALL':{days:1825}};
 
-async function openChart(holdingId){
-  const h=holdings.find(x=>x.id===holdingId);
-  if(!h)return;
-  currentChartHolding=h;
-  document.getElementById('chart-name').textContent=h.name;
-  document.getElementById('chart-ticker').textContent=(h.ticker||'')+(h.broker?' · '+h.broker:'');
-  document.getElementById('chart-price-big').textContent=fe(h.current||0);
-  document.getElementById('chart-price-change').innerHTML='';
-  document.getElementById('chart-stats-row').innerHTML='';
-  document.getElementById('chart-modal').classList.add('open');
-  // Set 1W active
-  document.querySelectorAll('.range-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelector('.range-btn').classList.add('active');
-  currentChartRange='1W';
-  await loadChart();
+// ── UNIFIED SPARKLINE DRAWER ──
+function drawSparkline(canvas, crosshairId, tooltipId, priceBigId, prices, h, buyLabel){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  const pad={t:10,r:12,b:28,l:8};
+  const vals=prices.map(p=>p.price);
+  const minV=Math.min(...vals), maxV=Math.max(...vals);
+  const range=maxV-minV||maxV*0.1||1;
+  const isUp=prices[prices.length-1].price>=prices[0].price;
+  const col=isUp?'#2d7a4f':'#c0392b';
+  const colFade=isUp?'rgba(45,122,79,':'rgba(192,57,43,';
+  const xS=i=>pad.l+(i/(prices.length-1))*(W-pad.l-pad.r);
+  const yS=v=>pad.t+((maxV-v)/range)*(H-pad.t-pad.b);
+  ctx.clearRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(128,128,128,0.08)';ctx.lineWidth=1;
+  [0.25,0.5,0.75].forEach(f=>{const y=pad.t+f*(H-pad.t-pad.b);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();});
+  // Area
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,colFade+'0.25)');grad.addColorStop(1,colFade+'0)');
+  ctx.beginPath();ctx.moveTo(xS(0),yS(prices[0].price));
+  for(let i=1;i<prices.length;i++)ctx.lineTo(xS(i),yS(prices[i].price));
+  ctx.lineTo(xS(prices.length-1),H-pad.b);ctx.lineTo(xS(0),H-pad.b);
+  ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  // Line
+  ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.lineJoin='round';
+  ctx.moveTo(xS(0),yS(prices[0].price));
+  for(let i=1;i<prices.length;i++)ctx.lineTo(xS(i),yS(prices[i].price));
+  ctx.stroke();
+  // Buy dots
+  if(h){
+    const txs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker&&t.action==='buy'&&t.date);
+    txs.forEach(tx=>{
+      const txD=new Date(tx.date);
+      const closest=prices.reduce((b,p,i)=>{const d=Math.abs(new Date(p.date)-txD);return d<b.d?{d,i}:b},{d:Infinity,i:0});
+      if(closest.d<86400000*20){
+        const x=xS(closest.i),y=yS(prices[closest.i].price);
+        ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
+        ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+      }
+    });
+  }
+  // X labels
+  ctx.fillStyle='rgba(160,152,148,0.7)';ctx.font='10px DM Mono,monospace';ctx.textAlign='center';
+  const lc=Math.min(4,prices.length);
+  for(let i=0;i<lc;i++){
+    const idx=Math.round(i*(prices.length-1)/(lc-1));
+    const d=new Date(prices[idx].date);
+    ctx.fillText(d.toLocaleDateString('nl-BE',{month:'short',day:'numeric'}),xS(idx),H-6);
+  }
+  // Crosshair interaction
+  const crosshair=document.getElementById(crosshairId);
+  const tooltip=document.getElementById(tooltipId);
+  const lastPriceBig=document.getElementById(priceBigId);
+  const origPrice=prices[prices.length-1].price;
+  function onMove(cx){
+    const rect=canvas.getBoundingClientRect();
+    const x=cx-rect.left;
+    const idx=Math.max(0,Math.min(prices.length-1,Math.round((x-pad.l)/(W-pad.l-pad.r)*(prices.length-1))));
+    const p=prices[idx];if(!p)return;
+    crosshair.style.left=xS(idx)+'px';crosshair.style.opacity='1';
+    tooltip.style.left=Math.min(xS(idx),W-130)+'px';tooltip.style.opacity='1';
+    const d=new Date(p.date).toLocaleDateString('nl-BE',{day:'numeric',month:'short',year:'numeric'});
+    tooltip.innerHTML='<span style="color:var(--text3)">'+ d+'</span> <strong>'+fe(p.price)+'</strong>';
+    if(lastPriceBig)lastPriceBig.textContent=fe(p.price);
+  }
+  function onLeave(){crosshair.style.opacity='0';tooltip.style.opacity='0';if(lastPriceBig)lastPriceBig.textContent=fe(origPrice);}
+  canvas.addEventListener('mousemove',e=>onMove(e.clientX));
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();onMove(e.touches[0].clientX);},{passive:false});
+  canvas.addEventListener('mouseleave',onLeave);
+  canvas.addEventListener('touchend',onLeave);
 }
 
-function closeChartModal(){
-  document.getElementById('chart-modal').classList.remove('open');
-  currentChartHolding=null;chartPrices=[];
-}
+// ── PORTFOLIO CHART ──
+let portfolioRange='1W';
 
-async function setChartRange(range,btn){
-  currentChartRange=range;
-  document.querySelectorAll('.range-btn').forEach(b=>b.classList.remove('active'));
+async function setPortfolioRange(range,btn){
+  portfolioRange=range;
+  document.querySelectorAll('[id^="pr-"]').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  await loadChart();
+  drawPortfolioChart();
 }
 
-async function refreshChartPrice(){
-  if(!currentChartHolding)return;
-  const btn=document.getElementById('chart-refresh-btn');
-  btn.style.animation='spin .8s linear infinite';
-  const ticker=getYahooTicker(currentChartHolding);
-  if(ticker){
-    const data=await fetchPriceInEur(ticker,currentChartHolding.instrumentCurrency);
-    if(data&&data.priceEur>0){
-      currentChartHolding.current=data.priceEur;
-      currentChartHolding.dailyChange=data.changeEur||0;
-      currentChartHolding.dailyChangePct=data.changePctEur||0;
-      currentChartHolding.lastRefresh=Date.now();
-      await persist();renderAll();
-    }
+function buildPortfolioHistory(range){
+  // Build portfolio value over time from transactions
+  if(!transactions.length&&!holdings.length)return null;
+  const days=RANGE_CONFIG[range].days;
+  const now=new Date();
+  const fromDate=new Date(now);fromDate.setDate(fromDate.getDate()-days);
+  // Collect all transaction dates + today
+  const dates=new Set();
+  transactions.forEach(t=>{if(t.date&&new Date(t.date)>=fromDate)dates.add(t.date);});
+  // Add weekly points in range
+  const d=new Date(fromDate);
+  while(d<=now){dates.add(d.toISOString().split('T')[0]);d.setDate(d.getDate()+7);}
+  dates.add(now.toISOString().split('T')[0]);
+  const sortedDates=[...dates].sort();
+  const points=[];
+  for(const date of sortedDates){
+    const dt=new Date(date);
+    // Calculate portfolio value at this date using each holding's cost basis up to that date
+    let totalValue=0;
+    holdings.forEach(h=>{
+      // Find qty at this date
+      const relevantTxs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker&&t.date&&new Date(t.date)<=dt);
+      let qty=0;
+      relevantTxs.forEach(t=>{if(t.action==='buy')qty+=t.qty;else qty-=t.qty;});
+      qty=Math.max(0,qty);
+      // Use current price as approximation (we don't have historical for portfolio)
+      // For past dates, use the purchase price from last tx before that date
+      const lastTx=relevantTxs[relevantTxs.length-1];
+      const price=lastTx?lastTx.price:(h.current||0);
+      totalValue+=qty*price;
+    });
+    if(totalValue>0)points.push({date,price:totalValue});
   }
-  btn.style.animation='';
-  await loadChart();
+  // Make sure the last point uses current values
+  if(points.length>0){
+    const curTotal=holdings.reduce((s,h)=>s+h.qty*(h.current||h.price),0);
+    points[points.length-1].price=curTotal;
+  }
+  return points.length>1?points:null;
 }
 
-async function loadChart(){
-  const h=currentChartHolding;if(!h)return;
-  const loading=document.getElementById('chart-loading');
-  const canvas=document.getElementById('price-chart');
-  loading.style.display='flex';canvas.style.display='none';
-  document.getElementById('chart-stats-row').innerHTML='';
-
-  const ticker=getYahooTicker(h);
-  if(!ticker){loading.textContent='Geen ticker beschikbaar';return;}
-
-  // Try to fetch historical data from Stooq (supports date ranges)
-  const cfg=RANGE_CONFIG[currentChartRange];
-  let prices=await fetchHistoricalStooq(ticker,currentChartRange);
-  
+function drawPortfolioChart(){
+  const canvas=document.getElementById('portfolio-canvas');
+  if(!canvas)return;
+  const wrap=canvas.parentElement;
+  canvas.width=wrap.clientWidth||window.innerWidth;
+  canvas.height=120;
+  const prices=buildPortfolioHistory(portfolioRange);
   if(!prices||prices.length<2){
-    // Fallback: build from transactions
-    prices=buildPricesFromTransactions(h);
-  }
-  if(!prices||prices.length<2){
-    loading.textContent='Geen historische data beschikbaar';
+    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
     return;
   }
+  drawSparkline(canvas,'portfolio-crosshair','portfolio-tooltip','hero-value',prices,null,'');
+  // Update hero change
+  const first=prices[0].price,last=prices[prices.length-1].price;
+  const chg=last-first,pct=first>0?(chg/first)*100:0;
+  const cc=chg>=0?'var(--green)':'var(--red)';
+  const hc=document.getElementById('hero-change');
+  if(hc)hc.innerHTML='<span style="color:'+cc+';font-weight:600">'+(chg>=0?'+':'')+fe(chg)+'</span>'+
+    '<span style="color:'+cc+'"> '+(pct>=0?'+':'')+pct.toFixed(2)+'%</span>'+
+    '<span style="color:var(--text3);font-size:.8rem"> '+portfolioRange+'</span>';
+}
 
-  chartPrices=prices;
-  loading.style.display='none';canvas.style.display='block';
-  drawChart(prices,h);
-  updateChartHeader(prices,h);
-  updateChartStats(prices,h);
+// ── HOLDING CHART (standalone modal) ──
+async function openChart(holdingId){
+  const h=holdings.find(x=>x.id===holdingId);if(!h)return;
+  // Just open the detail modal which now has chart
+  openDetail(holdingId);
 }
 
 async function fetchHistoricalStooq(ticker,range){
   const stooqTicker=STOOQ_MAP[ticker]||ticker.toLowerCase().replace('-eur','.v');
-  // Calculate date range
   const now=new Date();
   const from=new Date(now);
-  const days={'1W':7,'1M':31,'3M':91,'6M':183,'1Y':365,'ALL':1825};
-  from.setDate(from.getDate()-(days[range]||30));
+  const days=RANGE_CONFIG[range]?.days||30;
+  from.setDate(from.getDate()-days);
   const fmt=d=>d.getFullYear().toString()+(d.getMonth()+1).toString().padStart(2,'0')+d.getDate().toString().padStart(2,'0');
-  
   try{
     const url='https://stooq.com/q/d/l/?s='+stooqTicker+'&d1='+fmt(from)+'&d2='+fmt(now)+'&i=d';
     const r=await fetch(url,{mode:'cors',signal:AbortSignal.timeout(8000)});
     if(!r.ok)return null;
     const csv=await r.text();
     if(!csv||csv.includes('No data')||csv.length<50)return null;
-    const lines=csv.trim().split(/\r?\n/);
+    const lines=csv.trim().split(/
+?
+/);
     if(lines.length<2)return null;
     const data=[];
     for(let i=1;i<lines.length;i++){
       const parts=lines[i].split(',');
       if(parts.length<5)continue;
-      const date=parts[0],close=parseFloat(parts[4]);
-      if(!isNaN(close)&&close>0)data.push({date,price:close});
+      const close=parseFloat(parts[4]);
+      if(!isNaN(close)&&close>0)data.push({date:parts[0],price:close});
     }
     return data.length>1?data:null;
   }catch(e){return null;}
 }
 
 function buildPricesFromTransactions(h){
-  // Build price history from transactions
   const txs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker&&t.date).sort((a,b)=>new Date(a.date)-new Date(b.date));
   if(!txs.length)return null;
   const prices=[];
@@ -1322,156 +1572,10 @@ function buildPricesFromTransactions(h){
   const end=new Date();
   let cur=new Date(start);
   while(cur<=end){
-    // Find relevant tx price on/before this date
     const relevant=txs.filter(t=>new Date(t.date)<=cur);
-    if(relevant.length>0){
-      const p=relevant[relevant.length-1].price;
-      prices.push({date:cur.toISOString().split('T')[0],price:p});
-    }
+    if(relevant.length>0)prices.push({date:cur.toISOString().split('T')[0],price:relevant[relevant.length-1].price});
     cur.setDate(cur.getDate()+7);
   }
-  // Add current price as last point
   if(h.current>0)prices.push({date:end.toISOString().split('T')[0],price:h.current});
   return prices.length>1?prices:null;
 }
-
-function drawChart(prices,h){
-  const canvas=document.getElementById('price-chart');
-  const wrap=document.getElementById('chart-wrap-outer');
-  canvas.width=wrap.clientWidth;
-  canvas.height=wrap.clientHeight||220;
-  const ctx=canvas.getContext('2d');
-  chartCtx=ctx;
-  const W=canvas.width,H=canvas.height;
-  const pad={t:20,r:16,b:32,l:8};
-  const vals=prices.map(p=>p.price);
-  const minV=Math.min(...vals),maxV=Math.max(...vals);
-  const range=maxV-minV||maxV*0.1||1;
-  const isUp=prices[prices.length-1].price>=prices[0].price;
-  const color=isUp?'#2d7a4f':'#c0392b';
-  const colorFade=isUp?'rgba(45,122,79,':'rgba(192,57,43,';
-
-  // Map to canvas coords
-  const xScale=(i)=>pad.l+(i/(prices.length-1))*(W-pad.l-pad.r);
-  const yScale=(v)=>pad.t+((maxV-v)/range)*(H-pad.t-pad.b);
-
-  ctx.clearRect(0,0,W,H);
-
-  // Grid lines
-  ctx.strokeStyle='rgba(128,128,128,0.1)';ctx.lineWidth=1;
-  for(let i=0;i<4;i++){const y=pad.t+i*(H-pad.t-pad.b)/3;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();}
-
-  // Area fill
-  const grad=ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,colorFade+'0.3)');
-  grad.addColorStop(1,colorFade+'0)');
-  ctx.beginPath();
-  ctx.moveTo(xScale(0),yScale(prices[0].price));
-  for(let i=1;i<prices.length;i++)ctx.lineTo(xScale(i),yScale(prices[i].price));
-  ctx.lineTo(xScale(prices.length-1),H-pad.b);
-  ctx.lineTo(xScale(0),H-pad.b);
-  ctx.closePath();ctx.fillStyle=grad;ctx.fill();
-
-  // Price line
-  ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin='round';
-  ctx.moveTo(xScale(0),yScale(prices[0].price));
-  for(let i=1;i<prices.length;i++)ctx.lineTo(xScale(i),yScale(prices[i].price));
-  ctx.stroke();
-
-  // Buy point markers from transactions
-  const txs=transactions.filter(t=>t.name===h.name&&t.broker===h.broker&&t.action==='buy'&&t.date).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  txs.forEach(tx=>{
-    const txDate=new Date(tx.date);
-    const closest=prices.reduce((best,p,i)=>{const diff=Math.abs(new Date(p.date)-txDate);return diff<best.diff?{diff,i}:best;},{diff:Infinity,i:0});
-    if(closest.diff<86400000*14){
-      const x=xScale(closest.i),y=yScale(prices[closest.i].price);
-      ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
-      ctx.fillStyle='#fff';ctx.fill();
-      ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
-    }
-  });
-
-  // X-axis labels
-  ctx.fillStyle='rgba(128,128,128,0.6)';ctx.font='10px DM Mono,monospace';ctx.textAlign='center';
-  const labelCount=Math.min(5,prices.length);
-  for(let i=0;i<labelCount;i++){
-    const idx=Math.round(i*(prices.length-1)/(labelCount-1));
-    const d=new Date(prices[idx].date);
-    const label=d.toLocaleDateString('nl-BE',{month:'short',day:'numeric'});
-    ctx.fillText(label,xScale(idx),H-4);
-  }
-
-  // Interactive crosshair
-  setupCrosshair(canvas,prices,xScale,yScale,color,W,H,pad);
-}
-
-function setupCrosshair(canvas,prices,xScale,yScale,color,W,H,pad){
-  const crosshair=document.getElementById('chart-crosshair');
-  const tooltip=document.getElementById('chart-tooltip');
-  const wrap=document.getElementById('chart-wrap-outer');
-  
-  function onMove(clientX){
-    const rect=canvas.getBoundingClientRect();
-    const x=clientX-rect.left;
-    const idx=Math.max(0,Math.min(prices.length-1,Math.round((x-pad.l)/(W-pad.l-pad.r)*(prices.length-1))));
-    const p=prices[idx];
-    if(!p)return;
-    const cx=xScale(idx);
-    crosshair.style.left=cx+'px';crosshair.style.opacity='1';
-    tooltip.style.left=Math.min(cx,W-120)+'px';tooltip.style.opacity='1';
-    const d=new Date(p.date).toLocaleDateString('nl-BE',{day:'numeric',month:'short',year:'numeric'});
-    tooltip.innerHTML='<div style="color:var(--text3);font-size:.65rem">'+d+'</div><div style="font-size:.88rem;font-weight:600">'+fe(p.price)+'</div>';
-    // Update big price
-    document.getElementById('chart-price-big').textContent=fe(p.price);
-  }
-  function onLeave(){crosshair.style.opacity='0';tooltip.style.opacity='0';if(prices.length)document.getElementById('chart-price-big').textContent=fe(prices[prices.length-1].price);}
-  
-  canvas.addEventListener('mousemove',e=>onMove(e.clientX));
-  canvas.addEventListener('touchmove',e=>{e.preventDefault();onMove(e.touches[0].clientX);},{passive:false});
-  canvas.addEventListener('mouseleave',onLeave);
-  canvas.addEventListener('touchend',onLeave);
-}
-
-function updateChartHeader(prices,h){
-  const first=prices[0].price,last=prices[prices.length-1].price;
-  const chg=last-first,pct=(first>0?(chg/first)*100:0);
-  const isUp=chg>=0;
-  const color=isUp?'var(--green)':'var(--red)';
-  document.getElementById('chart-price-big').textContent=fe(last);
-  document.getElementById('chart-price-change').innerHTML=
-    '<span style="color:'+color+';font-size:.95rem;font-weight:600">'+(isUp?'+':'')+fe(chg)+'</span>'+
-    '<span style="color:'+color+'"> '+(isUp?'+':'')+pct.toFixed(2)+'%</span>'+
-    '<span style="color:var(--text3);font-size:.78rem"> '+currentChartRange+'</span>';
-}
-
-function updateChartStats(prices,h){
-  const vals=prices.map(p=>p.price);
-  const{inv,cur,pl,pct}=calc(h);
-  const high=Math.max(...vals),low=Math.min(...vals);
-  const el=document.getElementById('chart-stats-row');
-  el.innerHTML=[
-    {l:'INVESTERING',v:fe(inv)},
-    {l:'HUIDIG',v:fe(cur),c:pl>=0?'var(--green)':'var(--red)'},
-    {l:'HOOGSTE',v:fe(high)},
-    {l:'LAAGSTE',v:fe(low)},
-  ].map(s=>'<div class="chart-stat"><div class="cs-label">'+s.l+'</div><div class="cs-val" '+(s.c?'style="color:'+s.c+'"':'')+'>'+s.v+'</div></div>').join('');
-}
-
-// INIT
-(function init(){
-  document.getElementById('header-date').textContent=new Date().toLocaleDateString('nl-BE',{weekday:'short',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
-  document.getElementById('add-date').value=new Date().toISOString().split('T')[0];
-  loadPrefs();loadEmailJS();
-  ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
-  CF_WORKER_URL=localStorage.getItem('v_cf_worker')||'';
-  const hasPIN=!!localStorage.getItem('v_hash'),ejsSkipped=localStorage.getItem('v_ejs_skipped');
-  if(!ejsService&&!ejsSkipped){document.getElementById('setup-screen').classList.add('visible');document.getElementById('pin-screen').style.display='none';return;}
-  if(!hasPIN)hint('Stel je 6-cijferige PIN in');
-  updateBioUI();updateApiKeyBadge();
-  const sp=sessionStorage.getItem('v_sp');
-  if(sp&&hasPIN)unlockWith(sp);
-  else if(bioEnabled&&bioCredId&&hasPIN)setTimeout(autoTriggerBiometric,600);
-})();
-</script>
-</body>
-</html>
