@@ -1,5 +1,5 @@
 // Savings App - Service Worker v5.5
-const CACHE_VERSION = 'savings-v5.29';
+const CACHE_VERSION = 'savings-v5.30';
 const CACHE_ASSETS = ['./index.html'];
 
 self.addEventListener('install', event => {
