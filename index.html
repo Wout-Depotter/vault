@@ -289,9 +289,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="section-title">ZOEK KOERS WERELDWIJD</div>
     <div class="search-wrap">
       <span class="search-icon">&#128269;</span>
-      <input type="text" class="search-input" id="search-input" placeholder="Ticker of naam: AAPL, IWDA.AS, BTC-EUR, NVIDIA..." oninput="onSearchInput()" autocomplete="off" autocorrect="off" spellcheck="false">
+      <input type="text" class="search-input" id="search-input" placeholder="Exacte ticker: IWDA.AS, SWRD.AS, BTC-EUR, AAPL..." oninput="onSearchInput()" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
-    <div style="font-size:.75rem;color:var(--text3);padding:0 2px">Tip: gebruik exacte ticker voor beste resultaten</div>
+    <div style="font-size:.75rem;color:var(--text3);padding:0 2px">Typ exacte ticker: IWDA.AS · SWRD.AS · BTC-EUR · AAPL · NVDA</div>
     <div id="search-results"></div>
     <div id="search-detail"></div>
   </div>
@@ -477,66 +477,131 @@ function saveApiKey(){const k=document.getElementById('api-key-input').value.tri
 function clearApiKey(){ANTHROPIC_KEY='';localStorage.removeItem('v_api_key');updateApiKeyBadge();document.getElementById('apikey-modal').classList.remove('open');}
 function updateApiKeyBadge(){const b=document.getElementById('api-key-badge'),s=document.getElementById('api-key-sub');if(b){b.textContent=ANTHROPIC_KEY?'INGESTELD':'NIET INGESTELD';b.className='si-badge'+(ANTHROPIC_KEY?'':' off');}if(s)s.textContent=ANTHROPIC_KEY?'Zoeken actief':'Voor zoeken & automatische koersen';}
 
-// LIVE PRICES - Multi-strategy approach
+// LIVE PRICES
+// Strategy 1: Stooq.com (free, CORS*, works for all European ETFs)
+// Strategy 2: CoinGecko (free, CORS*, works for crypto)
+// Strategy 3: Yahoo Finance direct (works for some tickers in Safari)
+// Strategy 4: Cloudflare Worker (if configured)
 const EUR_USD={rate:1.08,ts:0};
-// Optional: set your Cloudflare Worker URL in settings for reliable prices
-// Free worker at workers.cloudflare.com - 100k requests/day
 let CF_WORKER_URL=localStorage.getItem('v_cf_worker')||'';
 
+// Stooq ticker mapping (lowercase)
+const STOOQ_MAP={
+  'IWDA.AS':'iwda.as','EMIM.AS':'emim.as','SWRD.AS':'swrd.as','WTCH.AS':'wtch.as',
+  'EUNL.AS':'eunl.as','CD5.PA':'cd5.pa','WAT.PA':'wat.pa','UST.PA':'ust.pa',
+  'FLXD.DE':'flxd.de','XSPU.L':'xspu.l','VUAA.IE':'vuaa.ie','FWIA.IE':'fwia.ie',
+  'QUTM.IE':'qutm.ie','NVDA':'nvda.us','GSAT':'gsat.us','AAPL':'aapl.us',
+  'MSFT':'msft.us','TSLA':'tsla.us','GOOGL':'googl.us','AMZN':'amzn.us',
+};
+
+// CoinGecko ID mapping for crypto
+const GECKO_MAP={
+  'BTC-EUR':'bitcoin','ETH-EUR':'ethereum','SOL-EUR':'solana',
+  'BTC':'bitcoin','ETH':'ethereum','SOL':'solana',
+};
+
+async function fetchStooq(ticker){
+  const stooqTicker=STOOQ_MAP[ticker]||ticker.toLowerCase().replace('-eur','.v');
+  try{
+    const r=await fetch('https://stooq.com/q/l/?s='+stooqTicker+'&f=sd2t2ohlcv&h&e=json',
+      {mode:'cors',signal:AbortSignal.timeout(6000)});
+    if(!r.ok)return null;
+    const d=await r.json();
+    const sym=d?.symbols?.[0];
+    if(!sym||!sym.close||sym.close<=0)return null;
+    const price=sym.close,prev=sym.open||price;
+    const chg=price-prev,pct=prev>0?(chg/prev)*100:0;
+    return{price,prev,change:chg,changePct:pct,currency:'EUR',name:ticker};
+  }catch(e){return null;}
+}
+
+async function fetchCoinGecko(ticker){
+  const geckoId=GECKO_MAP[ticker];
+  if(!geckoId)return null;
+  try{
+    const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+geckoId+'&vs_currencies=eur&include_24hr_change=true',
+      {mode:'cors',signal:AbortSignal.timeout(6000)});
+    if(!r.ok)return null;
+    const d=await r.json();
+    const data=d?.[geckoId];
+    if(!data||!data.eur)return null;
+    const price=data.eur,pct=data.eur_24h_change||0;
+    return{price,prev:price/(1+pct/100),change:price*pct/100,changePct:pct,currency:'EUR',name:ticker};
+  }catch(e){return null;}
+}
+
 async function fetchYahoo(ticker){
-  // Strategy 1: Cloudflare Worker proxy (if configured)
-  if(CF_WORKER_URL){
-    try{
-      const r=await fetch(CF_WORKER_URL+'?ticker='+encodeURIComponent(ticker),{mode:'cors'});
-      if(r.ok){const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;if(meta){const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price,chg=price-prev,pct=prev>0?(chg/prev)*100:0;return{price,prev,change:chg,changePct:pct,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};}}
-    }catch(e){}
-  }
-  // Strategy 2: Direct Yahoo (works in Safari iOS without CORS issues in many cases)
-  const yahooUrls=[
+  const urls=[
     'https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d',
     'https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=2d',
   ];
-  for(const url of yahooUrls){
+  for(const url of urls){
     try{
-      const r=await fetch(url,{mode:'cors',credentials:'include',headers:{'Accept':'application/json'}});
+      const r=await fetch(url,{mode:'cors',signal:AbortSignal.timeout(5000)});
       if(!r.ok)continue;
-      const d=await r.json();const meta=d?.chart?.result?.[0]?.meta;
-      if(!meta)continue;
-      const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price,chg=price-prev,pct=prev>0?(chg/prev)*100:0;
-      return{price,prev,change:chg,changePct:pct,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};
-    }catch(e){}
-  }
-  // Strategy 3: Yahoo with no-cors (limited but sometimes works for basic data)
-  try{
-    const r=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d',{mode:'no-cors'});
-    // no-cors returns opaque response - can't read data but confirms reachability
-  }catch(e){}
-  // Strategy 4: Try corsproxy variants
-  const proxies=[
-    'https://corsproxy.io/?'+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=2d'),
-    'https://api.allorigins.win/raw?url='+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=2d'),
-  ];
-  for(const url of proxies){
-    try{
-      const r=await fetch(url,{signal:AbortSignal.timeout(4000)});
-      if(!r.ok)continue;
-      const text=await r.text();
-      const d=JSON.parse(text.startsWith('{')?text:'{}');
-      const inner=d.contents?JSON.parse(d.contents):d;
-      const meta=inner?.chart?.result?.[0]?.meta;
-      if(meta&&meta.regularMarketPrice){
-        const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price,chg=price-prev,pct=prev>0?(chg/prev)*100:0;
-        return{price,prev,change:chg,changePct:pct,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};
-      }
+      const d=await r.json();
+      const meta=d?.chart?.result?.[0]?.meta;
+      if(!meta||!meta.regularMarketPrice)continue;
+      const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price;
+      return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};
     }catch(e){}
   }
   return null;
 }
-async function fetchEurUsd(){if(Date.now()-EUR_USD.ts<300000)return EUR_USD.rate;const d=await fetchYahoo('EURUSD=X');if(d){EUR_USD.rate=d.price;EUR_USD.ts=Date.now();}return EUR_USD.rate;}
-async function fetchPriceInEur(ticker,instrCurrency){const data=await fetchYahoo(ticker);if(!data)return null;let priceEur=data.price;if((instrCurrency||data.currency)==='USD'){const rate=await fetchEurUsd();priceEur=data.price/rate;data.changeEur=(data.change||0)/rate;}else data.changeEur=data.change||0;data.priceEur=priceEur;data.changePctEur=data.changePct||0;return data;}
-const TICKER_MAP={'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA','SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS','UST':'UST.PA','EUNL':'EUNL.AS','VUAA':'VUAA.IE','FWIA':'FWIA.IE','BTC':'BTC-EUR','ETH':'ETH-EUR'};
-function getYahooTicker(h){if(h.yahooTicker)return h.yahooTicker;const t=(h.ticker||'').split(':')[0];return TICKER_MAP[t]||h.ticker||'';}
-async function refreshAllPrices(){if(!holdings.length){showToast('Geen holdings');return;}const btn=document.getElementById('refresh-btn');btn.classList.add('spinning');showToast('Koersen ophalen...');let ok=0,fail=0;for(const h of holdings){const t=getYahooTicker(h);if(!t||h.type==='cash')continue;const d=await fetchPriceInEur(t,h.instrumentCurrency);if(d&&d.priceEur>0){h.current=d.priceEur;h.dailyChange=d.changeEur||0;h.dailyChangePct=d.changePctEur||0;h.lastRefresh=Date.now();ok++;}else fail++;}await persist();btn.classList.remove('spinning');const now=new Date().toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'});document.getElementById('last-refresh-time').textContent='Laatste update: '+now;renderAll();showToast(ok+' koersen bijgewerkt'+(fail?' ('+fail+' mislukt)':''));}
+
+async function fetchCloudflare(ticker){
+  if(!CF_WORKER_URL)return null;
+  try{
+    const r=await fetch(CF_WORKER_URL+'?ticker='+encodeURIComponent(ticker),{signal:AbortSignal.timeout(6000)});
+    if(!r.ok)return null;
+    const d=await r.json();
+    const meta=d?.chart?.result?.[0]?.meta;
+    if(!meta||!meta.regularMarketPrice)return null;
+    const price=meta.regularMarketPrice,prev=meta.chartPreviousClose||price;
+    return{price,prev,change:price-prev,changePct:prev>0?((price-prev)/prev)*100:0,currency:meta.currency||'EUR',name:meta.longName||meta.shortName||ticker};
+  }catch(e){return null;}
+}
+
+async function fetchEurUsd(){
+  if(Date.now()-EUR_USD.ts<300000)return EUR_USD.rate;
+  // Try Stooq for EUR/USD rate
+  try{
+    const r=await fetch('https://stooq.com/q/l/?s=eurusd&f=sd2t2ohlcv&h&e=json',{mode:'cors',signal:AbortSignal.timeout(4000)});
+    const d=await r.json();
+    const rate=d?.symbols?.[0]?.close;
+    if(rate&&rate>0){EUR_USD.rate=rate;EUR_USD.ts=Date.now();return rate;}
+  }catch(e){}
+  return EUR_USD.rate;
+}
+
+async function fetchPriceInEur(ticker,instrCurrency){
+  const isCrypto=GECKO_MAP[ticker];
+  let data=null;
+  
+  if(isCrypto){
+    // Crypto: CoinGecko first (best for crypto), then Yahoo
+    data=await fetchCoinGecko(ticker)||await fetchYahoo(ticker)||await fetchCloudflare(ticker);
+  } else {
+    // ETFs/stocks: Stooq first (best for European), then Yahoo, then Cloudflare
+    data=await fetchStooq(ticker)||await fetchYahoo(ticker)||await fetchCloudflare(ticker);
+  }
+  
+  if(!data)return null;
+  
+  // Convert USD to EUR if needed
+  let priceEur=data.price;
+  if((instrCurrency||data.currency)==='USD'){
+    const rate=await fetchEurUsd();
+    priceEur=data.price/rate;
+    data.changeEur=(data.change||0)/rate;
+  } else {
+    data.changeEur=data.change||0;
+  }
+  data.priceEur=priceEur;
+  data.changePctEur=data.changePct||0;
+  return data;
+}
+
 
 // SEARCH - dual approach: Yahoo direct + Anthropic fallback
 let searchTO=null;
