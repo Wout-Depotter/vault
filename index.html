@@ -6,6 +6,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Savings">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="version" content="202604220933">
 <title>Savings</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -429,6 +433,9 @@ export default {<br>
 <div class="toast" id="toast"></div>
 <input type="file" id="json-import-input" accept=".json" style="display:none" onchange="handleJsonImport(event)">
 <script>
+// Force fresh load - unregister any cached service workers
+if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister()));}
+
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const ENC=new TextEncoder(),DEC=new TextDecoder();
 async function deriveKey(pin,salt){const km=await crypto.subtle.importKey('raw',ENC.encode(pin),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
@@ -699,7 +706,18 @@ async function deleteHolding(id){
 function toggleBlur(){blurValues=!blurValues;document.getElementById('eye-btn').textContent=blurValues?'🙈':'👁';renderOverview();}
 
 // PDF IMPORT
-async function importPDF(event,broker){const file=event.target.files[0];if(!file)return;event.target.value='';showLoading('PDF verwerken...');try{const ab=await file.arrayBuffer();const pdf=await pdfjsLib.getDocument({data:ab}).promise;let text='';for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);const c=await p.getTextContent();text+=c.items.map(x=>x.str).join(' ')+'\n';}hideLoading();const result=broker==='saxo'?parseSaxoPDF(text):parseRevolutPDF(text);showImportResult(result);if(result.updatedHoldings>0||result.newTx>0){await persist();renderAll();}}catch(e){hideLoading();showToast('PDF lezen mislukt: '+e.message);console.error(e);}}
+async function importPDF(event,broker){const file=event.target.files[0];if(!file)return;event.target.value='';showLoading('PDF verwerken...');try{const ab=await file.arrayBuffer();const pdf=await pdfjsLib.getDocument({data:ab}).promise;let text='';for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);const c=await p.getTextContent();
+      // Join items with newlines based on y-position changes (proper line detection)
+      let pageText='',lastY=null;
+      c.items.forEach(item=>{
+        if(!item.str)return;
+        const y=Math.round(item.transform[5]);
+        if(lastY!==null&&Math.abs(y-lastY)>3)pageText+='\n';
+        else if(lastY!==null)pageText+=' ';
+        pageText+=item.str;
+        lastY=y;
+      });
+      text+=pageText+'\n';}hideLoading();const result=broker==='saxo'?parseSaxoPDF(text):parseRevolutPDF(text);showImportResult(result);if(result.updatedHoldings>0||result.newTx>0){await persist();renderAll();}}catch(e){hideLoading();showToast('PDF lezen mislukt: '+e.message);console.error(e);}}
 function showLoading(msg){document.getElementById('loading-text').textContent=msg;document.getElementById('loading-overlay').classList.add('visible');}
 function hideLoading(){document.getElementById('loading-overlay').classList.remove('visible');}
 
