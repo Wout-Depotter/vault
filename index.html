@@ -285,7 +285,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <button class="tab-btn" onclick="switchTab('revolut',this)">Revolut</button>
     <button class="tab-btn" onclick="switchTab('search',this)">&#128269; Zoeken</button>
     <button class="tab-btn" onclick="switchTab('transactions',this)">Transacties</button>
-    <button class="tab-btn" onclick="switchTab('import',this)">&#128229; Import PDF</button>
+    <button class="tab-btn" onclick="switchTab('import',this)">&#128229; Import</button>
     <button class="tab-btn" onclick="switchTab('add',this)">+ Toevoegen</button>
     <button class="tab-btn" onclick="switchTab('trash',this)">&#128465; Prullenbak</button>
     <button class="tab-btn" onclick="switchTab('settings',this)">Instellingen</button>
@@ -393,33 +393,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div id="tx-list"><div class="empty-state"><div style="font-size:2.5rem;margin-bottom:10px">&#128336;</div><div style="font-size:.95rem;font-weight:600;color:var(--text2)">Nog geen transacties</div></div></div>
   </div>
   <div class="page" id="page-import">
-    <div class="section-title">IMPORTEER PDF AFSCHRIFT</div>
-    <div class="form-card" style="padding:13px"><div style="font-size:.82rem;color:var(--text2);line-height:1.6">Importeer een afschrift van <strong>Saxo Bank</strong> of <strong>Revolut</strong>. Ondersteunt zowel transactierapport als portefeuillerapport. Duplicaten worden overgeslagen.</div></div>
-    <div class="import-zone">
-      <input type="file" accept=".pdf" onchange="importPDF(event,'saxo')">
-      <div class="import-icon">&#127956;</div>
-      <div class="import-title">Saxo Bank PDF</div>
-      <div class="import-sub">Transactie- &amp; saldorapport of Portefeuillerapport<br><span style="color:var(--accent);font-weight:600">Tik hier om te selecteren</span></div>
+    <div class="section-title">IMPORTEER BESTAND</div>
+    <div class="form-card" style="padding:13px;margin-bottom:14px">
+      <div style="font-size:.82rem;color:var(--text2);line-height:1.6">
+        Selecteer je broker en upload je bestand. De app detecteert automatisch het type PDF (transacties, portefeuille, P&amp;L) of Excel. Duplicaten worden overgeslagen.
+      </div>
     </div>
-    <div class="import-zone">
-      <input type="file" accept=".pdf" onchange="importPDF(event,'revolut')">
-      <div class="import-icon">&#128260;</div>
-      <div class="import-title">Revolut PDF</div>
-      <div class="import-sub">ETF, aandelen of crypto statement<br><span style="color:var(--accent);font-weight:600">Tik hier om te selecteren</span></div>
+    <!-- Hidden file inputs - triggered programmatically -->
+    <input type="file" id="saxo-file-input" accept=".pdf,.xlsx,.xls,.csv" style="display:none" onchange="importSaxoAuto(event)">
+    <input type="file" id="revolut-file-input" accept=".pdf" style="display:none" onchange="importRevolutAuto(event)">
+    <!-- Two big broker buttons -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 2px">
+      <div class="import-zone" onclick="document.getElementById('saxo-file-input').click()" style="cursor:pointer">
+        <div class="import-icon">&#127956;</div>
+        <div class="import-title">Saxo Bank</div>
+        <div class="import-sub">PDF of Excel<br><span style="color:var(--accent);font-weight:600">Tik om te selecteren</span></div>
+      </div>
+      <div class="import-zone" onclick="document.getElementById('revolut-file-input').click()" style="cursor:pointer">
+        <div class="import-icon">&#128260;</div>
+        <div class="import-title">Revolut</div>
+        <div class="import-sub">PDF statement<br><span style="color:var(--accent);font-weight:600">Tik om te selecteren</span></div>
+      </div>
     </div>
-    <div class="import-zone">
-      <input type="file" accept=".xlsx,.xls,.csv" onchange="importExcel(event)">
-      <div class="import-icon">&#128200;</div>
-      <div class="import-title">Saxo Bank Excel / CSV</div>
-      <div class="import-sub">Transacties export (.xlsx of .csv)<br><span style="color:var(--accent);font-weight:600">Tik hier om te selecteren</span></div>
-    </div>
-    <div class="import-zone">
-      <input type="file" accept=".pdf" onchange="importPDF(event,'revolut-pnl')">
-      <div class="import-icon">📊</div>
-      <div class="import-title">Revolut P&amp;L PDF</div>
-      <div class="import-sub">USD/EUR Profit and Loss Statement<br><span style="color:var(--accent);font-weight:600">Tik hier om te selecteren</span></div>
-    </div>
-    <div id="import-result"></div>
+    <div id="import-result" style="margin-top:14px"></div>
   </div>
   <div class="page" id="page-add">
     <div class="form-card">
@@ -1368,6 +1364,51 @@ function parseSaxoPDF(text){
   }
 
   return{newTx,skipped,updatedHoldings,broker:'Saxo Bank',reportType:isPortfolio?'Portefeuillerapport':'Transactierapport'};
+}
+
+// ── SMART AUTO-DETECT IMPORT ──
+async function importSaxoAuto(event){
+  const file=event.target.files[0];if(!file)return;
+  event.target.value='';
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='pdf'){
+    await importPDF({target:{files:[file]}},'saxo');
+  } else {
+    await importExcel({target:{files:[file]}});
+  }
+}
+
+async function importRevolutAuto(event){
+  const file=event.target.files[0];if(!file)return;
+  event.target.value='';
+  // Read first ~2000 chars of text to detect PDF type
+  showLoading('PDF detecteren...');
+  try{
+    const ab=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+    // Read first page text
+    let firstPageText='';
+    const page=await pdf.getPage(1);
+    const tc=await page.getTextContent();
+    let lastY=null;
+    tc.items.forEach(item=>{
+      if(!item.str)return;
+      const y=Math.round(item.transform[5]);
+      if(lastY!==null&&Math.abs(y-lastY)>3)firstPageText+='\n';
+      else if(lastY!==null)firstPageText+=' ';
+      firstPageText+=item.str;
+      lastY=y;
+    });
+    hideLoading();
+    // Detect type based on keywords
+    const isPnL=firstPageText.includes('Profit and Loss')||firstPageText.includes('Cost basis')||firstPageText.includes('Gross proceeds')||firstPageText.includes('Date acquired');
+    const broker=isPnL?'revolut-pnl':'revolut';
+    // Now parse full PDF
+    await importPDF({target:{files:[file]}},broker);
+  }catch(e){
+    hideLoading();
+    showToast('PDF lezen mislukt: '+e.message);
+  }
 }
 
 // ── EXCEL / CSV PARSER (Saxo Bank transacties export) ──
