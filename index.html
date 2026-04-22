@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Vault">
-<title>Vault</title>
+<meta name="apple-mobile-web-app-title" content="Savings">
+<title>Savings</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -195,7 +195,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </head>
 <body>
 <div id="setup-screen">
-  <div class="setup-title">Vault instellen</div>
+  <div class="setup-title">Savings instellen</div>
   <div class="setup-sub">Voer je EmailJS gegevens in voor meldingen bij nieuwe toestellen.<br>Dit is eenmalig.</div>
   <input type="text" class="setup-input" id="setup-service" placeholder="EmailJS Service ID">
   <input type="text" class="setup-input" id="setup-template" placeholder="EmailJS Template ID">
@@ -205,7 +205,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <button onclick="skipEmailJS()" style="background:none;border:none;color:var(--text3);font-size:.78rem;cursor:pointer;margin-top:-4px">Sla over</button>
 </div>
 <div id="pin-screen">
-  <div class="pin-logo">Vault</div>
+  <div class="pin-logo">Savings</div>
   <div class="pin-sub">PORTFOLIO TRACKER</div>
   <div class="pin-dots">
     <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
@@ -235,9 +235,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </div>
 <div id="app">
   <div class="app-header">
-    <div><div class="app-logo">Vault</div><div class="header-date" id="header-date"></div></div>
+    <div><div class="app-logo">Savings</div><div class="header-date" id="header-date"></div></div>
     <div class="header-right">
       <button class="header-btn" title="Koersen verversen" onclick="refreshAllPrices()">&#128260;</button>
+      <button class="header-btn" title="Instellingen" onclick="switchTab('settings',document.querySelectorAll('.tab-btn')[7])">&#9881;&#65039;</button>
       <button class="header-btn" onclick="lockApp()">&#128274;</button>
     </div>
   </div>
@@ -362,7 +363,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
     <div class="section-title">OVER</div>
     <div class="settings-section">
-      <div class="settings-item"><div class="si-icon">&#128188;</div><div class="si-info"><div class="si-label">Vault v5.1</div><div class="si-sub">Live koersen &middot; PDF import &middot; AES-256 &middot; Prullenbak</div></div></div>
+      <div class="settings-item"><div class="si-icon">&#128188;</div><div class="si-info"><div class="si-label">Savings v5.1</div><div class="si-sub">Live koersen &middot; PDF import &middot; AES-256 &middot; Prullenbak</div></div></div>
     </div>
   </div>
 </div>
@@ -388,7 +389,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       Een gratis Cloudflare Worker lost het CORS probleem op voor live koersen.<br><br>
       <strong>Stap 1:</strong> Ga naar <strong>workers.cloudflare.com</strong> (gratis account)<br>
       <strong>Stap 2:</strong> Maak een nieuwe Worker aan<br>
-      <strong>Stap 3:</strong> Plak de code uit de Vault app<br>
+      <strong>Stap 3:</strong> Plak de code uit de Savings app<br>
       <strong>Stap 4:</strong> Kopieer je Worker URL hier in<br><br>
       <strong>Gratis:</strong> 100.000 requests/dag — meer dan genoeg.
     </div>
@@ -404,7 +405,7 @@ export default {<br>
 &nbsp;}<br>
 };
     </div>
-    <div class="form-group"><label class="form-label">Jouw Worker URL</label><input type="text" class="form-input" id="worker-url-input" placeholder="https://vault-proxy.JOUW-NAAM.workers.dev"></div>
+    <div class="form-group"><label class="form-label">Jouw Worker URL</label><input type="text" class="form-input" id="worker-url-input" placeholder="https://savings-proxy.JOUW-NAAM.workers.dev"></div>
     <button class="btn-primary" onclick="saveWorkerUrl()">Opslaan</button>
     <button class="btn-danger" onclick="clearWorkerUrl()">Verwijderen</button>
   </div>
@@ -433,7 +434,7 @@ const ENC=new TextEncoder(),DEC=new TextDecoder();
 async function deriveKey(pin,salt){const km=await crypto.subtle.importKey('raw',ENC.encode(pin),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
 async function aesEncrypt(data,pin){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await deriveKey(pin,salt),ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,ENC.encode(JSON.stringify(data)));const out=new Uint8Array(28+ct.byteLength);out.set(salt,0);out.set(iv,16);out.set(new Uint8Array(ct),28);return btoa(String.fromCharCode(...out));}
 async function aesDecrypt(b64,pin){const buf=Uint8Array.from(atob(b64),c=>c.charCodeAt(0)),key=await deriveKey(pin,buf.slice(0,16)),plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:buf.slice(16,28)},key,buf.slice(28));return JSON.parse(DEC.decode(plain));}
-async function pinHash(pin){const d=await crypto.subtle.digest('SHA-256',ENC.encode('vault3:'+pin));return btoa(String.fromCharCode(...new Uint8Array(d)));}
+async function pinHash(pin){const d=await crypto.subtle.digest('SHA-256',ENC.encode('savings3:'+pin));return btoa(String.fromCharCode(...new Uint8Array(d)));}
 
 // STATE
 let holdings=[],transactions=[],deletedHoldings=[],currentPin='',pinInput='';
@@ -453,7 +454,7 @@ function saveEmailJS(){const s=document.getElementById('setup-service').value.tr
 function skipEmailJS(){localStorage.setItem('v_ejs_skipped','1');document.getElementById('setup-screen').classList.remove('visible');document.getElementById('pin-screen').style.display='';const hasPIN=!!localStorage.getItem('v_hash');if(!hasPIN)hint('Stel je 6-cijferige PIN in');}
 function updateEmailBadge(){const b=document.getElementById('email-badge'),s=document.getElementById('email-sub');if(!b)return;const a=!!(ejsService&&ejsTemplate&&ejsKey);b.textContent=a?'AAN':'UIT';b.className='si-badge'+(a?'':' off');if(s)s.textContent=a?'Mail bij nieuw toestel naar '+NOTIFY_EMAIL:'Niet ingesteld';}
 function showEmailSetup(){document.getElementById('setup-service').value=ejsService;document.getElementById('setup-template').value=ejsTemplate;document.getElementById('setup-pubkey').value=ejsKey;document.getElementById('setup-screen').classList.add('visible');}
-async function sendLoginNotificationIfNewDevice(){if(!ejsService||!ejsTemplate||!ejsKey)return;try{const deviceId=await getDeviceId();const known=JSON.parse(localStorage.getItem('v_known_devices')||'[]');if(known.includes(deviceId))return;const t=new Date().toLocaleString('nl-BE',{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});await emailjs.send(ejsService,ejsTemplate,{to_email:NOTIFY_EMAIL,to_name:'Wout',login_time:t,device:navigator.userAgent.includes('iPhone')?'iPhone':navigator.userAgent.includes('iPad')?'iPad':'Onbekend',app_name:'Vault Portfolio',message:'Nieuw toestel gedetecteerd!'});known.push(deviceId);localStorage.setItem('v_known_devices',JSON.stringify(known));}catch(e){}}
+async function sendLoginNotificationIfNewDevice(){if(!ejsService||!ejsTemplate||!ejsKey)return;try{const deviceId=await getDeviceId();const known=JSON.parse(localStorage.getItem('v_known_devices')||'[]');if(known.includes(deviceId))return;const t=new Date().toLocaleString('nl-BE',{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});await emailjs.send(ejsService,ejsTemplate,{to_email:NOTIFY_EMAIL,to_name:'Wout',login_time:t,device:navigator.userAgent.includes('iPhone')?'iPhone':navigator.userAgent.includes('iPad')?'iPad':'Onbekend',app_name:'Savings Portfolio',message:'Nieuw toestel gedetecteerd!'});known.push(deviceId);localStorage.setItem('v_known_devices',JSON.stringify(known));}catch(e){}}
 
 // CLOUDFLARE WORKER
 function showWorkerSetup(){document.getElementById('worker-url-input').value=CF_WORKER_URL;document.getElementById('worker-modal').classList.add('open');}
@@ -593,7 +594,7 @@ function loadPrefs(){bioEnabled=localStorage.getItem('v_bio')==='1';bioCredId=lo
 
 // BIOMETRICS
 const bioOk=()=>!!window.PublicKeyCredential&&typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable==='function';
-async function enrollBio(){if(!bioOk()){showToast('Niet ondersteund');return false;}const ok=await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();if(!ok){showToast('Geen Face ID gevonden');return false;}try{const chal=crypto.getRandomValues(new Uint8Array(32)),uid=crypto.getRandomValues(new Uint8Array(16)),cred=await navigator.credentials.create({publicKey:{challenge:chal,rp:{name:'Vault',id:location.hostname||'localhost'},user:{id:uid,name:'vault',displayName:'Vault'},pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},timeout:60000,attestation:'none'}});bioCredId=btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));bioEnabled=true;await persist();updateBioUI();showToast('Face ID ingeschakeld');return true;}catch(e){if(e.name!=='NotAllowedError')showToast('Instellen mislukt');return false;}}
+async function enrollBio(){if(!bioOk()){showToast('Niet ondersteund');return false;}const ok=await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();if(!ok){showToast('Geen Face ID gevonden');return false;}try{const chal=crypto.getRandomValues(new Uint8Array(32)),uid=crypto.getRandomValues(new Uint8Array(16)),cred=await navigator.credentials.create({publicKey:{challenge:chal,rp:{name:'Savings',id:location.hostname||'localhost'},user:{id:uid,name:'savings',displayName:'Savings'},pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},timeout:60000,attestation:'none'}});bioCredId=btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));bioEnabled=true;await persist();updateBioUI();showToast('Face ID ingeschakeld');return true;}catch(e){if(e.name!=='NotAllowedError')showToast('Instellen mislukt');return false;}}
 async function autoTriggerBiometric(){if(!bioEnabled||!bioCredId)return;await triggerBiometric();}
 async function triggerBiometric(){if(!bioEnabled||!bioCredId)return;try{const chal=crypto.getRandomValues(new Uint8Array(32)),cid=Uint8Array.from(atob(bioCredId),c=>c.charCodeAt(0));await navigator.credentials.get({publicKey:{challenge:chal,rpId:location.hostname||'localhost',allowCredentials:[{id:cid,type:'public-key'}],userVerification:'required',timeout:60000}});const bp=localStorage.getItem('v_bio_pin');if(bp)await unlockWith(atob(bp));else hint('Face ID gelukt - voer eenmalig PIN in');}catch(e){if(e.name!=='NotAllowedError')showToast('Biometrie mislukt');hint('Voer je 6-cijferige PIN in');}}
 async function toggleBiometric(){if(!currentPin){showToast('Ontgrendel eerst de app');return;}if(bioEnabled){bioEnabled=false;bioCredId=null;localStorage.removeItem('v_bio_pin');await persist();updateBioUI();showToast('Face ID uitgeschakeld');}else await enrollBio();}
@@ -868,9 +869,9 @@ function showImportResult(result){
 }
 
 // DATA MANAGEMENT
-async function exportData(){const enc=await aesEncrypt({holdings,transactions,deletedHoldings},currentPin);const blob=new Blob([JSON.stringify({vault_enc:enc,v:5})],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='vault-backup-'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup geëxporteerd');}
+async function exportData(){const enc=await aesEncrypt({holdings,transactions,deletedHoldings},currentPin);const blob=new Blob([JSON.stringify({savings_enc:enc,v:5})],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='savings-backup-'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup geëxporteerd');}
 function importJsonData(){document.getElementById('json-import-input').click();}
-async function handleJsonImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async ev=>{try{const w=JSON.parse(ev.target.result),d=w.vault_enc?await aesDecrypt(w.vault_enc,currentPin):w;if(d.holdings)holdings=d.holdings;if(d.transactions)transactions=d.transactions;if(d.deletedHoldings)deletedHoldings=d.deletedHoldings;await persist();renderAll();showToast('Geïmporteerd');}catch{showToast('Import mislukt');}};reader.readAsText(file);e.target.value='';}
+async function handleJsonImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async ev=>{try{const w=JSON.parse(ev.target.result),d=w.savings_enc?await aesDecrypt(w.savings_enc,currentPin):w;if(d.holdings)holdings=d.holdings;if(d.transactions)transactions=d.transactions;if(d.deletedHoldings)deletedHoldings=d.deletedHoldings;await persist();renderAll();showToast('Geïmporteerd');}catch{showToast('Import mislukt');}};reader.readAsText(file);e.target.value='';}
 async function clearData(){if(!confirm('Alle data wissen?'))return;holdings=[];transactions=[];deletedHoldings=[];await persist();renderAll();showToast('Alle data gewist');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
