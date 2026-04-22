@@ -1671,44 +1671,108 @@ function parseSaxoPDF(text){
 function parseRevolutPDF(text){
   let newTx=0,skipped=0,updatedHoldings=0;
   const existingIds=new Set(transactions.map(t=>t.id));
-  const RY={'EUNL':'EUNL.AS','QUTM':'QUTM.IE','VUAA':'VUAA.IE','FWIA':'FWIA.IE','IWDA':'IWDA.AS','EMIM':'EMIM.AS'};
-  const lines=text.split('\n');
-  const ETF_RE=/^(\d{1,2}\s+\w+\s+\d{4})[\s\S]*?(\w{2,6})\s+Trade\s*-\s*Market\s+([\d.]+)\s+[€$]([\d,.]+)\s+(Buy|Sell)\s+[€$]([\d,.]+)/i;
-  const CRYPTO_RE=/^(\d{1,2}\s+\w+\s+\d{4})[\s\S]*?(BTC|ETH|SOL)\s+[A-Z]+\s+([\d.]+)\s+[€$]([\d,.]+)\s+(Buy|Sell)\s+[€$]([\d,.]+)/i;
+
+  const lines=text.split(/\r?\n/);
+
+  // ── FORMAT 1: Account Statement (stocks/ETFs) ──
+  // "21 Oct 2025 14:39:43 GMT NVDA Trade - Market 0.09597163 US$180.47 Buy US$17.32 US$0 US$0"
+  // "15 Oct 2025 06:00:13 GMT QUTM Trade - Market 1.18413276 €25.33 Buy €30 €0 €0"
+  const ACCT_RE=/^(\d{1,2}\s+\w+\s+\d{4})\s+[\d:]+\s+GMT\s+(\w+)\s+Trade\s*-\s*Market\s+([\d.]+)\s+(?:US\$|€)([\d,.]+)\s+(Buy|Sell)\s+(?:US\$|€)([\d,.]+)\s+(?:US\$|€)([\d,.]+)\s+(?:US\$|€)([\d,.]+)/i;
+
+  // ── FORMAT 2: Crypto Account Statement ──
+  // "BTC Buy 0.00344974 €57,975.25 €200.00 €2.97 Feb 17, 2026, 12:42:16PM"
+  const CRYPTO_RE=/^(BTC|ETH|SOL)\s+(Buy|Sell)\s+([\d.]+)\s+(?:[€$])([\d,]+(?:\.\d+)?)\s+(?:[€$])([\d,]+(?:\.\d+)?)\s+(?:[€$])([\d,]+(?:\.\d+)?)\s+(\w+\s+\d+,\s+\d{4})/i;
+  // Crypto Revolut X format: "BTC Buy - Revolut X 0.00252178 $68,907.68 $173.77 $0.15 Apr 1, 2026, 9:39:15AM"
+  const CRYPTO_X_RE=/^(BTC|ETH|SOL)\s+Buy\s+-\s+Revolut\s+X\s+([\d.]+)\s+(?:[€$])([\d,]+(?:\.\d+)?)\s+(?:[€$])([\d,]+(?:\.\d+)?)\s+(?:[€$])([\d,]+(?:\.\d+)?)\s+(\w+\s+\d+,\s+\d{4})/i;
+
+  const RY={'EUNL':'EUNL.AS','QUTM':'QUTM.IE','VUAA':'VUAA.IE','FWIA':'FWIA.IE',
+            'IWDA':'IWDA.AS','EMIM':'EMIM.AS','NVDA':'NVDA','GSAT':'GSAT',
+            'AAPL':'AAPL','MSFT':'MSFT','TSLA':'TSLA'};
+
+  function parsePrice(s){return parseFloat((s||'0').replace(/,/g,''));}
+  function parseDate(s){
+    // "21 Oct 2025" or "Feb 17, 2026" or "Apr 1, 2026"
+    const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+    s=s.trim();
+    // "21 Oct 2025"
+    let m=s.match(/^(\d{1,2})\s+(\w{3})\s+(\d{4})/i);
+    if(m)return m[3]+'-'+String(months[m[2].toLowerCase()]||1).padStart(2,'0')+'-'+m[1].padStart(2,'0');
+    // "Feb 17, 2026" or "Apr 1, 2026"
+    m=s.match(/^(\w{3})\s+(\d{1,2}),?\s+(\d{4})/i);
+    if(m)return m[3]+'-'+String(months[m[1].toLowerCase()]||1).padStart(2,'0')+'-'+m[2].padStart(2,'0');
+    return s.substring(0,10);
+  }
+
+  // Detect currency from text
+  const isUSD=lines.some(l=>l.includes('USD Account summary')||l.includes('USD Transactions'));
+
   for(let i=0;i<lines.length;i++){
     const line=lines[i].trim();
-    let m=ETF_RE.exec(line);
+
+    // Format 1: stocks/ETFs
+    let m=ACCT_RE.exec(line);
     if(m){
-      const[,dateStr,sym,qty,price,action,total]=m;
-      const id='rev_'+sym+'_'+dateStr.replace(/\s/g,'_')+'_'+qty;
+      const[,dateStr,sym,qty,price,side,value,fees,commission]=m;
+      const action=side.toLowerCase()==='buy'?'buy':'sell';
+      const id='rev_acct_'+sym+'_'+dateStr.replace(/\s/g,'')+'_'+qty;
       if(!existingIds.has(id)){
-        const name=sym+' ETF',asType='etf',date=dateStr;
-        const tx={id,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:parseFloat(qty),price:parseFloat(price),total:parseFloat(total),date,action:action.toLowerCase()==='buy'?'buy':'sell',note:'Kosten inbegrepen in prijs/spread'};
+        const date=parseDate(dateStr);
+        const qtyN=parseFloat(qty),priceN=parsePrice(price),valueN=parsePrice(value);
+        const feesN=parsePrice(fees),commN=parsePrice(commission);
+        const totalCosts=feesN+commN;
+        // Convert USD to approx EUR if needed
+        const priceEur=isUSD?priceN*0.92:priceN;
+        const valueEur=isUSD?valueN*0.92:valueN;
+        const name=sym+' (Revolut)';
+        const tx={id,name,ticker:sym,yahooTicker:RY[sym]||sym,type:'stock',broker:'Revolut',
+          qty:qtyN,price:priceEur,total:valueEur,costs:totalCosts>0?totalCosts:undefined,
+          date,action,note:'Revolut Account Statement'};
         transactions.push(tx);existingIds.add(id);newTx++;
         const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Revolut');
-        if(ex){if(tx.action==='buy')ex.qty+=parseFloat(qty);else ex.qty=Math.max(0,ex.qty-parseFloat(qty));}
-        else if(tx.action==='buy'){holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym,type:asType,broker:'Revolut',qty:parseFloat(qty),price:parseFloat(price),current:parseFloat(price),date,notes:''});}
+        if(ex){if(action==='buy')ex.qty+=qtyN;else ex.qty=Math.max(0,ex.qty-qtyN);}
+        else if(action==='buy'){
+          holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:RY[sym]||sym,
+            type:'stock',broker:'Revolut',qty:qtyN,price:priceEur,current:priceEur,date,notes:''});
+        }
         updatedHoldings++;
       } else skipped++;
       continue;
     }
-    m=CRYPTO_RE.exec(line);
-    if(m){
-      const[,dateStr,sym,qty,price,action,total]=m;
-      const id='rev_'+sym+'_'+dateStr.replace(/\s/g,'_')+'_'+qty;
+
+    // Format 2: crypto
+    for(const [re,isRevX] of [[CRYPTO_X_RE,true],[CRYPTO_RE,false]]){
+      m=re.exec(line);
+      if(!m)continue;
+      const sym=m[1].toUpperCase();
+      const qty=isRevX?m[2]:m[3];
+      const price=isRevX?m[3]:m[4];
+      const value=isRevX?m[4]:m[5];
+      const fees=isRevX?m[5]:m[6];
+      const dateStr=isRevX?m[6]:m[7];
+      const action='buy';
+      const id='rev_crypto_'+sym+'_'+dateStr.replace(/[\s,]/g,'')+'_'+qty;
       if(!existingIds.has(id)){
+        const date=parseDate(dateStr);
+        const qtyN=parseFloat(qty),priceN=parsePrice(price);
+        const valueN=parsePrice(value),feesN=parsePrice(fees);
         const name=sym==='BTC'?'Bitcoin':sym==='ETH'?'Ethereum':'Solana';
-        const ticker=sym,yahooTicker=sym+'-EUR',p=parseFloat(price),tot=parseFloat(total);
-        const tx={id,name,ticker,yahooTicker,type:'crypto',broker:'Revolut',qty:parseFloat(qty),price:p,total:tot,date:dateStr,action:action.toLowerCase()==='buy'?'buy':'sell',note:'Revolut spread inbegrepen'};
+        // If price is in USD (Revolut X), convert to EUR
+        const priceEur=line.includes('$')?priceN*0.92:priceN;
+        const valueEur=line.includes('$')?valueN*0.92:valueN;
+        const tx={id,name,ticker:sym,yahooTicker:sym+'-EUR',type:'crypto',broker:'Revolut',
+          qty:qtyN,price:priceEur,total:valueEur,costs:feesN>0?feesN:undefined,
+          date,action,note:isRevX?'Revolut X aankoop':'Revolut crypto'};
         transactions.push(tx);existingIds.add(id);newTx++;
-        const ex=holdings.find(h=>h.ticker===ticker&&h.broker==='Revolut');
-        if(ex){if(tx.action==='buy')ex.qty+=parseFloat(qty);else ex.qty=Math.max(0,ex.qty-parseFloat(qty));ex.current=p;}
-        else if(tx.action==='buy'){holdings.push({id:'h_rev_'+ticker,name,ticker,yahooTicker,type:'crypto',broker:'Revolut',qty:parseFloat(qty),price:p,current:p,date:dateStr,notes:''});}
+        const ex=holdings.find(h=>h.ticker===sym&&h.broker==='Revolut');
+        if(ex){ex.qty+=qtyN;ex.current=priceEur;}
+        else{holdings.push({id:'h_rev_'+sym,name,ticker:sym,yahooTicker:sym+'-EUR',
+          type:'crypto',broker:'Revolut',qty:qtyN,price:priceEur,current:priceEur,date,notes:''});}
         updatedHoldings++;
       } else skipped++;
+      break;
     }
   }
-  return{newTx,skipped,updatedHoldings,broker:'Revolut',reportType:'Statement'};
+  return{newTx,skipped,updatedHoldings,broker:'Revolut',reportType:'Account Statement'};
 }
 
 function parseRevolutPnL(text){
