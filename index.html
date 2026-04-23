@@ -261,18 +261,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="pin-dot" id="d4"></div><div class="pin-dot" id="d5"></div>
   </div>
   <div class="pin-grid">
-    <button class="pin-btn" onclick="pinPress('1')" ontouchstart="">1</button>
-    <button class="pin-btn" onclick="pinPress('2')">2<span class="letters">ABC</span></button>
-    <button class="pin-btn" onclick="pinPress('3')">3<span class="letters">DEF</span></button>
-    <button class="pin-btn" onclick="pinPress('4')">4<span class="letters">GHI</span></button>
-    <button class="pin-btn" onclick="pinPress('5')">5<span class="letters">JKL</span></button>
-    <button class="pin-btn" onclick="pinPress('6')">6<span class="letters">MNO</span></button>
-    <button class="pin-btn" onclick="pinPress('7')">7<span class="letters">PQRS</span></button>
-    <button class="pin-btn" onclick="pinPress('8')">8<span class="letters">TUV</span></button>
-    <button class="pin-btn" onclick="pinPress('9')">9<span class="letters">WXYZ</span></button>
+    <button class="pin-btn" ontouchend="pinPress('1');event.preventDefault()" onclick="pinPress('1')">1</button>
+    <button class="pin-btn" ontouchend="pinPress('2');event.preventDefault()" onclick="pinPress('2')">2<span class="letters">ABC</span></button>
+    <button class="pin-btn" ontouchend="pinPress('3');event.preventDefault()" onclick="pinPress('3')">3<span class="letters">DEF</span></button>
+    <button class="pin-btn" ontouchend="pinPress('4');event.preventDefault()" onclick="pinPress('4')">4<span class="letters">GHI</span></button>
+    <button class="pin-btn" ontouchend="pinPress('5');event.preventDefault()" onclick="pinPress('5')">5<span class="letters">JKL</span></button>
+    <button class="pin-btn" ontouchend="pinPress('6');event.preventDefault()" onclick="pinPress('6')">6<span class="letters">MNO</span></button>
+    <button class="pin-btn" ontouchend="pinPress('7');event.preventDefault()" onclick="pinPress('7')">7<span class="letters">PQRS</span></button>
+    <button class="pin-btn" ontouchend="pinPress('8');event.preventDefault()" onclick="pinPress('8')">8<span class="letters">TUV</span></button>
+    <button class="pin-btn" ontouchend="pinPress('9');event.preventDefault()" onclick="pinPress('9')">9<span class="letters">WXYZ</span></button>
     <button class="pin-btn empty"></button>
-    <button class="pin-btn" onclick="pinPress('0')" ontouchstart="">0</button>
-    <button class="pin-btn del" onclick="pinDel()">&#9003;</button>
+    <button class="pin-btn" ontouchend="pinPress('0');event.preventDefault()" onclick="pinPress('0')">0</button>
+    <button class="pin-btn del" ontouchend="pinDel();event.preventDefault()" onclick="pinDel()">&#9003;</button>
   </div>
   <div class="pin-hint" id="pin-hint">Voer je 6-cijferige PIN in</div>
   <div class="faceid-btn hidden" id="faceid-btn" onclick="triggerBiometric()">
@@ -2396,14 +2396,6 @@ const sp=sessionStorage.getItem(‘v_sp’);
 if(sp&&hasPIN)unlockWith(sp);
 else if(bioEnabled&&bioCredId&&hasPIN)setTimeout(autoTriggerBiometric,600);
 
-// iOS Safari fix: ensure pin buttons respond to touch
-document.querySelectorAll(’.pin-btn’).forEach(btn=>{
-btn.addEventListener(‘touchstart’, function(e){
-e.preventDefault();
-const oc=this.getAttribute(‘onclick’);
-if(oc)eval(oc);
-},{passive:false});
-});
 })();
 </script>
 
