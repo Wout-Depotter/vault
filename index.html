@@ -1559,10 +1559,18 @@ function lockApp(){holdings=[];transactions=[];deletedHoldings=[];currentPin=’
 function unlock(){
 document.getElementById(‘pin-screen’).classList.add(‘hidden’);
 document.getElementById(‘app’).classList.add(‘visible’);
-// Small delay so DOM is ready before rendering charts
-setTimeout(()=>{try{renderAll();}catch(e){console.warn(‘renderAll error:’,e);}},100);
+try{renderAll();}catch(e){console.warn(‘renderAll:’,e);}
 }
-async function unlockWith(pin){const ok=await loadData(pin);if(!ok){pinErr(‘Ontsleuteling mislukt’);return;}currentPin=pin;sessionStorage.setItem(‘v_sp’,currentPin);unlock();}
+async function unlockWith(pin){
+const stored=localStorage.getItem(‘v_hash’);
+const h=await pinHash(pin);
+if(h!==stored){pinErr(‘Onjuiste PIN’);return;}
+const ok=await loadData(pin);
+if(!ok){pinErr(‘Ontsleuteling mislukt’);return;}
+currentPin=pin;
+sessionStorage.setItem(‘v_sp’,currentPin);
+unlock();
+}
 function changePIN(){if(!currentPin){showToast(‘Ontgrendel eerst’);return;}isSettingPin=true;pinConfirm=’’;hint(‘Voer je nieuwe PIN in’);document.getElementById(‘pin-screen’).classList.remove(‘hidden’);}
 function showToast(msg){const t=document.getElementById(‘toast’);if(!t)return;t.textContent=msg;t.classList.add(‘show’);setTimeout(()=>t.classList.remove(‘show’),2600);}
 function showLoading(msg){const el=document.getElementById(‘loading-overlay’);const txt=document.getElementById(‘loading-text’);if(txt)txt.textContent=msg||‘Laden…’;if(el)el.classList.add(‘visible’);}
