@@ -162,7 +162,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s ease}
 .modal-overlay.open{opacity:1;pointer-events:all}
 .modal-sheet{background:var(–bg);border-radius:24px 24px 0 0;width:100%;padding:18px 18px 40px;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:88dvh;overflow-y:auto}
-.modal-overlay.open .modal-sheet{transform:translateY(0)}
+.modal-overlay.open .modal-sheet.open{transform:translateY(0)}
 .modal-handle{width:36px;height:4px;background:var(–border);border-radius:2px;margin:0 auto 16px}
 .modal-title{font-family:‘DM Serif Display’,serif;font-size:1.4rem;margin-bottom:3px}
 .modal-ticker{font-family:‘DM Mono’,monospace;font-size:.76rem;color:var(–text3);margin-bottom:14px}
@@ -206,7 +206,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .tx-edit-modal{position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .2s}
 .tx-edit-modal.open{opacity:1;pointer-events:all}
 .tx-edit-sheet{background:var(–card);border-radius:20px 20px 0 0;padding:20px 18px 40px;width:100%;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
-.tx-edit-modal.open .tx-edit-sheet{transform:translateY(0)}
+.tx-edit-modal.open .tx-edit-sheet.open{transform:translateY(0)}
 .tx-edit-title{font-family:‘DM Serif Display’,serif;font-size:1.2rem;margin-bottom:16px}
 #page-overview{padding:0;gap:0}
 /* CHART MODAL */
@@ -687,40 +687,25 @@ export default {<br>
 <div class="toast" id="toast"></div>
 <input type="file" id="json-import-input" accept=".json" style="display:none" onchange="handleJsonImport(event)">
 <script>
-// Global error catcher - shows errors visibly for debugging
-window.onerror = function(msg, src, line, col, err) {
-  const div = document.createElement('div');
-  div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:12px;font-family:monospace;font-size:.8rem;z-index:99999;white-space:pre-wrap;max-height:50vh;overflow:auto';
-  div.textContent = '❌ JS ERROR:\n' + msg + '\n' + src + ':' + line;
-  document.body.appendChild(div);
-  return false;
-};
-window.addEventListener('unhandledrejection', function(e) {
-  const div = document.createElement('div');
-  div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#e67e22;color:#fff;padding:12px;font-family:monospace;font-size:.8rem;z-index:99999;white-space:pre-wrap;max-height:50vh;overflow:auto';
-  div.textContent = '❌ PROMISE ERROR:\n' + (e.reason?.message || e.reason || 'Unknown');
-  document.body.appendChild(div);
-});
-
 // Service Worker - auto-update
-if(‘serviceWorker’ in navigator){
-navigator.serviceWorker.register(‘sw.js’).then(reg=>{
-// Check for updates every time app opens
-reg.update();
-reg.addEventListener(‘updatefound’,()=>{
-const newWorker=reg.installing;
-newWorker.addEventListener(‘statechange’,()=>{
-if(newWorker.state===‘installed’&&navigator.serviceWorker.controller){
-// New version available - show update banner
-showUpdateBanner();
-}
-});
-});
-}).catch(()=>{});
-// When new SW takes control, reload
-navigator.serviceWorker.addEventListener(‘controllerchange’,()=>{
-if(window._swUpdating)window.location.reload();
-});
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    // Check for updates every time app opens
+    reg.update();
+    reg.addEventListener('updatefound',()=>{
+      const newWorker=reg.installing;
+      newWorker.addEventListener('statechange',()=>{
+        if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
+          // New version available - show update banner
+          showUpdateBanner();
+        }
+      });
+    });
+  }).catch(()=>{});
+  // When new SW takes control, reload
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(window._swUpdating)window.location.reload();
+  });
 }
 
 pdfjsLib.GlobalWorkerOptions.workerSrc=‘https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js’;
