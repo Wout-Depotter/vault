@@ -1066,11 +1066,40 @@ async function setPortfolioRange(range,btn){
 }
 
 function buildPortfolioHistory(range){
-  // Build P&L history: shows added value (current value - invested cost basis)
-  // NOT cumulative invested amount - just the profit/loss over time
   if(!transactions.length&&!holdings.length)return null;
-  const days=RANGE_CONFIG[range].days;
   const now=new Date();
+
+  // ── 1D: show today's live movement using dailyChange data ──
+  if(range==='1D'){
+    const hasLive=holdings.some(h=>h.lastRefresh&&h.dailyChangePct!==undefined);
+    if(!hasLive){
+      // No live data yet - show flat line at current total P&L
+      const{tc,ti}=portfolio();
+      const pl=tc-ti;
+      const today=now.toISOString().split('T')[0];
+      return[{date:today+' 00:00',price:pl},{date:today+' now',price:pl}];
+    }
+    // Calculate yesterday close: current value - today's daily change
+    let totalCurrent=0,totalYesterday=0;
+    holdings.forEach(h=>{
+      const curVal=h.qty*(h.current||h.price||0);
+      const dailyChg=h.qty*(h.dailyChange||0);
+      totalCurrent+=curVal;
+      totalYesterday+=curVal-dailyChg;
+    });
+    const{ti}=portfolio();
+    // P&L points: yesterday close P&L vs today's P&L
+    const plYesterday=totalYesterday-ti;
+    const plNow=totalCurrent-ti;
+    const today=now.toISOString().split('T')[0];
+    return[
+      {date:today+' 09:00',price:plYesterday},
+      {date:today+' now',price:plNow}
+    ];
+  }
+
+  // ── Other ranges: transaction-based history ──
+  const days=RANGE_CONFIG[range].days;
   const fromDate=new Date(now);fromDate.setDate(fromDate.getDate()-days);
 
   // Collect date points: all tx dates + weekly intervals
@@ -1160,6 +1189,17 @@ function drawPortfolioChart(){
     // Label per range
     const rangeLabel={'1D':'vandaag','1W':'deze week','1M':'deze maand',
       '3M':'3 maanden','6M':'6 maanden','1Y':'dit jaar','ALL':'alltime'}[portfolioRange]||portfolioRange;
+    // For 1D: also show the raw daily change amount
+    if(portfolioRange==='1D'){
+      let totalDailyChange=0;
+      holdings.forEach(h=>totalDailyChange+=(h.dailyChange||0)*h.qty);
+      const hasLiveData=holdings.some(h=>h.lastRefresh);
+      if(!hasLiveData){
+        const hc=document.getElementById('hero-change');
+        if(hc)hc.innerHTML='<span style="color:var(--text3);font-size:.78rem">Ververs koersen voor dagelijkse W/V</span>';
+        return;
+      }
+    }
 
     const cc=periodGain>=0?'var(--green)':'var(--red)';
     const hc=document.getElementById('hero-change');
@@ -1430,7 +1470,7 @@ async function renderSearchResult(el,results){el.innerHTML=results.map(item=>{co
 // ── LIVE PRICES ──
 let ANTHROPIC_KEY=localStorage.getItem('v_api_key')||'';
 const TICKER_MAP={'FLXD':'FLXD.DE','XSPU':'XSPU.L','CD5':'CD5.PA','WAT':'WAT.PA','SWRD':'SWRD.AS','WTCH':'WTCH.AS','EMIM':'EMIM.AS','IWDA':'IWDA.AS','UST':'UST.PA','EUNL':'EUNL.DE','VUAA':'VUAA.MI','FWIA':'FWIA.DE','QUTM':'QUTM.MU','BTC':'BTC-EUR','ETH':'ETH-EUR'};
-function getYahooTicker(h){if(h.yahooTicker)return h.yahooTicker;const t=(h.ticker||'').split(':')[0];return TICKER_MAP[t]||h.ticker||'';}
+function getYahooTicker(h){const t=(h.ticker||'').split(':')[0];return TICKER_MAP[t]||h.yahooTicker||h.ticker||'';}
 async function fetchCoinGecko(ticker){
   const id=GECKO_MAP[ticker];if(!id)return null;
   // Try CoinGecko direct, then via allorigins proxy
