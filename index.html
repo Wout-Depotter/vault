@@ -1134,7 +1134,8 @@ if(!canvas)return;
 const wrap=canvas.parentElement;
 // Use requestAnimationFrame to ensure layout is complete
 const doRender=()=>{
-const w=wrap.getBoundingClientRect().width||window.innerWidth;
+const rect=wrap?.getBoundingClientRect?.();
+const w=(rect&&rect.width>0)?rect.width:(wrap?.clientWidth||window.innerWidth||390);
 canvas.width=w;
 canvas.height=120;
 const plPoints=buildPortfolioHistory(portfolioRange);
@@ -1170,7 +1171,7 @@ if(hc)hc.innerHTML=
 ```
 
 };
-if(wrap.getBoundingClientRect().width>0){doRender();}
+if(wrap?.getBoundingClientRect?.()?.width>0){doRender();}
 else{requestAnimationFrame(doRender);}
 }
 
@@ -1286,7 +1287,8 @@ if(!prices||prices.length<2){if(loading)loading.textContent=‘Geen historische 
 if(loading)loading.style.display=‘none’;
 if(canvas)canvas.style.display=‘block’;
 const wrap=canvas.parentElement;
-canvas.width=wrap.getBoundingClientRect().width||wrap.clientWidth||window.innerWidth;canvas.height=160;
+const rect2=wrap?.getBoundingClientRect?.();
+canvas.width=(rect2&&rect2.width>0)?rect2.width:(wrap?.clientWidth||window.innerWidth||390);canvas.height=160;
 drawSparkline(canvas,‘modal-crosshair’,‘modal-tooltip’,‘modal-price-big’,prices,h,’’);
 const first=prices[0].price,last=prices[prices.length-1].price;
 const chg=last-first,pct=first>0?(chg/first)*100:0;
@@ -1552,7 +1554,12 @@ async function restoreHolding(i){const h=deletedHoldings[i];if(!h)return;const t
 
 // ── LOCK/UNLOCK ──
 function lockApp(){holdings=[];transactions=[];deletedHoldings=[];currentPin=’’;sessionStorage.removeItem(‘v_sp’);document.getElementById(‘pin-screen’).classList.remove(‘hidden’);document.getElementById(‘app’).classList.remove(‘visible’);renderAll();}
-function unlock(){document.getElementById(‘pin-screen’).classList.add(‘hidden’);document.getElementById(‘app’).classList.add(‘visible’);renderAll();}
+function unlock(){
+document.getElementById(‘pin-screen’).classList.add(‘hidden’);
+document.getElementById(‘app’).classList.add(‘visible’);
+// Small delay so DOM is ready before rendering charts
+setTimeout(()=>{try{renderAll();}catch(e){console.warn(‘renderAll error:’,e);}},100);
+}
 async function unlockWith(pin){const ok=await loadData(pin);if(!ok){pinErr(‘Ontsleuteling mislukt’);return;}currentPin=pin;sessionStorage.setItem(‘v_sp’,currentPin);unlock();}
 function changePIN(){if(!currentPin){showToast(‘Ontgrendel eerst’);return;}isSettingPin=true;pinConfirm=’’;hint(‘Voer je nieuwe PIN in’);document.getElementById(‘pin-screen’).classList.remove(‘hidden’);}
 function showToast(msg){const t=document.getElementById(‘toast’);if(!t)return;t.textContent=msg;t.classList.add(‘show’);setTimeout(()=>t.classList.remove(‘show’),2600);}
